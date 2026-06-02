@@ -4,6 +4,13 @@
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
+  "alias": {
+    "#tanstack-router-entry": "./dist/server/assets/worker-entry-Crmm-da7.js",
+    "#tanstack-start-entry": "./dist/server/assets/start-Dnz_VIpV.js",
+    "#tanstack-start-plugin-adapters": "./dist/server/assets/__23tanstack-start-plugin-adapters-Cwee5PKy.js",
+    "tanstack-start-manifest:v": "./dist/server/assets/_tanstack-start-manifest_v-D8a_MkMj.js",
+    "tanstack-start-injected-head-scripts:v": "./dist/server/assets/start-Dnz_VIpV.js"
+  },
   "vars": {
     "GROQ_API_KEY": "",
     "SUPABASE_URL": "",
