@@ -637,7 +637,7 @@ function AsteroidKPIRow({ stats }: { stats: { total: number; raised: number; fun
 
   return (
     <div style={{ flexShrink: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
+      <div className="hub-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
         {cards.map(c => {
           const Icon = c.icon;
           return (
@@ -707,6 +707,7 @@ function HubPage() {
   const [vcSearch, setVcSearch] = useState('');
   const [startups, setStartups] = useState(EXTENDED_STARTUPS);
   const [tab, setTab] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [editingDoc, setEditingDoc] = useState<typeof VAULT_DOCS[0] | null>(null);
   const [incuScoreState, setIncuScoreState] = useState<{
@@ -1160,8 +1161,14 @@ function HubPage() {
   return (
     <div className="flex h-screen bg-black text-white overflow-hidden" style={{ fontFamily: 'inherit' }}>
 
+      {/* Mobile sidebar overlay */}
+      <div
+        className={`hub-sidebar-overlay${sidebarOpen ? ' open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
       {/* ── SIDEBAR ──────────────────────────────────────────────────────── */}
-      <aside className="w-56 flex flex-col border-r border-white/[0.06] bg-black shrink-0">
+      <aside className={`hub-sidebar w-56 flex flex-col border-r border-white/[0.06] bg-black shrink-0${sidebarOpen ? ' open' : ''}`}>
         <a href="/" className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06] hover:bg-violet-500/[0.06] transition-all group">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/40 group-hover:text-violet-400 transition-colors shrink-0">
             <polyline points="15 18 9 12 15 6" />
@@ -1193,7 +1200,7 @@ function HubPage() {
             const Icon = item.icon;
             const active = tab === item.id;
             return (
-              <button key={item.id} onClick={() => setTab(item.id)}
+              <button key={item.id} onClick={() => { setTab(item.id); setSidebarOpen(false); }}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all border ${active ? 'bg-violet-500/15 text-violet-300 border-violet-500/25'
                   : 'text-white/35 hover:text-white/70 hover:bg-white/[0.04] border-transparent'
                   }`}>
@@ -1229,16 +1236,31 @@ function HubPage() {
       </aside>
 
       {/* ── MAIN AREA ────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="hub-main-content flex-1 flex flex-col overflow-hidden">
 
         {/* Topbar */}
-        <header className="flex items-center justify-between px-8 py-4 border-b border-white/[0.06] bg-black shrink-0 relative">
-          <div>
-            <h2 className="text-base font-semibold text-white">{navItems.find(n => n.id === tab)?.label}</h2>
-            <p className="text-[11px] text-white/25 mt-0.5">Cohort 12 · IIT KGP Innovation Cell · Live</p>
+        <header className="hub-header-adjust flex items-center justify-between px-8 py-4 border-b border-white/[0.06] bg-black shrink-0 relative">
+          <div className="flex items-center gap-3">
+            {/* Hamburger — mobile only */}
+            <button
+              className="hub-hamburger items-center justify-center w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white/60"
+              onClick={() => setSidebarOpen(o => !o)}
+              aria-label="Toggle menu"
+              style={{ flexShrink: 0, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect y="2" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)"/>
+                <rect y="7.1" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)"/>
+                <rect y="12.2" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)"/>
+              </svg>
+            </button>
+            <div>
+              <h2 className="hub-topbar-title text-base font-semibold text-white">{navItems.find(n => n.id === tab)?.label}</h2>
+              <p className="text-[11px] text-white/25 mt-0.5">Cohort 12 · IIT KGP Innovation Cell · Live</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative">
+            <div className="hub-topbar-search relative">
               <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-white/25" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search startups…"
                 className="pl-9 pr-4 py-2 w-52 text-xs bg-white/[0.04] border border-white/[0.08] rounded-full focus:outline-none focus:border-violet-500/50 text-white placeholder-white/20 transition" />
@@ -1286,7 +1308,7 @@ function HubPage() {
 
           {/* ── COMMAND CENTER ────────────────────────────────────────────── */}
           {tab === 'overview' && (
-            <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 28px', boxSizing: 'border-box', overflow: 'hidden' }}>
+            <div className="hub-main-content" style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 28px', boxSizing: 'border-box', overflow: 'hidden' }}>
 
               {/* Constellation bg */}
               <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0, opacity: 0.35 }}>
@@ -1300,10 +1322,10 @@ function HubPage() {
               </div>
 
               {/* ── Table + Activity ──────────────────────────────────── */}
-              <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 296px', gap: 16 }}>
+              <div className="lp-two-col" style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 296px', gap: 16 }}>
 
                 {/* Portfolio table */}
-                <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div className="hub-table-wrap" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
                   {/* Table header */}
                   <div style={{ flexShrink: 0, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1583,7 +1605,7 @@ function HubPage() {
             const STAGE_ICONS: Record<string, string> = { Ideation: '◈', Validation: '⬡', 'MVP Built': '▣', Growth: '⟁', 'Funding Secured': '✦' };
             const STAGE_DESC: Record<string, string> = { Ideation: 'Concept stage', Validation: 'Testing fit', 'MVP Built': 'Product ready', Growth: 'Scaling up', 'Funding Secured': 'Round closed' };
             return (
-              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 12 }}>
+              <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 12 }}>
 
                 {/* ── CSS ambient + multiple 3D decorations ── */}
                 <style>{`
@@ -1693,7 +1715,7 @@ function HubPage() {
                 </div>
 
                 {/* ── Kanban — 5 equal columns, each with rigid scroll ── */}
-                <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+                <div className="hub-pipeline-kanban" style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
                   {STAGE_ORDER.map((stage, stageIdx) => {
                     const sc = STAGE_COLORS[stage];
                     const cards = filteredPipeline.filter(s => s.stage === stage);
@@ -1832,7 +1854,7 @@ function HubPage() {
 
           {/* ── PITCH VAULT ──────────────────────────────────────────────── */}
           {tab === 'vault' && (
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 28px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
+            <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 28px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
 
               {/* ── Nebula background ── */}
               <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
@@ -1857,7 +1879,7 @@ function HubPage() {
               </div>
 
               {/* ── Stats strip ── */}
-              <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
+              <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                 {[
                   { label: 'Total Documents', val: filteredDocs.length, color: '#8b5cf6', Icon: FolderKey },
                   { label: 'Avg AI Score', val: Math.round(filteredDocs.reduce((a, d) => a + d.score, 0) / (filteredDocs.length || 1)), color: '#06b6d4', Icon: Target },
@@ -1885,7 +1907,7 @@ function HubPage() {
                 <div style={{ textAlign: 'center', paddingTop: 60, color: 'rgba(255,255,255,0.2)', fontSize: 14, position: 'relative', zIndex: 1 }}>No documents of this type</div>
               )}
               <div className="analytics-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+                <div className="hub-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
                   {filteredDocs.map(d => {
                     const tc = TYPE_COLOR[d.type] || '#8b5cf6';
                     const sc = STAT_COLOR[d.status];
@@ -2066,7 +2088,7 @@ function HubPage() {
 
           {/* ── MENTOR NETWORK ───────────────────────────────────────────── */}
           {tab === 'network' && (
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
+            <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
 
               {/* ── Galaxy background ── */}
               <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
@@ -2097,7 +2119,7 @@ function HubPage() {
                 </div>
               )}
               <div className="analytics-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 28px 24px', position: 'relative', zIndex: 1 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+                <div className="hub-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
                   {filteredMentors.map(m => {
                     const mc = MENTOR_COLORS[m.id] || '#8b5cf6';
                     return (
@@ -2202,7 +2224,7 @@ function HubPage() {
             };
             const TYPES = ['All', 'Pitching', 'Workshop', 'Mentorship', 'Hackathon'];
             return (
-              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 14 }}>
+              <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 14 }}>
 
                 {/* ── Full CSS ambient layer ── */}
                 <style>{`
@@ -2307,7 +2329,7 @@ function HubPage() {
                 </div>
 
                 {/* ── Main: 2-col ── */}
-                <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 300px', gap: 14, position: 'relative', zIndex: 1 }}>
+                <div className="hub-events-main" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 300px', gap: 14, position: 'relative', zIndex: 1 }}>
 
                   {/* LEFT — scrollable rigid box */}
                   <div style={{ borderRadius: 20, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(8,8,20,0.7)', backdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
@@ -2464,7 +2486,7 @@ function HubPage() {
 
           {/* ── ANALYTICS ────────────────────────────────────────────────── */}
           {tab === 'analytics' && (
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 14, padding: '20px 24px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
+            <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 14, padding: '20px 24px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
 
               {/* ── Accretion disk background ── */}
               <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
@@ -2473,7 +2495,7 @@ function HubPage() {
               </div>
 
               {/* ── Row 1: KPI strip with Armillary orbs ── */}
-              <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, position: 'relative', zIndex: 1 }}>
+              <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, position: 'relative', zIndex: 1 }}>
                 {[
                   { label: 'Total MRR', val: '₹80K', change: '+54%', period: 'vs last month', color: '#8b5cf6' },
                   { label: 'Active Users', val: '1,580', change: '+68%', period: 'vs last month', color: '#06b6d4' },
@@ -2502,7 +2524,7 @@ function HubPage() {
               </div>
 
               {/* ── Row 2: Charts ── */}
-              <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, position: 'relative', zIndex: 1 }}>
+              <div className="lp-two-col" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, position: 'relative', zIndex: 1 }}>
                 {[
                   { label: 'Portfolio MRR Growth', sub: '+54% MoM', data: MRR_DATA, color: '#8b5cf6', unit: 'K' },
                   { label: 'Active User Acquisition', sub: '+68% MoM', data: USR_DATA, color: '#06b6d4', unit: '' },
@@ -2530,7 +2552,7 @@ function HubPage() {
               </div>
 
               {/* ── Row 3: Three redesigned panels ── */}
-              <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, position: 'relative', zIndex: 1 }}>
+              <div className="hub-card-grid" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, position: 'relative', zIndex: 1 }}>
 
                 {/* ══ Sector Distribution — Donut + Legend ══ */}
                 <div style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', overflow: 'hidden', backdropFilter: 'blur(18px)', position: 'relative' }}>
@@ -2689,7 +2711,7 @@ function HubPage() {
             const pipeline = INVESTORS.filter(i => i.status !== 'Committed');
             const pipelinePotential = pipeline.reduce((a, c) => a + c.amount, 0);
             return (
-              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 24px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 12 }}>
+              <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 24px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 12 }}>
 
                 {/* ── CSS ambient ── */}
                 <style>{`
@@ -2739,7 +2761,7 @@ function HubPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     TOP STRIP — headline KPIs spanning full width
                 ═══════════════════════════════════════════════════════════ */}
-                <div style={{ flexShrink: 0, position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10 }}>
+                <div className="hub-kpi-5col" style={{ flexShrink: 0, position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10 }}>
                   {[
                     { label: 'Total Target', val: `₹${(totalTarget / 1e6).toFixed(0)}M`, sub: 'Series A goal', col: '#8b5cf6', icon: '⌖' },
                     { label: 'Committed', val: `₹${(totalCommitted / 1e6).toFixed(1)}M`, sub: `${committed.length} investors`, col: '#10b981', icon: '✓' },
@@ -2763,7 +2785,7 @@ function HubPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     MAIN ROW — 3-column layout
                 ═══════════════════════════════════════════════════════════ */}
-                <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '320px 1fr 280px', gap: 12, position: 'relative', zIndex: 1 }}>
+                <div className="hub-funding-main" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '320px 1fr 280px', gap: 12, position: 'relative', zIndex: 1 }}>
 
                   {/* ── LEFT: Funding Orb Panel ── */}
                   <div style={{ borderRadius: 20, border: '1px solid rgba(139,92,246,0.3)', background: 'linear-gradient(160deg,rgba(139,92,246,0.14) 0%,rgba(6,6,18,0.97) 70%)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -3037,7 +3059,7 @@ function HubPage() {
       {/* ── MODAL: REGISTER ─────────────────────────────────────────────── */}
       {registerOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-[#08080f] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl">
+          <div className="hub-modal-wrap bg-[#08080f] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl">
             <div className="px-6 py-4 border-b border-white/[0.07] flex justify-between items-center">
               <div className="flex items-center gap-2.5">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400 shadow-[0_0_8px_2px_rgba(167,139,250,0.8)]" />
@@ -3048,7 +3070,7 @@ function HubPage() {
             <form onSubmit={handleCreate} className="p-6 space-y-4">
               <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Company Name</label>
                 <input type="text" required placeholder="e.g. NeuralKit" value={newS.name} onChange={e => setNewS({ ...newS, name: e.target.value })} className={input} /></div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="hub-modal-grid grid grid-cols-2 gap-3">
                 <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Founder</label>
                   <input type="text" required placeholder="Primary contact" value={newS.founder} onChange={e => setNewS({ ...newS, founder: e.target.value })} className={input} /></div>
                 <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Industry</label>
@@ -3073,20 +3095,20 @@ function HubPage() {
       {/* ── MODAL: EDIT ─────────────────────────────────────────────────── */}
       {editTarget && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-[#08080f] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl border-t-2 border-t-violet-500/50">
+          <div className="hub-modal-wrap bg-[#08080f] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl border-t-2 border-t-violet-500/50">
             <div className="px-6 py-4 border-b border-white/[0.07] flex justify-between items-center">
               <div className="flex items-center gap-2"><Edit3 className="h-3.5 w-3.5 text-violet-400" />
                 <h3 className="text-sm font-semibold text-white">Edit — {editTarget.name}</h3></div>
               <button onClick={() => setEditTarget(null)} className="text-white/30 hover:text-white transition"><X className="h-4 w-4" /></button>
             </div>
             <form onSubmit={handleSave} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="hub-modal-grid grid grid-cols-2 gap-3">
                 <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Name</label>
                   <input type="text" required value={editTarget.name} onChange={e => setEditTarget({ ...editTarget, name: e.target.value })} className={input} /></div>
                 <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Founder</label>
                   <input type="text" required value={editTarget.founder} onChange={e => setEditTarget({ ...editTarget, founder: e.target.value })} className={input} /></div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="hub-modal-grid grid grid-cols-2 gap-3">
                 <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Industry</label>
                   <select value={editTarget.industry} onChange={e => setEditTarget({ ...editTarget, industry: e.target.value })} className={input + " bg-black/40"}>
                     <option>SaaS</option><option>FinTech</option><option>DeepTech</option>
@@ -3098,7 +3120,7 @@ function HubPage() {
               </div>
               <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Tagline</label>
                 <input type="text" required value={editTarget.tagline} onChange={e => setEditTarget({ ...editTarget, tagline: e.target.value })} className={input} /></div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="hub-modal-grid grid grid-cols-2 gap-3">
                 <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Funding Target</label>
                   <input type="number" required value={editTarget.fundingGoal} onChange={e => setEditTarget({ ...editTarget, fundingGoal: e.target.value })} className={input} /></div>
                 <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Capital Raised</label>
@@ -3163,7 +3185,7 @@ function HubPage() {
 
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
-            <div style={{ background: '#08080f', border: '1px solid rgba(255,255,255,0.09)', borderTop: '2px solid rgba(139,92,246,0.6)', borderRadius: 20, width: '100%', maxWidth: 460, boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }}>
+            <div className="hub-modal-wrap" style={{ background: '#08080f', border: '1px solid rgba(255,255,255,0.09)', borderTop: '2px solid rgba(139,92,246,0.6)', borderRadius: 20, width: '100%', maxWidth: 460, boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }}>
 
               {/* Header */}
               <div style={{ padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -3209,7 +3231,7 @@ function HubPage() {
                       style={{ width: '100%', padding: '9px 13px', fontSize: 12, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="hub-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
                       <label style={{ display: 'block', fontSize: 10, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Type</label>
                       <select id="vup-type" style={{ width: '100%', padding: '9px 13px', fontSize: 12, background: '#0d0d18', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, color: 'white', outline: 'none' }}>
@@ -3242,7 +3264,7 @@ function HubPage() {
       {/* Upload Guard Modal */}
       {uploadGuardOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
-          <div style={{ background: '#08080f', border: '1px solid rgba(139,92,246,0.3)', borderTop: '2px solid #8b5cf6', borderRadius: 20, width: '100%', maxWidth: 420, padding: 32, textAlign: 'center' }}>
+          <div className="hub-modal-wrap" style={{ background: '#08080f', border: '1px solid rgba(139,92,246,0.3)', borderTop: '2px solid #8b5cf6', borderRadius: 20, width: '100%', maxWidth: 420, padding: 32, textAlign: 'center' }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 24 }}>🚀</div>
             <p style={{ fontSize: 18, fontWeight: 700, color: 'white', margin: '0 0 10px' }}>Register Your Startup First</p>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.65, margin: '0 0 24px' }}>
@@ -3305,7 +3327,7 @@ function HubPage() {
 
     return (
       <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
-        <div style={{ background: '#08080f', border: `1px solid ${col}40`, borderTop: `3px solid ${col}`, borderRadius: 24, width: '100%', maxWidth: 520, boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 60px ${col}18`, padding: 32, position: 'relative', overflow: 'hidden' }}>
+        <div className="incuscore-modal hub-modal-wrap" style={{ background: '#08080f', border: `1px solid ${col}40`, borderTop: `3px solid ${col}`, borderRadius: 24, width: '100%', maxWidth: 520, boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 60px ${col}18`, padding: 32, position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, borderRadius: '50%', background: `radial-gradient(circle,${col}12,transparent 70%)`, pointerEvents: 'none' }} />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -3315,7 +3337,7 @@ function HubPage() {
             <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>✕</button>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 22 }}>
+          <div className="incuscore-modal-inner" style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 22 }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <svg width={132} height={132} viewBox="0 0 132 132">
                 <circle cx="66" cy="66" r="54" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />

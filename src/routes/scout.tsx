@@ -616,6 +616,7 @@ function ScoutPage() {
     const { user, isLoading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [tab, setTab] = useState('cockpit');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [scoutSearch, setScoutSearch] = useState('');
     const [dealSector, setDealSector] = useState('All');
     const [eventType, setEventType] = useState('All');
@@ -676,6 +677,12 @@ function ScoutPage() {
     return (
         <div style={{ display: 'flex', height: '100vh', background: '#050509', color: 'white', fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden' }}>
 
+            {/* Mobile sidebar overlay */}
+            <div
+                className={`scout-sidebar-overlay${sidebarOpen ? ' open' : ''}`}
+                onClick={() => setSidebarOpen(false)}
+            />
+
             <style>{`
         .sc-scroll::-webkit-scrollbar{width:3px}
         .sc-scroll::-webkit-scrollbar-track{background:transparent}
@@ -700,7 +707,7 @@ function ScoutPage() {
       `}</style>
 
             {/* ══ SIDEBAR ══ */}
-            <aside style={{
+            <aside className={`scout-sidebar${sidebarOpen ? ' open' : ''}`} style={{
                 width: 228, flexShrink: 0, display: 'flex', flexDirection: 'column',
                 borderRight: '1px solid rgba(255,255,255,0.07)',
                 background: 'rgba(3,3,12,0.88)', backdropFilter: 'blur(28px)',
@@ -747,7 +754,7 @@ function ScoutPage() {
                     {TABS.map(t => {
                         const Icon = t.icon; const active = tab === t.id;
                         return (
-                            <button key={t.id} onClick={() => setTab(t.id)} className="sc-btn" style={{
+                            <button key={t.id} onClick={() => { setTab(t.id); setSidebarOpen(false); }} className="sc-btn" style={{
                                 display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px', borderRadius: 12,
                                 background: active ? 'rgba(139,92,246,.2)' : 'transparent',
                                 border: `1px solid ${active ? 'rgba(139,92,246,.42)' : 'transparent'}`,
@@ -790,17 +797,30 @@ function ScoutPage() {
             </aside>
 
             {/* ══ MAIN ══ */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+            <div className="hub-main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
 
                 {/* Top bar */}
-                <header style={{ flexShrink: 0, height: 52, borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 22px', background: 'rgba(5,5,9,0.85)', backdropFilter: 'blur(20px)', zIndex: 10 }}>
+                <header style={{ flexShrink: 0, height: 52, borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', background: 'rgba(5,5,9,0.85)', backdropFilter: 'blur(20px)', zIndex: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {/* Hamburger — mobile only */}
+                        <button
+                            className="scout-hamburger"
+                            onClick={() => setSidebarOpen(o => !o)}
+                            aria-label="Toggle menu"
+                            style={{ alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', flexShrink: 0 }}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <rect y="2" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)"/>
+                                <rect y="7.1" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)"/>
+                                <rect y="12.2" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)"/>
+                            </svg>
+                        </button>
                         <span style={{ fontSize: 11, color: 'rgba(255,255,255,.22)' }}>Scout Hub</span>
                         <ChevronRight style={{ width: 12, height: 12, color: 'rgba(255,255,255,.15)' }} />
                         <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,.8)' }}>{TABS.find(t => t.id === tab)?.label}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 13px', borderRadius: 10, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                        <div className="scout-topbar-search" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 13px', borderRadius: 10, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
                             <Search style={{ width: 11, height: 11, color: 'rgba(255,255,255,.3)' }} />
                             <input
                                 value={scoutSearch} onChange={e => setScoutSearch(e.target.value)}
@@ -818,13 +838,13 @@ function ScoutPage() {
                     </div>
                 </header>
 
-                <main style={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
+                <main className="hub-main-content" style={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
 
                     {/* ══ 1. INVESTMENT COCKPIT ══ */}
                     {tab === 'cockpit' && (() => {
                         const topDeals = ALL_STARTUPS.filter(s => shortlisted.includes(s.id)).sort((a, b) => b.score - a.score);
                         return (
-                            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 12, position: 'relative' }}>
+                            <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 12, position: 'relative' }}>
 
                                 {/* ── CSS-only ambient (replaces heavy WebGL CockpitNebula) ── */}
                                 <style>{`
@@ -870,7 +890,7 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── Row 1: KPI strip ── */}
-                                <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
+                                <div className="hub-kpi-5col" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                                     {[
                                         { label: 'AUM', val: fmt(VC_PROFILE.aum), sub: 'Total fund size', color: '#8b5cf6', Icon: Building2 },
                                         { label: 'Dry Powder', val: fmt(dryPowder), sub: 'Available to deploy', color: '#10b981', Icon: Zap },
@@ -894,7 +914,7 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── Row 2: 3-panel grid ── */}
-                                <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '220px 1fr 260px', gap: 12, position: 'relative', zIndex: 1 }}>
+                                <div className="scout-cockpit-main" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '220px 1fr 260px', gap: 12, position: 'relative', zIndex: 1 }}>
 
                                     {/* Panel L: Portfolio Orb */}
                                     <div style={{ ...G(), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', gap: 12, position: 'relative' }}>
@@ -1097,7 +1117,7 @@ function ScoutPage() {
 
                     {/* ══ 2. DEAL FLOW KANBAN ══ */}
                     {tab === 'dealflow' && (() => (
-                        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 12, position: 'relative' }}>
+                        <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 12, position: 'relative' }}>
                             <DealFlowGalaxy />
 
                             <style>{`
@@ -1161,7 +1181,7 @@ function ScoutPage() {
                             </div>
 
                             {/* Kanban columns */}
-                            <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+                            <div className="hub-pipeline-kanban" style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
                                 {STAGE_ORDER.map(stage => {
                                     const sc = STAGE_COLORS[stage];
                                     const cards = filteredDeals.filter(s => s.stage === stage);
@@ -1232,7 +1252,7 @@ function ScoutPage() {
                         const pendingCount = selectedDocs.filter(d => !d.access).length;
 
                         return (
-                            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
+                            <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
 
                                 {/* ── keyframes ── */}
                                 <style>{`
@@ -1299,7 +1319,7 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── KPI strip ── */}
-                                <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
+                                <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                                     {[
                                         { label: 'Total Documents', val: DILIGENCE_DOCS.length, sub: 'Across all startups', color: '#8b5cf6', Icon: FolderKey },
                                         { label: 'Viewed', val: DILIGENCE_DOCS.filter(d => d.viewed).length, sub: 'Documents opened', color: '#10b981', Icon: Eye },
@@ -1566,7 +1586,7 @@ function ScoutPage() {
 
                     {/* ══ 4. STARTUP NETWORK ══ */}
                     {tab === 'network' && (() => (
-                        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
+                        <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
                             <NetworkStarMap />
 
                             <style>{`
@@ -1667,7 +1687,7 @@ function ScoutPage() {
                         const TYPES = ['All', 'Demo Day', 'Workshop', 'Hackathon', 'Mentorship'];
 
                         return (
-                            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
+                            <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
 
                                 {/* ── keyframes ── */}
                                 <style>{`
@@ -2012,7 +2032,7 @@ function ScoutPage() {
 
                     {/* ══ 6. MARKET INSIGHTS ══ */}
                     {tab === 'insights' && (() => (
-                        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
+                        <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
                             <InsightsNebula />
 
                             {/* ── ambient CSS decorations ── */}
@@ -2319,7 +2339,7 @@ function ScoutPage() {
                         const fundTotal = totalD + dryPowder;
 
                         return (
-                            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
+                            <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
                                 <DeploymentGalaxy />
 
                                 {/* ── keyframes ── */}
@@ -2395,7 +2415,7 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── KPI strip ── */}
-                                <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
+                                <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                                     {[
                                         { label: 'Total AUM', val: fmt(VC_PROFILE.aum), sub: 'Fund size', color: '#8b5cf6', Icon: Building2 },
                                         { label: 'Deployed', val: fmt(totalD), sub: `${((totalD / fundTotal) * 100).toFixed(0)}% of fund`, color: '#10b981', Icon: TrendingUp },
@@ -2733,7 +2753,7 @@ function ScoutPage() {
             {
                 msgOpen && (
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
-                        <div style={{ background: '#07070f', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(6,182,212,.5)', borderRadius: 22, width: '100%', maxWidth: 420, boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
+                        <div className="hub-modal-wrap" style={{ background: '#07070f', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(6,182,212,.5)', borderRadius: 22, width: '100%', maxWidth: 420, boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
                             <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     <div style={{ width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg,#0e7490,#06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, boxShadow: '0 4px 14px rgba(6,182,212,.35)' }}>{msgOpen.avatar}</div>
@@ -2745,7 +2765,7 @@ function ScoutPage() {
                                 <button onClick={() => setMsgOpen(null)} style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,.5)', padding: 6, display: 'flex' }}><X style={{ width: 14, height: 14 }} /></button>
                             </div>
                             <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                <textarea placeholder="Type your message…" style={{ width: '100%', minHeight: 110, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 13, color: 'white', fontSize: 12, padding: '10px 13px', resize: 'vertical', outline: 'none', fontFamily: 'Inter,sans-serif', lineHeight: 1.55, boxSizing: 'border-box' }} />
+                                <textarea placeholder="Type your message…" style={{ width: '100%', minHeight: 110, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 13, color: 'white', fontSize: 16, padding: '10px 13px', resize: 'vertical', outline: 'none', fontFamily: 'Inter,sans-serif', lineHeight: 1.55, boxSizing: 'border-box' }} />
                                 <div style={{ display: 'flex', gap: 10 }}>
                                     <button onClick={() => setMsgOpen(null)} style={{ flex: 1, padding: '10px', borderRadius: 12, background: 'rgba(255,255,255,.05)', color: 'rgba(255,255,255,.45)', border: '1px solid rgba(255,255,255,.08)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Cancel</button>
                                     <button onClick={() => setMsgOpen(null)} className="sc-btn" style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px', borderRadius: 12, background: 'linear-gradient(90deg,#0e7490,#06b6d4)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, boxShadow: '0 4px 18px rgba(6,182,212,.4)' }}>
@@ -2762,7 +2782,7 @@ function ScoutPage() {
             {
                 registerOpen && (
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
-                        <div style={{ background: '#07070f', border: '1px solid rgba(139,92,246,.22)', borderTop: '2px solid rgba(139,92,246,.6)', borderRadius: 22, width: '100%', maxWidth: 460, boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
+                        <div className="hub-modal-wrap" style={{ background: '#07070f', border: '1px solid rgba(139,92,246,.22)', borderTop: '2px solid rgba(139,92,246,.6)', borderRadius: 22, width: '100%', maxWidth: 460, boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
                             <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(255,255,255,.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     <div style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(139,92,246,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 14px rgba(139,92,246,.5)' }}>

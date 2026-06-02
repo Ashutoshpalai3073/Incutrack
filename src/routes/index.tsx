@@ -1179,6 +1179,7 @@ function MiniPlanetCanvas({ color, ringColor, size = 38 }: { color: string; ring
    SECTION LAYOUT CONSTANT
 ══════════════════════════════════════════════════════════ */
 const S = { maxWidth: 1200, margin: "0 auto", padding: "0 40px" };
+const SC = "lp-section-inner-pad"; // class for responsive padding override
 
 /* ══════════════════════════════════════════════════════════
    MAIN PAGE
@@ -1199,6 +1200,7 @@ function Index() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const sectionIndex = useRef(-1)
   const transitioning = useRef(false)
@@ -1206,6 +1208,10 @@ function Index() {
   const pinchAccum = useRef(0)
 
   useEffect(() => {
+    // On touch-primary devices, disable scroll hijacking to allow native scroll
+    const isTouchDevice = 'ontouchstart' in window && navigator.maxTouchPoints > 0;
+    if (isTouchDevice) return;
+
     let resetTimer: ReturnType<typeof setTimeout>
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
@@ -1405,13 +1411,54 @@ function Index() {
   }
 
   return (
-    <main style={{ background: "#020208", color: "white", fontFamily: "Inter, system-ui, sans-serif", overflowX: "hidden", scrollBehavior: "smooth", overflowY: "hidden", height: "100vh" }}>
+    <main className="lp-main-wrapper" style={{ background: "#020208", color: "white", fontFamily: "Inter, system-ui, sans-serif", overflowX: "hidden", scrollBehavior: "smooth", overflowY: "hidden", height: "100vh" }}>
 
       <style>{`
         html, body {
           overflow: hidden;
           height: 100vh;
           width: 100vw;
+        }
+        @media (max-width: 768px) {
+          html, body {
+            overflow: visible !important;
+            height: auto !important;
+            min-height: 100dvh !important;
+          }
+          /* Convert fixed sections to stacked layout on mobile */
+          .lp-fixed-section {
+            position: relative !important;
+            inset: unset !important;
+            opacity: 1 !important;
+            transform: none !important;
+            pointer-events: auto !important;
+            z-index: auto !important;
+            display: block !important;
+          }
+          /* Hide all canvas backgrounds on very small screens for performance */
+          .lp-bg-canvas-only {
+            display: none !important;
+          }
+          /* Hero: make it a normal block on mobile */
+          .lp-hero-fixed {
+            position: relative !important;
+            inset: unset !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            height: 100dvh !important;
+          }
+          /* Section nav: hide on mobile by default (hamburger shows content) */
+          .lp-section-nav-overlay {
+            position: relative !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+          }
+          /* Make main scrollable */
+          .lp-main-wrapper {
+            overflow-y: auto !important;
+            height: auto !important;
+            overflow-x: hidden !important;
+          }
         }
 
         ::-webkit-scrollbar {
@@ -1502,7 +1549,7 @@ function Index() {
       `}</style>
 
       {/* ══ SECTION NAV OVERLAY — visible on all section pages ══ */}
-      <div style={{
+      <div className="lp-section-nav" style={{
         position: 'fixed',
         top: 0, left: 0, right: 0,
         zIndex: 30,
@@ -1519,11 +1566,12 @@ function Index() {
           <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#a78bfa', boxShadow: '0 0 12px 2px rgba(167,139,250,0.8)' }} />
           Incutrack
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32, fontSize: 13, color: 'rgba(163,163,163,1)' }}>
+        {/* Desktop nav links */}
+        <div className="lp-section-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 32, fontSize: 13, color: 'rgba(163,163,163,1)' }}>
           {([['Home', -1], ['Features', 0], ['Founders', 1], ['Investors', 2], ['Testimonials', 3], ['About', 4], ['Contact', 5]] as [string, number][]).map(([label, idx]) => (
             <button
               key={label}
-              onClick={() => navigateToSection(idx)}
+              onClick={() => { navigateToSection(idx); setMobileNavOpen(false); }}
               style={{
                 background: 'none', border: 'none', padding: 0,
                 color: activeSectionIdx === idx ? 'white' : 'rgba(163,163,163,1)',
@@ -1536,10 +1584,38 @@ function Index() {
             >{label}</button>
           ))}
         </div>
+        {/* Mobile hamburger */}
+        <button
+          className="lp-mobile-menu-btn"
+          onClick={() => setMobileNavOpen(o => !o)}
+          style={{ display: 'none', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer' }}
+        >
+          {mobileNavOpen ? (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2L14 14M14 2L2 14" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round"/></svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect y="2" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.8)"/>
+              <rect y="7.1" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.8)"/>
+              <rect y="12.2" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.8)"/>
+            </svg>
+          )}
+        </button>
+        {/* Mobile dropdown */}
+        {mobileNavOpen && (
+          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'rgba(2,2,10,0.97)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '8px 0', zIndex: 40 }}>
+            {([['Home', -1], ['Features', 0], ['Founders', 1], ['Investors', 2], ['Testimonials', 3], ['About', 4], ['Contact', 5]] as [string, number][]).map(([label, idx]) => (
+              <button
+                key={label}
+                onClick={() => { navigateToSection(idx); setMobileNavOpen(false); }}
+                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 24px', background: 'none', border: 'none', color: activeSectionIdx === idx ? '#a78bfa' : 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: activeSectionIdx === idx ? 700 : 400, fontFamily: 'inherit', cursor: 'pointer' }}
+              >{label}</button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ══ HERO ══ */}
-      <div style={{
+      <div className="lp-hero-fixed" style={{
         position: 'fixed',
         inset: 0,
         zIndex: 10,
@@ -1552,7 +1628,7 @@ function Index() {
           <Spotlight className="-top-40 left-0 md:left-60 md:-top-20" fill="white" />
           {!dustDone && <DustCanvas heroRef={heroRef} onDone={() => setDustDone(true)} />}
 
-          <nav className="relative z-20 flex items-center justify-between px-10 md:px-16 py-7">
+          <nav className="relative z-20 flex items-center justify-between px-6 md:px-16 py-7" style={{ flexWrap: 'wrap' }}>
             <div className="flex items-center gap-2.5 text-sm font-semibold tracking-widest uppercase">
               <span className="inline-block h-2 w-2 rounded-full bg-violet-400 shadow-[0_0_12px_2px_rgba(167,139,250,0.8)]" />
               Incutrack
@@ -1678,27 +1754,27 @@ function Index() {
               transition: 'opacity 400ms ease, transform 400ms ease',
               pointerEvents: heroVisible ? 'auto' : 'none'
             }}>
-            <div ref={heroRef} className="px-10 md:px-16 max-w-[580px] pointer-events-auto">
+            <div ref={heroRef} className="px-6 sm:px-10 md:px-16 max-w-[580px] pointer-events-auto">
               <div data-dust="badge" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs text-neutral-300 backdrop-blur mb-7" style={{ opacity: dustDone ? 1 : 0, transform: dustDone ? "translateY(0)" : "translateY(6px)", transition: "opacity 0.45s ease 0.05s,transform 0.45s ease 0.05s" }}>
                 <Sparkles className="h-3 w-3 text-violet-300" />Built for founders &amp; incubators
               </div>
-              <h1 data-dust="h1" className="text-[52px] md:text-[68px] font-bold leading-[1.03] tracking-tight mb-6" style={{ opacity: dustDone ? 1 : 0, transform: dustDone ? "translateY(0)" : "translateY(10px)", transition: "opacity 0.5s ease 0.12s,transform 0.5s ease 0.12s" }}>
+              <h1 data-dust="h1" className="text-[32px] sm:text-[48px] md:text-[68px] font-bold leading-[1.03] tracking-tight mb-6" style={{ fontSize: 'clamp(2rem, 7vw, 68px)', opacity: dustDone ? 1 : 0, transform: dustDone ? "translateY(0)" : "translateY(10px)", transition: "opacity 0.5s ease 0.12s,transform 0.5s ease 0.12s" }}>
                 <span className="bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-neutral-400">Build the next</span><br />
                 <span className="bg-gradient-to-r from-violet-400 via-sky-300 to-emerald-300 bg-clip-text text-transparent">billion-dollar</span><br />
                 <span className="bg-gradient-to-r from-sky-300 to-emerald-300 bg-clip-text text-transparent">idea.</span>
               </h1>
-              <p data-dust="para" className="text-neutral-400 text-base md:text-lg leading-[1.75] max-w-md mb-9" style={{ opacity: dustDone ? 1 : 0, transform: dustDone ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.45s ease 0.22s,transform 0.45s ease 0.22s" }}>
+              <p data-dust="para" className="text-neutral-400 text-sm sm:text-base md:text-lg leading-[1.75] max-w-md mb-9" style={{ fontSize: 'clamp(0.9rem, 3vw, 1.1rem)', opacity: dustDone ? 1 : 0, transform: dustDone ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.45s ease 0.22s,transform 0.45s ease 0.22s" }}>
                 One platform where founders ship and incubators scale. Track traction, manage your pipeline, connect with capital — all backed by data, not vibes.
               </p>
-              <div className="flex items-center gap-4 flex-wrap" style={{ opacity: dustDone ? 1 : 0, transform: dustDone ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.45s ease 0.30s,transform 0.45s ease 0.30s" }}>
-                <a data-dust="btn1" href="/hub" className="inline-flex items-center gap-2.5 rounded-full bg-white text-black px-7 py-3.5 text-sm font-semibold hover:bg-neutral-100 transition-all shadow-[0_0_32px_rgba(255,255,255,0.1)] hover:shadow-[0_0_44px_rgba(255,255,255,0.18)]">
+              <div className="lp-hero-btns flex items-center gap-4 flex-wrap" style={{ opacity: dustDone ? 1 : 0, transform: dustDone ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.45s ease 0.30s,transform 0.45s ease 0.30s" }}>
+                <a data-dust="btn1" href="/hub" className="inline-flex items-center justify-center gap-2.5 rounded-full bg-white text-black px-7 py-3.5 text-sm font-semibold hover:bg-neutral-100 transition-all shadow-[0_0_32px_rgba(255,255,255,0.1)] hover:shadow-[0_0_44px_rgba(255,255,255,0.18)]" style={{ minWidth: 160 }}>
                   <Rocket className="h-4 w-4" />Explore Hub
                 </a>
-                <a data-dust="btn2" href="/scout" className="inline-flex items-center gap-2.5 rounded-full border border-violet-500/50 bg-violet-500/10 text-violet-300 px-7 py-3.5 text-sm font-semibold backdrop-blur-sm hover:bg-violet-500/20 hover:border-violet-400/70 transition-all">
+                <a data-dust="btn2" href="/scout" className="inline-flex items-center justify-center gap-2.5 rounded-full border border-violet-500/50 bg-violet-500/10 text-violet-300 px-7 py-3.5 text-sm font-semibold backdrop-blur-sm hover:bg-violet-500/20 hover:border-violet-400/70 transition-all" style={{ minWidth: 160 }}>
                   <Telescope className="h-4 w-4" />Scout Hub
                 </a>
               </div>
-              <div className="mt-12 flex items-center gap-8 text-xs text-neutral-500" style={{ opacity: dustDone ? 1 : 0, transition: "opacity 0.45s ease 0.40s" }}>
+              <div className="lp-stats-row mt-12 flex items-center gap-8 text-xs text-neutral-500" style={{ opacity: dustDone ? 1 : 0, transition: "opacity 0.45s ease 0.40s" }}>
                 <div><div data-dust="stat-num" className="text-white text-base font-semibold leading-tight">2.4k+</div><div data-dust="stat-label" className="mt-0.5">founders building</div></div>
                 <div className="h-7 w-px bg-white/10" />
                 <div><div data-dust="stat-num" className="text-white text-base font-semibold leading-tight">$180M</div><div data-dust="stat-label" className="mt-0.5">tracked runway</div></div>
@@ -1714,7 +1790,7 @@ function Index() {
       </div>
 
       {/* ══ FEATURES ══ */}
-      <div style={{
+      <div className="lp-fixed-section" style={{
         position: 'fixed',
         inset: 0,
         zIndex: 20,
@@ -1730,7 +1806,7 @@ function Index() {
         <div className="ambient-blob" style={{ width: 600, height: 600, background: "#8b5cf6", top: "-10%", left: "-5%", opacity: 0.07 }} />
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#06b6d4", bottom: "5%", right: "0%", opacity: 0.06 }} />
 
-        <div className="section-inner" style={{ ...S }}>
+        <div className={`section-inner ${SC}`} style={{ ...S }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)", marginBottom: 20 }}>
               <Layers style={{ width: 12, height: 12, color: "#a78bfa" }} />
@@ -1744,7 +1820,7 @@ function Index() {
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+          <div className="lp-features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
             {[
               { Icon: GitBranch, color: "#8b5cf6", title: "Pipeline Management", desc: "Visualise your journey through every stage — Ideation to Funding Secured. Kanban-style with real-time updates." },
               { Icon: BarChart3, color: "#06b6d4", title: "Growth Analytics", desc: "Track MRR, user acquisition, burn rate, and runway in one unified dashboard. Know where you stand before every investor meeting." },
@@ -1768,7 +1844,7 @@ function Index() {
       </div>
 
       {/* ══ FOUNDER POV ══ */}
-      <div style={{
+      <div className="lp-fixed-section" style={{
         position: 'fixed',
         inset: 0,
         zIndex: 20,
@@ -1784,8 +1860,8 @@ function Index() {
         <div className="ambient-blob" style={{ width: 700, height: 700, background: "#8b5cf6", top: "-15%", right: "-10%", opacity: 0.06 }} />
         <div className="ambient-blob" style={{ width: 400, height: 400, background: "#a78bfa", bottom: "0%", left: "5%", opacity: 0.05 }} />
 
-        <div className="section-inner" style={{ ...S }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
+        <div className={`section-inner ${SC}`} style={{ ...S }}>
+          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 28 }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)" }}>
                 <Rocket style={{ width: 12, height: 12, color: "#a78bfa" }} />
@@ -1867,7 +1943,7 @@ function Index() {
       </div>
 
       {/* ══ VC / INVESTOR POV ══ */}
-      <div style={{
+      <div className="lp-fixed-section" style={{
         position: 'fixed',
         inset: 0,
         zIndex: 20,
@@ -1883,8 +1959,8 @@ function Index() {
         <div className="ambient-blob" style={{ width: 600, height: 600, background: "#06b6d4", top: "-10%", left: "-8%", opacity: 0.06 }} />
         <div className="ambient-blob" style={{ width: 450, height: 450, background: "#10b981", bottom: "0%", right: "5%", opacity: 0.05 }} />
 
-        <div className="section-inner" style={{ ...S }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 56, alignItems: "center" }}>
+        <div className={`section-inner ${SC}`} style={{ ...S }}>
+          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 56, alignItems: "center" }}>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <GlassCard accentColor="#06b6d4">
@@ -1973,7 +2049,7 @@ function Index() {
       </div>
 
       {/* ══ TESTIMONIALS ══ */}
-      <div style={{
+      <div className="lp-fixed-section" style={{
         position: 'fixed',
         inset: 0,
         zIndex: 20,
@@ -1989,7 +2065,7 @@ function Index() {
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#f59e0b", top: "10%", right: "5%", opacity: 0.04 }} />
         <div className="ambient-blob" style={{ width: 600, height: 600, background: "#8b5cf6", bottom: "-10%", left: "-5%", opacity: 0.05 }} />
 
-        <div className="section-inner" style={{ ...S }}>
+        <div className={`section-inner ${SC}`} style={{ ...S }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(245,158,11,.1)", border: "1px solid rgba(245,158,11,.25)", marginBottom: 16 }}>
               <MessageSquare style={{ width: 12, height: 12, color: "#fbbf24" }} />
@@ -1999,7 +2075,7 @@ function Index() {
               Loved by builders &amp; backers
             </h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+          <div className="lp-features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
             {[
               { name: "Meera Iyer", role: "Founder · ClimateOS", initials: "MI", gradient: "linear-gradient(135deg,#064e3b,#065f46,#34d399)", ring: "#10b981", text: "IncuScore™ told us exactly what investors would push back on before we walked into the room. Fixed those gaps, raised ₹3Cr in 6 weeks.", rating: 5 },
               { name: "Pawan Kumar", role: "CTO · QuantumGrid", initials: "PK", gradient: "linear-gradient(135deg,#0c4a6e,#0369a1,#38bdf8)", ring: "#06b6d4", text: "Our lead investor said it was the most professional due diligence process they'd ever seen from a seed-stage company.", rating: 5 },
@@ -2029,7 +2105,7 @@ function Index() {
       </div>
 
       {/* ══ ABOUT ══ */}
-      <div style={{
+      <div className="lp-fixed-section" style={{
         position: 'fixed',
         inset: 0,
         zIndex: 20,
@@ -2045,9 +2121,9 @@ function Index() {
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#8b5cf6", top: "5%", left: "-5%", opacity: 0.06 }} />
         <div className="ambient-blob" style={{ width: 400, height: 400, background: "#10b981", bottom: "10%", right: "0%", opacity: 0.05 }} />
 
-        <div className="section-inner" style={{ ...S }}>
+        <div className={`section-inner ${SC}`} style={{ ...S }}>
           {/* ── top two-column grid ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 52, alignItems: "center" }}>
+          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 52, alignItems: "center" }}>
             <div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)", marginBottom: 24 }}>
                 <Award style={{ width: 12, height: 12, color: "#a78bfa" }} />
@@ -2125,7 +2201,7 @@ function Index() {
       </div>
 
       {/* ══ CONTACT ══ */}
-      <div style={{
+      <div className="lp-fixed-section" style={{
         position: 'fixed',
         inset: 0,
         zIndex: 20,
@@ -2141,7 +2217,7 @@ function Index() {
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#06b6d4", top: "-5%", right: "0%", opacity: 0.05 }} />
         <div className="ambient-blob" style={{ width: 400, height: 400, background: "#8b5cf6", bottom: "10%", left: "5%", opacity: 0.05 }} />
 
-        <div className="section-inner" style={{ ...S }}>
+        <div className={`section-inner ${SC}`} style={{ ...S }}>
           <div style={{ textAlign: "center", marginBottom: 18 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(6,182,212,.1)", border: "1px solid rgba(6,182,212,.25)", marginBottom: 10 }}>
               <Mail style={{ width: 12, height: 12, color: "#22d3ee" }} />
@@ -2155,7 +2231,7 @@ function Index() {
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
             <GlassCard accentColor="#06b6d4">
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "white", margin: "0 0 14px" }}>Send us a message</h3>
               {contactSent ? (
@@ -2173,7 +2249,7 @@ function Index() {
                         type={f.type} placeholder={f.placeholder}
                         value={contactForm[f.id as keyof typeof contactForm]}
                         onChange={e => setContactForm(p => ({ ...p, [f.id]: e.target.value }))}
-                        style={{ width: "100%", padding: "10px 13px", borderRadius: 10, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.09)", color: "white", fontSize: 14, outline: "none", boxSizing: "border-box", transition: "border-color .18s" }}
+                        className="lp-contact-input" style={{ width: "100%", padding: "10px 13px", borderRadius: 10, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.09)", color: "white", fontSize: 14, outline: "none", boxSizing: "border-box", transition: "border-color .18s" }}
                         onFocus={e => (e.target.style.borderColor = "rgba(6,182,212,.45)")}
                         onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,.09)")}
                       />
@@ -2240,7 +2316,7 @@ function Index() {
       </div>
 
       {/* ══ FOOTER ══ */}
-      <div style={{
+      <div className="lp-fixed-section" style={{
         position: 'fixed',
         inset: 0,
         zIndex: 20,
@@ -2254,7 +2330,7 @@ function Index() {
       <StarFieldCanvas />
       <footer style={{ borderTop: "1px solid rgba(255,255,255,.05)", padding: "50px 0 36px", background: "rgba(2,2,8,1)" }}>
         <div style={{ ...S }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
+          <div className="lp-footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#a78bfa", boxShadow: "0 0 10px rgba(167,139,250,.7)", display: "inline-block" }} />

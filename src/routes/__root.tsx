@@ -72,7 +72,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1.0, maximum-scale=5.0" },
       { title: "Lovable App" },
       { name: "description", content: "Integrate interactive 3D scenes into your React application with this component." },
       { name: "author", content: "Lovable" },

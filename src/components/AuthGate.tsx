@@ -22,7 +22,7 @@ export function AuthGate() {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 9999, padding: 16,
     }}>
-      <div style={{
+      <div className="auth-gate-card" style={{
         background: '#0a0a14',
         border: '1px solid rgba(139,92,246,0.3)',
         borderTop: '2px solid #8b5cf6',

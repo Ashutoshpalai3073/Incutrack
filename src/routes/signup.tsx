@@ -122,7 +122,7 @@ function SignUpPage() {
               <input
                 type="text" required value={name} onChange={e => setName(e.target.value)}
                 placeholder="Ashutosh Palai"
-                style={{ width: '100%', padding: '11px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 16 }}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: 16, outline: 'none', boxSizing: 'border-box', marginBottom: 16 }}
                 onFocus={e => (e.target.style.borderColor = 'rgba(139,92,246,0.6)')}
                 onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
               />
@@ -132,7 +132,7 @@ function SignUpPage() {
               <input
                 type="email" required value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                style={{ width: '100%', padding: '11px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 20 }}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: 16, outline: 'none', boxSizing: 'border-box', marginBottom: 20 }}
                 onFocus={e => (e.target.style.borderColor = 'rgba(139,92,246,0.6)')}
                 onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
               />
@@ -159,7 +159,7 @@ function SignUpPage() {
                 type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required
                 value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
                 placeholder="123456"
-                style={{ width: '100%', padding: '11px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: 22, fontWeight: 700, letterSpacing: 8, outline: 'none', boxSizing: 'border-box', marginBottom: 20, textAlign: 'center' }}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: 16, fontWeight: 700, letterSpacing: 8, outline: 'none', boxSizing: 'border-box', marginBottom: 20, textAlign: 'center' }}
                 onFocus={e => (e.target.style.borderColor = 'rgba(139,92,246,0.6)')}
                 onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
               />

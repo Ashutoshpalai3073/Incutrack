@@ -77,9 +77,9 @@ export function Chatbot() {
 
             {/* Chat Window */}
             {open && (
-                <div style={{
+                <div className="chatbot-window" style={{
                     position: 'fixed', bottom: '90px', right: '24px',
-                    width: '360px', height: '480px',
+                    width: 'min(360px, calc(100vw - 32px))', height: '480px',
                     background: '#0a0a0f',
                     border: '1px solid rgba(124,58,237,0.3)',
                     borderRadius: '20px',
@@ -174,7 +174,7 @@ export function Chatbot() {
                                 flex: 1, background: 'rgba(255,255,255,0.05)',
                                 border: '1px solid rgba(124,58,237,0.3)',
                                 borderRadius: '12px', padding: '10px 14px',
-                                color: 'white', fontSize: '13px', outline: 'none'
+                                color: 'white', fontSize: '16px', outline: 'none'
                             }}
                         />
                         <button

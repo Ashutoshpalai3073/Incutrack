@@ -174,3 +174,486 @@
 .notif-scroll::-webkit-scrollbar { width: 3px; }
 .notif-scroll::-webkit-scrollbar-track { background: transparent; }
 .notif-scroll::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.5); border-radius: 2px; }
+
+/* ─── MOBILE & TABLET RESPONSIVE FOUNDATION ─────────────────────────────── */
+
+/* Box-sizing reset */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Prevent horizontal overflow */
+body { overflow-x: hidden; }
+
+/* Media-safe canvas/img scaling — only scoped to non-fixed canvases */
+img, video { max-width: 100%; height: auto; }
+
+/* Touch scrolling */
+.touch-scroll { -webkit-overflow-scrolling: touch; }
+
+/* Minimum tap target — only apply on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  button, a[href], [role="button"] { min-height: 44px; min-width: 44px; }
+  /* Reset for small/icon-only buttons that are visually grouped */
+  .sc-btn, nav button, .hub-icon-btn { min-height: unset; min-width: unset; }
+}
+
+/* Active state for touch devices */
+@media (hover: none) {
+  button:active, a:active { opacity: 0.7; }
+}
+
+/* ─── FLUID TYPOGRAPHY ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .fluid-display { font-size: clamp(1.8rem, 5vw, 4rem) !important; }
+  .fluid-heading  { font-size: clamp(1.4rem, 4vw, 2.5rem) !important; }
+  .fluid-body     { font-size: clamp(0.875rem, 2vw, 1rem) !important; }
+  .fluid-label    { font-size: clamp(0.75rem, 1.5vw, 0.875rem) !important; }
+}
+
+/* ─── REDUCED MOTION ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── SCROLLABLE TAB BAR (hub + scout) ──────────────────────────────────── */
+.mobile-tab-scroll {
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.mobile-tab-scroll::-webkit-scrollbar { display: none; }
+
+/* ─── HUB / SCOUT SIDEBAR MOBILE OVERLAY ────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Hub sidebar */
+  .hub-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: -100%;
+    height: 100vh !important;
+    z-index: 200;
+    transition: left 0.25s ease;
+    width: 240px !important;
+    max-width: 80vw;
+    box-shadow: 4px 0 32px rgba(0,0,0,0.6);
+  }
+  .hub-sidebar.open {
+    left: 0 !important;
+  }
+  .hub-sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 190;
+    backdrop-filter: blur(2px);
+  }
+  .hub-sidebar-overlay.open {
+    display: block;
+  }
+  .hub-hamburger {
+    display: flex !important;
+  }
+  .hub-main-area {
+    width: 100% !important;
+    max-width: 100vw;
+  }
+  /* topbar search: hide on small screens, show on tablet */
+  .hub-topbar-search {
+    display: none !important;
+  }
+}
+@media (max-width: 480px) {
+  .hub-topbar-title { font-size: 13px !important; }
+}
+/* Desktop: hamburger hidden */
+.hub-hamburger { display: none; }
+
+/* Reduce header padding on mobile for hub/scout */
+@media (max-width: 768px) {
+  .hub-header-adjust {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+  /* Allow main content to scroll on mobile */
+  .hub-main-content {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* ─── SCOUT SIDEBAR MOBILE ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .scout-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: -100%;
+    height: 100vh !important;
+    z-index: 200;
+    transition: left 0.25s ease;
+    width: 240px !important;
+    max-width: 80vw;
+    box-shadow: 4px 0 32px rgba(0,0,0,0.6);
+  }
+  .scout-sidebar.open {
+    left: 0 !important;
+  }
+  .scout-sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 190;
+    backdrop-filter: blur(2px);
+  }
+  .scout-sidebar-overlay.open {
+    display: block;
+  }
+  .scout-hamburger {
+    display: flex !important;
+  }
+  .scout-topbar-search {
+    display: none !important;
+  }
+}
+.scout-hamburger { display: none; }
+
+/* ─── HUB CONTENT GRIDS ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Stat cards: 2-col grid on tablet */
+  .hub-stat-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  /* Card grids: 2-col on tablet */
+  .hub-card-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  /* Modals */
+  .hub-modal {
+    width: 90vw !important;
+    max-width: 480px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    margin: 5vh auto !important;
+  }
+  .hub-modal input, .hub-modal select, .hub-modal textarea {
+    width: 100% !important;
+    font-size: 16px !important;
+  }
+  .hub-modal .btn-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  /* Tables: scrollable on tablet */
+  .hub-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  /* Charts */
+  .hub-chart {
+    width: 100% !important;
+    min-height: 200px !important;
+  }
+}
+@media (max-width: 480px) {
+  /* Stat cards: stack on mobile */
+  .hub-stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Card grids: single col */
+  .hub-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ─── LANDING PAGE HERO ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .lp-hero-inner {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 0 24px !important;
+  }
+  .lp-hero-3d {
+    max-height: 300px !important;
+    width: 100% !important;
+  }
+  .lp-hero-btns {
+    justify-content: center !important;
+  }
+  .lp-stats-row {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 12px !important;
+  }
+  .lp-section-nav {
+    padding: 16px 20px !important;
+  }
+  .lp-section-nav-links {
+    display: none !important;
+  }
+  .lp-mobile-menu-btn {
+    display: flex !important;
+  }
+  .lp-section-content {
+    padding: 40px 20px !important;
+  }
+}
+@media (max-width: 480px) {
+  .lp-hero-3d {
+    max-height: 220px !important;
+  }
+  .lp-hero-btns {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  .lp-hero-btns > * {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+  .lp-stats-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+.lp-mobile-menu-btn { display: none; }
+
+/* 2-col section grids → stack on mobile */
+@media (max-width: 768px) {
+  .lp-two-col {
+    grid-template-columns: 1fr !important;
+    gap: 40px !important;
+  }
+  .lp-testimonials-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 480px) {
+  .lp-two-col {
+    gap: 24px !important;
+  }
+  .lp-testimonials-grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ─── AUTH PAGES ─────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 24px 20px !important;
+  }
+  .auth-input {
+    font-size: 16px !important;
+  }
+}
+
+/* ─── LANDING PAGE SECTION CONTENT ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .lp-features-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .lp-testimonials-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .lp-section-inner-pad {
+    padding-left: 32px !important;
+    padding-right: 32px !important;
+  }
+}
+@media (max-width: 480px) {
+  .lp-features-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .lp-testimonials-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .lp-section-inner-pad {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+
+/* ─── LANDING PAGE FOOTER ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .lp-footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 32px !important;
+  }
+}
+@media (max-width: 480px) {
+  .lp-footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+}
+
+/* ─── CONTACT FORM INPUTS ────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .lp-contact-input { font-size: 16px !important; }
+}
+
+/* ─── SECTION HEADINGS ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .lp-section-h2 {
+    font-size: clamp(1.4rem, 4vw, 2.5rem) !important;
+  }
+}
+
+/* ─── TOUCH ACTION FOR SCROLL CONTAINERS ────────────────────────────────── */
+.touch-pan-y { touch-action: pan-y; }
+
+/* ─── SECTION FULL MIN-HEIGHT ────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .section-full {
+    min-height: 100dvh !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HUB / SCOUT — ADDITIONAL RESPONSIVE LAYOUTS
+═══════════════════════════════════════════════════════════ */
+
+/* Pipeline & Deal Flow Kanban — horizontal scroll on mobile */
+@media (max-width: 768px) {
+  .hub-pipeline-kanban {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    flex-wrap: nowrap !important;
+  }
+  .hub-pipeline-kanban::-webkit-scrollbar { display: none; }
+  .hub-pipeline-kanban > * {
+    min-width: 200px !important;
+    max-width: 200px !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* 5-col KPI strips (Funding, Scout Cockpit) */
+@media (max-width: 768px) {
+  .hub-kpi-5col {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+}
+@media (max-width: 480px) {
+  .hub-kpi-5col {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Funding Tracker 3-col main layout (320px 1fr 280px) */
+@media (max-width: 768px) {
+  .hub-funding-main {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* Scout Cockpit 3-col main layout (220px 1fr 260px) */
+@media (max-width: 768px) {
+  .scout-cockpit-main {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* Events 2-col layout (1fr 300px) */
+@media (max-width: 768px) {
+  .hub-events-main {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* 2-col grid inside modals */
+@media (max-width: 480px) {
+  .hub-modal-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Modal containers */
+@media (max-width: 768px) {
+  .hub-modal-wrap {
+    width: 90vw !important;
+    max-width: 480px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .hub-modal-wrap input,
+  .hub-modal-wrap select,
+  .hub-modal-wrap textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Chatbot window */
+@media (max-width: 480px) {
+  .chatbot-window {
+    width: calc(100vw - 32px) !important;
+    right: 16px !important;
+    left: 16px !important;
+    bottom: 80px !important;
+  }
+}
+
+/* AuthGate card */
+@media (max-width: 480px) {
+  .auth-gate-card {
+    padding: 24px 20px !important;
+  }
+}
+
+/* Filter pills rows - scrollable on mobile */
+@media (max-width: 768px) {
+  .filter-pills-row {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+    scrollbar-width: none !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 4px !important;
+  }
+  .filter-pills-row::-webkit-scrollbar { display: none; }
+  .filter-pills-row > * { flex-shrink: 0 !important; }
+}
+
+/* IncuScore modal */
+@media (max-width: 768px) {
+  .incuscore-modal {
+    padding: 20px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+  .incuscore-modal-inner {
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+}
+
+/* Hub overview tab content */
+@media (max-width: 768px) {
+  .hub-tab-content {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 12px 14px !important;
+  }
+}
+
+/* 2-col testimonials in landing */
+@media (max-width: 768px) {
+  .lp-two-col-no-stack {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
