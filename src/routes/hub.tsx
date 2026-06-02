@@ -1159,7 +1159,7 @@ function HubPage() {
   if (!authLoading && !user) return <AuthGate />;
 
   return (
-    <div className="flex h-screen bg-black text-white overflow-hidden" style={{ fontFamily: 'inherit' }}>
+    <div className="flex h-dvh bg-black text-white overflow-hidden" style={{ fontFamily: 'inherit' }}>
 
       {/* Mobile sidebar overlay */}
       <div

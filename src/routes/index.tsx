@@ -1208,10 +1208,6 @@ function Index() {
   const pinchAccum = useRef(0)
 
   useEffect(() => {
-    // On touch-primary devices, disable scroll hijacking to allow native scroll
-    const isTouchDevice = 'ontouchstart' in window && navigator.maxTouchPoints > 0;
-    if (isTouchDevice) return;
-
     let resetTimer: ReturnType<typeof setTimeout>
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
@@ -1290,15 +1286,18 @@ function Index() {
     const onTouchStart = (e: TouchEvent) => {
       touchStartY = e.touches[0].clientY
     }
+    const onTouchMove = (e: TouchEvent) => { e.preventDefault() }
     const onTouchEnd = (e: TouchEvent) => {
       const diff = touchStartY - e.changedTouches[0].clientY
       if (Math.abs(diff) < 50) return
       window.dispatchEvent(new WheelEvent('wheel', { deltaY: diff, bubbles: true }))
     }
-    window.addEventListener('touchstart', onTouchStart)
+    window.addEventListener('touchstart', onTouchStart, { passive: false })
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
     window.addEventListener('touchend', onTouchEnd)
     return () => {
       window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove)
       window.removeEventListener('touchend', onTouchEnd)
     }
   }, [])
@@ -1411,54 +1410,14 @@ function Index() {
   }
 
   return (
-    <main className="lp-main-wrapper" style={{ background: "#020208", color: "white", fontFamily: "Inter, system-ui, sans-serif", overflowX: "hidden", scrollBehavior: "smooth", overflowY: "hidden", height: "100vh" }}>
+    <main className="lp-main-wrapper" style={{ background: "#020208", color: "white", fontFamily: "Inter, system-ui, sans-serif", overflowX: "hidden", scrollBehavior: "smooth", overflowY: "hidden", height: "100dvh", touchAction: "none" }}>
 
       <style>{`
         html, body {
           overflow: hidden;
-          height: 100vh;
+          height: 100dvh;
           width: 100vw;
-        }
-        @media (max-width: 768px) {
-          html, body {
-            overflow: visible !important;
-            height: auto !important;
-            min-height: 100dvh !important;
-          }
-          /* Convert fixed sections to stacked layout on mobile */
-          .lp-fixed-section {
-            position: relative !important;
-            inset: unset !important;
-            opacity: 1 !important;
-            transform: none !important;
-            pointer-events: auto !important;
-            z-index: auto !important;
-            display: block !important;
-          }
-          /* Hide all canvas backgrounds on very small screens for performance */
-          .lp-bg-canvas-only {
-            display: none !important;
-          }
-          /* Hero: make it a normal block on mobile */
-          .lp-hero-fixed {
-            position: relative !important;
-            inset: unset !important;
-            opacity: 1 !important;
-            pointer-events: auto !important;
-            height: 100dvh !important;
-          }
-          /* Section nav: hide on mobile by default (hamburger shows content) */
-          .lp-section-nav-overlay {
-            position: relative !important;
-            opacity: 1 !important;
-            pointer-events: auto !important;
-          }
-          /* Make main scrollable */
-          .lp-main-wrapper {
-            overflow-y: auto !important;
-            height: auto !important;
-            overflow-x: hidden !important;
-          }
+          touch-action: none;
         }
 
         ::-webkit-scrollbar {
@@ -1623,7 +1582,7 @@ function Index() {
         transition: 'opacity 300ms ease',
         pointerEvents: activeSectionIdx === -1 ? 'auto' : 'none'
       }}>
-      <div className="snap-section" style={{ position: "relative", height: "100vh", overflow: "hidden" }}>
+      <div className="snap-section" style={{ position: "relative", height: "100dvh", overflow: "hidden" }}>
         <Card className="w-full h-full bg-black/[0.96] relative rounded-none border-0">
           <Spotlight className="-top-40 left-0 md:left-60 md:-top-20" fill="white" />
           {!dustDone && <DustCanvas heroRef={heroRef} onDone={() => setDustDone(true)} />}

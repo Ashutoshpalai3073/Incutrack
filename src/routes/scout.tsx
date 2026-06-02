@@ -675,7 +675,7 @@ function ScoutPage() {
     if (!authLoading && !user) return <AuthGate />;
 
     return (
-        <div style={{ display: 'flex', height: '100vh', background: '#050509', color: 'white', fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', height: '100dvh', background: '#050509', color: 'white', fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden' }}>
 
             {/* Mobile sidebar overlay */}
             <div
