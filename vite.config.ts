@@ -23,10 +23,15 @@ export default defineConfig({
     {
       name: 'remove-wrangler-from-dist',
       closeBundle() {
-        const filePath = path.resolve('dist/client/wrangler.json');
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+        const wranglerInDist = path.resolve('dist/client/wrangler.json');
+        if (fs.existsSync(wranglerInDist)) {
+          fs.unlinkSync(wranglerInDist);
           console.log('Removed dist/client/wrangler.json');
+        }
+        const deployConfig = path.resolve('.wrangler/deploy/config.json');
+        if (fs.existsSync(deployConfig)) {
+          fs.unlinkSync(deployConfig);
+          console.log('Removed .wrangler/deploy/config.json');
         }
       },
     },
