@@ -13,5 +13,6 @@
     "GOOGLE_CLIENT_SECRET": "",
     "FRONTEND_URL": "https://your-worker.workers.dev",
     "RESEND_API_KEY": ""
-  }
+  },
+  "pages_build_output_dir": "./dist"
 }
