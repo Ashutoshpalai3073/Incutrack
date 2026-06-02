@@ -10,5 +10,11 @@
     "#tanstack-start-plugin-adapters": "./dist/server/assets/__23tanstack-start-plugin-adapters-Cwee5PKy.js",
     "tanstack-start-manifest:v": "./dist/server/assets/_tanstack-start-manifest_v-D8a_MkMj.js",
     "tanstack-start-injected-head-scripts:v": "./dist/server/assets/start-Dnz_VIpV.js"
+  },
+  "vars": {
+    "SUPABASE_URL": "https://kntoyozitskrblvxmbpp.supabase.co",
+    "VITE_SUPABASE_URL": "https://kntoyozitskrblvxmbpp.supabase.co",
+    "GOOGLE_CLIENT_ID": "54247305152-ifijvdsu0rknflkl2blg945a50p7b3pq.apps.googleusercontent.com",
+    "FRONTEND_URL": "https://incutrack.ashutosh-palai2005.workers.dev"
   }
 }
