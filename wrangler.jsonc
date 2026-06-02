@@ -3,7 +3,7 @@
   "name": "tanstack-start-app",
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "src/server.ts",
+  "pages_build_output_dir": "./dist",
   "vars": {
     "GROQ_API_KEY": "YOUR_GROQ_API_KEY",
     "SUPABASE_URL": "",
@@ -11,8 +11,7 @@
     "JWT_SECRET": "",
     "GOOGLE_CLIENT_ID": "",
     "GOOGLE_CLIENT_SECRET": "",
-    "FRONTEND_URL": "https://your-worker.workers.dev",
+    "FRONTEND_URL": "https://incutrack-1o5.pages.dev",
     "RESEND_API_KEY": ""
-  },
-  "pages_build_output_dir": "./dist"
+  }
 }
