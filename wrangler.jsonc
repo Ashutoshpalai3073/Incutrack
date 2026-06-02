@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tanstack-start-app",
+  "compatibility_date": "2025-09-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/server.ts",
+  "vars": {
+    "GROQ_API_KEY": "YOUR_GROQ_API_KEY",
+    "SUPABASE_URL": "",
+    "SUPABASE_SERVICE_ROLE_KEY": "",
+    "JWT_SECRET": "",
+    "GOOGLE_CLIENT_ID": "",
+    "GOOGLE_CLIENT_SECRET": "",
+    "FRONTEND_URL": "https://your-worker.workers.dev",
+    "RESEND_API_KEY": ""
+  }
+}

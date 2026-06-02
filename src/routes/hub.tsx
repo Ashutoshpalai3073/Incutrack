@@ -1,0 +1,3385 @@
+// @ts-nocheck
+import { createFileRoute } from '@tanstack/react-router';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { AuthGate } from '../components/AuthGate';
+import * as THREE from 'three';
+import { supabase, type VaultDoc } from '../lib/supabase';
+import { initialStartups, upcomingEvents } from '../data';
+import {
+  LayoutDashboard, GitBranch, FolderKey, Users, CalendarDays, BarChart3,
+  Plus, X, Edit3, Save, Search, ArrowRight, Bell, TrendingUp, DollarSign,
+  Award, Clock, Filter, Star, Building2, Activity, Rocket,
+  Shield, Lightbulb, Wallet, Upload, CheckCircle, Briefcase,
+  ChevronRight, MoreHorizontal, Globe, Zap, Target
+} from 'lucide-react';
+
+export const Route = createFileRoute('/hub')({
+  component: HubPage,
+  head: () => ({ meta: [{ title: 'Incutrack — Hub' }] }),
+});
+
+// ─── Extended data ────────────────────────────────────────────────────────────
+const EXTENDED_STARTUPS = [
+  ...initialStartups,
+  { id: 'st-5', name: 'ClimateOS', tagline: 'Carbon accounting for SMEs.', description: 'Automated Scope 1-3 emissions tracking with regulatory reporting for mid-market enterprises.', stage: 'Validation', industry: 'DeepTech', founder: 'Meera Iyer', fundingGoal: 20000000, raised: 3000000, metrics: { members: 3, pitchScore: 79 } },
+  { id: 'st-6', name: 'NeuralKit', tagline: 'No-code ML model builder.', description: 'Drag-and-drop to train, evaluate and deploy production ML without writing code.', stage: 'Growth', industry: 'SaaS', founder: 'Kabir Sen', fundingGoal: 40000000, raised: 28000000, metrics: { members: 7, pitchScore: 93 } },
+];
+
+const STAGE_ORDER = ['Ideation', 'Validation', 'MVP Built', 'Growth', 'Funding Secured'];
+const STAGE_COLORS = { Ideation: '#8b5cf6', Validation: '#06b6d4', 'MVP Built': '#f59e0b', Growth: '#10b981', 'Funding Secured': '#34d399' };
+const STAGE_DIM = { Ideation: 'rgba(139,92,246,.12)', Validation: 'rgba(6,182,212,.12)', 'MVP Built': 'rgba(245,158,11,.12)', Growth: 'rgba(16,185,129,.12)', 'Funding Secured': 'rgba(52,211,153,.12)' };
+
+const MENTORS = [
+  { id: 'm1', name: 'Priya Sharma', role: 'Partner', company: 'Sequoia India', avatar: 'PS', tags: ['SaaS', 'GTM', 'Series A'], rating: 4.9, sessions: 47, avail: true, bio: 'Led 12 portfolio companies to Series B+. Specialises in B2B SaaS go-to-market in India.' },
+  { id: 'm2', name: 'Rahul Mehta', role: 'Ex-CTO', company: 'Zomato', avatar: 'RM', tags: ['Tech', 'Scale', 'Infra'], rating: 4.8, sessions: 32, avail: false, bio: 'Built Zomato engineering from 20→400. Expert in hyper-scale distributed systems.' },
+  { id: 'm3', name: 'Anjali Gupta', role: 'Angel Investor', company: 'AJ Capital', avatar: 'AG', tags: ['FinTech', 'Ops', 'Fundraising'], rating: 4.7, sessions: 28, avail: true, bio: '50+ angel investments. Former CFO at Razorpay. Expert in FinTech regulation & compliance.' },
+  { id: 'm4', name: 'Dev Patel', role: 'YC Alumni W21', company: 'BuildFast', avatar: 'DP', tags: ['SaaS', 'Product', 'PMF'], rating: 4.9, sessions: 61, avail: true, bio: 'Built and exited 2 companies. YC W21. Specialist in finding product-market fit fast.' },
+  { id: 'm5', name: 'Sneha Reddy', role: 'VC Principal', company: 'Nexus VP', avatar: 'SR', tags: ['DeepTech', 'AI/ML', 'Research'], rating: 4.8, sessions: 19, avail: false, bio: 'PhD CS. Evaluates deep-tech for Nexus VP. 8 portfolio exits.' },
+  { id: 'm6', name: 'Arjun Nair', role: 'Growth Lead', company: 'PhonePe', avatar: 'AN', tags: ['SaaS', 'Marketing', 'Retention'], rating: 4.6, sessions: 38, avail: true, bio: 'Grew PhonePe 5M→100M users. Expert in viral growth loops and retention engineering.' },
+];
+const MENTOR_COLORS: Record<string, string> = {
+  'm1': '#8b5cf6',
+  'm2': '#3b82f6',
+  'm3': '#06b6d4',
+  'm4': '#f59e0b',
+  'm5': '#ec4899',
+  'm6': '#10b981',
+};
+const ALL_EVENTS = [
+  ...upcomingEvents,
+  { id: 'ev-3', title: 'AI Product Workshop — Build vs Buy', date: 'July 8, 2026', time: '11:00 AM IST', type: 'Workshop', location: 'Online · Zoom', description: 'Deep-dive into when to build proprietary AI vs. integrate APIs. Live case studies from NeuralKit and ClimateOS.' },
+  { id: 'ev-4', title: 'Hack-to-Scale Hackathon 2026', date: 'July 20, 2026', time: '09:00 AM IST', type: 'Hackathon', location: 'IIT BBS Campus', description: '48-hour hackathon open to all cohort teams. ₹5L prize pool. Focus: climate-tech and fintech for Tier-2 cities.' },
+  { id: 'ev-5', title: 'Sequoia India Office Hours', date: 'August 3, 2026', time: '02:00 PM IST', type: 'Mentorship', location: 'Virtual', description: 'Closed-door session with Priya Sharma. Application-only. Priority for MVP+ stage startups.' },
+];
+
+const VAULT_DOCS = [
+  { name: 'NeuralKit Pitch Deck v4.1', type: 'Deck', date: 'Jun 12', views: 28, status: 'Final', score: 94, file_url: '', file_path: '' },
+  { name: 'FinFlow Executive Summary', type: 'Doc', date: 'Jun 10', views: 14, status: 'Final', score: 88, file_url: '', file_path: '' },
+  { name: 'QuantumGrid Due Diligence Pack', type: 'Bundle', date: 'Jun 8', views: 9, status: 'Final', score: 96, file_url: '', file_path: '' },
+  { name: 'ClimateOS Product Demo v2', type: 'Video', date: 'Jun 5', views: 6, status: 'Review', score: 79, file_url: '', file_path: '' },
+  { name: 'EduSphere Financial Projections', type: 'Sheet', date: 'Jun 1', views: 21, status: 'Final', score: 85, file_url: '', file_path: '' },
+  { name: 'BioWeave Cap Table Structure', type: 'Sheet', date: 'May 28', views: 3, status: 'Draft', score: 71, file_url: '', file_path: '' },
+];
+
+const INVESTORS = [
+  { name: 'Sequoia India', amount: 20000000, status: 'Committed', type: 'Lead VC' },
+  { name: 'Nexus VP', amount: 10000000, status: 'Committed', type: 'VC' },
+  { name: 'Anjali Gupta', amount: 2000000, status: 'Committed', type: 'Angel' },
+  { name: 'Dev Patel', amount: 500000, status: 'Committed', type: 'Angel' },
+  { name: 'Accel India', amount: 15000000, status: 'In Diligence', type: 'VC' },
+  { name: 'Kalaari Capital', amount: 8000000, status: 'In Discussion', type: 'VC' },
+
+];
+
+const ACTIVITY = [
+  { icon: GitBranch, text: 'NeuralKit advanced to Growth stage', time: '2m ago', color: '#8b5cf6' },
+  { icon: Plus, text: 'ClimateOS registered — DeepTech', time: '14m ago', color: '#06b6d4' },
+  { icon: CalendarDays, text: 'Demo Day 2026 · 47 RSVPs confirmed', time: '1h ago', color: '#10b981' },
+  { icon: Star, text: 'Priya Sharma · 3 new session requests', time: '2h ago', color: '#f59e0b' },
+  { icon: DollarSign, text: 'QuantumGrid · ₹50M round fully closed', time: '5h ago', color: '#34d399' },
+  { icon: Upload, text: 'EduSphere deck viewed 12× by investors', time: '8h ago', color: '#8b5cf6' },
+];
+
+const MRR_DATA = [{ m: 'Jan', v: 8 }, { m: 'Feb', v: 14 }, { m: 'Mar', v: 22 }, { m: 'Apr', v: 35 }, { m: 'May', v: 52 }, { m: 'Jun', v: 80 }];
+const USR_DATA = [{ m: 'Jan', v: 120 }, { m: 'Feb', v: 210 }, { m: 'Mar', v: 380 }, { m: 'Apr', v: 620 }, { m: 'May', v: 940 }, { m: 'Jun', v: 1580 }];
+const SECTOR_DATA = [{ label: 'SaaS', val: 38, color: '#06b6d4' }, { label: 'FinTech', val: 24, color: '#f59e0b' }, { label: 'DeepTech', val: 22, color: '#8b5cf6' }, { label: 'HealthTech', val: 10, color: '#10b981' }, { label: 'Other', val: 6, color: '#475569' }];
+
+
+// ─── SVG Charts ───────────────────────────────────────────────────────────────
+function AreaChart({ data, color, h = 90 }) {
+  const max = Math.max(...data.map(d => d.v));
+  const pts = data.map((d, i) => ({ x: (i / (data.length - 1)) * 100, y: 100 - (d.v / max) * 88 }));
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  const area = `${line} L100,100 L0,100 Z`;
+  const id = `ac${color.replace(/[^a-z0-9]/gi, '')}${h}`;
+  return (
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height: h, width: '100%' }}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${id})`} />
+      <path d={line} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+      {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="1.8" fill={color} vectorEffect="non-scaling-stroke" />)}
+    </svg>
+  );
+}
+
+function MiniSparkline({ data, color }) {
+  const max = Math.max(...data.map(d => d.v));
+  const pts = data.map((d, i) => ({ x: (i / (data.length - 1)) * 100, y: 100 - (d.v / max) * 90 }));
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  return (
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height: 32, width: 72, flexShrink: 0 }}>
+      <path d={line} fill="none" stroke={color} strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+
+
+// ─── Three.js: Mini Crystal ───────────────────────────────────────────────────
+function MiniCrystal() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(64, 64, false);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 10);
+    camera.position.z = 2.8;
+    const dl = new THREE.DirectionalLight(0xffffff, 1.2); dl.position.set(2, 3, 2); scene.add(dl);
+    const pl = new THREE.PointLight(0x8b5cf6, 2.5, 8); pl.position.set(-1, 1, 1); scene.add(pl);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+    const mesh = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.9, 0),
+      new THREE.MeshPhongMaterial({ color: 0xa78bfa, emissive: 0x4c1d95, specular: 0xffffff, shininess: 130, transparent: true, opacity: 0.92 })
+    );
+    scene.add(mesh);
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1.22, 0.014, 8, 64),
+      new THREE.MeshBasicMaterial({ color: 0xc4b5fd, transparent: true, opacity: 0.5 })
+    );
+    ring.rotation.x = Math.PI / 2.4; scene.add(ring);
+    let raf: number;
+    let alive = true;
+    const tick = () => {
+      if (!alive) return;
+      raf = requestAnimationFrame(tick);
+      mesh.rotation.y += 0.013; mesh.rotation.x += 0.007; ring.rotation.z += 0.009;
+      renderer.render(scene, camera);
+    };
+    tick();
+    return () => { alive = false; cancelAnimationFrame(raf); renderer.dispose(); };
+  }, []);
+  return <canvas ref={ref} width={64} height={64} style={{ width: 64, height: 64 }} />;
+}
+
+// ─── Three.js: Constellation background ──────────────────────────────────────
+function ConstellationBg() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+    renderer.setPixelRatio(1);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+    camera.position.z = 5;
+    const resize = () => {
+      const w = canvas.clientWidth || 900, h = canvas.clientHeight || 500;
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    };
+    resize();
+    const nodes = [];
+    for (let i = 0; i < 22; i++) {
+      const p = new THREE.Vector3((Math.random() - .5) * 14, (Math.random() - .5) * 9, (Math.random() - .5) * 2);
+      nodes.push(p);
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.45 }));
+      m.position.copy(p); scene.add(m);
+    }
+    for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+      if (nodes[i].distanceTo(nodes[j]) < 4.2)
+        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([nodes[i], nodes[j]]), new THREE.LineBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.07 })));
+    }
+    window.addEventListener('resize', resize);
+    let raf: number;
+    let alive = true;
+    const tick = () => {
+      if (!alive) return;
+      raf = requestAnimationFrame(tick);
+      scene.rotation.y += 0.00025;
+      renderer.render(scene, camera);
+    };
+    tick();
+    return () => { alive = false; cancelAnimationFrame(raf); window.removeEventListener('resize', resize); renderer.dispose(); };
+  }, []);
+  return <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: .55 }} />;
+}
+
+// ─── Three.js: Funding Orb ────────────────────────────────────────────────────
+function FundingOrb({ progress = 0.64 }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(130, 130, false);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 10);
+    camera.position.z = 2.8;
+    const hue = 0.75 - progress * 0.25;
+    const col = new THREE.Color().setHSL(hue, 0.8, 0.6);
+    const col2 = new THREE.Color(0x10b981);
+    const pl = new THREE.PointLight(col, 3, 6); pl.position.set(0, 0, 1.5); scene.add(pl);
+    const pl2 = new THREE.PointLight(col2, 1.5, 6); pl2.position.set(1, -1, 1); scene.add(pl2);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+    const sphere = new THREE.Mesh(
+      new THREE.SphereGeometry(0.65 + progress * 0.25, 32, 32),
+      new THREE.MeshPhongMaterial({ color: col, emissive: col, emissiveIntensity: 0.2, transparent: true, opacity: 0.9, shininess: 90 })
+    );
+    scene.add(sphere);
+    const comet = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 10), new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xfbbf24, emissiveIntensity: 2 }));
+    scene.add(comet);
+    const comet2 = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 10), new THREE.MeshStandardMaterial({ color: 0x34d399, emissive: 0x34d399, emissiveIntensity: 2 }));
+    scene.add(comet2);
+    let raf: number; let t = 0;
+    let alive = true;
+    const tick = () => {
+      if (!alive) return;
+      raf = requestAnimationFrame(tick); t += 0.022;
+      sphere.rotation.y += 0.006;
+      comet.position.set(Math.cos(t) * 1.3, Math.sin(t * 1.2) * 0.4, Math.sin(t) * 1.3);
+      comet2.position.set(Math.cos(t + 2.1) * 1.1, Math.sin(t * 0.9 + 1) * 0.5, Math.sin(t + 2.1) * 1.1);
+      pl.position.x = Math.sin(t * 0.7) * 1.5; pl.position.y = Math.cos(t * 0.9) * 1.5;
+      renderer.render(scene, camera);
+    };
+    tick();
+    return () => { alive = false; cancelAnimationFrame(raf); renderer.dispose(); };
+  }, [progress]);
+  return <canvas ref={ref} width={130} height={130} style={{ width: 130, height: 130 }} />;
+}
+
+// ─── Three.js: Runway Globe ───────────────────────────────────────────────────
+function RunwayGlobe() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(108, 108, false);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 10);
+    camera.position.z = 3.0;
+    const pl = new THREE.PointLight(0xa78bfa, 3.5, 8); pl.position.set(2, 2, 1); scene.add(pl);
+    const pl2 = new THREE.PointLight(0x10b981, 1.2, 8); pl2.position.set(-2, -1, 1); scene.add(pl2);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.15));
+    const inner = new THREE.Mesh(
+      new THREE.SphereGeometry(0.7, 32, 32),
+      new THREE.MeshPhongMaterial({ color: 0x2d1b69, emissive: 0x7c3aed, emissiveIntensity: 0.4, shininess: 55, transparent: true, opacity: 0.88 })
+    );
+    scene.add(inner);
+    const wire = new THREE.Mesh(
+      new THREE.SphereGeometry(0.88, 14, 10),
+      new THREE.MeshBasicMaterial({ color: 0x8b5cf6, wireframe: true, transparent: true, opacity: 0.26 })
+    );
+    scene.add(wire);
+    [0, 0.31, -0.31, 0.60, -0.60].forEach(y => {
+      const rr = Math.sqrt(Math.max(0, 0.88 ** 2 - y ** 2));
+      if (rr < 0.05) return;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.007, 6, 52), new THREE.MeshBasicMaterial({ color: 0xc4b5fd, transparent: true, opacity: 0.38 }));
+      ring.position.y = y; ring.rotation.x = Math.PI / 2; scene.add(ring);
+    });
+    const longRing = new THREE.Mesh(new THREE.TorusGeometry(0.88, 0.007, 6, 52), new THREE.MeshBasicMaterial({ color: 0xa78bfa, transparent: true, opacity: 0.3 }));
+    scene.add(longRing);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xfbbf24, emissiveIntensity: 3.5 }));
+    scene.add(dot);
+    let raf: number, alive = true, t = 0;
+    const tick = () => {
+      if (!alive) return;
+      raf = requestAnimationFrame(tick); t += 0.011;
+      inner.rotation.y += 0.005; wire.rotation.y += 0.008; wire.rotation.x += 0.002;
+      dot.position.set(Math.cos(t) * 0.88, Math.sin(t * 0.7) * 0.28, Math.sin(t) * 0.88);
+      renderer.render(scene, camera);
+    };
+    tick();
+    return () => { alive = false; cancelAnimationFrame(raf); renderer.dispose(); };
+  }, []);
+  return <canvas ref={ref} width={108} height={108} style={{ width: 108, height: 108 }} />;
+}
+
+// ─── Three.js: Vault Nebula Background ───────────────────────────────────────
+function VaultNebulaField() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+    renderer.setPixelRatio(1);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+    camera.position.z = 6;
+    const resize = () => {
+      const w = canvas.clientWidth || 900, h = canvas.clientHeight || 500;
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    };
+    resize();
+    const N = 500;
+    const pos = new Float32Array(N * 3);
+    const col = new Float32Array(N * 3);
+    const palette = [new THREE.Color(0x8b5cf6), new THREE.Color(0x06b6d4), new THREE.Color(0x10b981), new THREE.Color(0xf59e0b), new THREE.Color(0xf472b6)];
+    for (let i = 0; i < N; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 20;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 14;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 5;
+      const c = palette[Math.floor(Math.random() * palette.length)];
+      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const points = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.055, vertexColors: true, transparent: true, opacity: 0.75 }));
+    scene.add(points);
+    const nodes: THREE.Vector3[] = [];
+    for (let i = 0; i < 28; i++) {
+      nodes.push(new THREE.Vector3((Math.random() - 0.5) * 18, (Math.random() - 0.5) * 11, (Math.random() - 0.5) * 2));
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.4 }));
+      m.position.copy(nodes[i]); scene.add(m);
+    }
+    for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+      if (nodes[i].distanceTo(nodes[j]) < 4.5)
+        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([nodes[i], nodes[j]]), new THREE.LineBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.06 })));
+    }
+    const asteroids: THREE.Mesh[] = [];
+    for (let i = 0; i < 10; i++) {
+      const g = i % 2 === 0 ? new THREE.IcosahedronGeometry(0.05 + Math.random() * 0.09, 0) : new THREE.OctahedronGeometry(0.05 + Math.random() * 0.07, 0);
+      const c = palette[Math.floor(Math.random() * palette.length)];
+      const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: c, wireframe: true, transparent: true, opacity: 0.28 }));
+      m.position.set((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 9, (Math.random() - 0.5) * 2);
+      scene.add(m); asteroids.push(m);
+    }
+    window.addEventListener('resize', resize);
+    let raf: number;
+    let alive = true;
+    const tick = () => {
+      if (!alive) return;
+      raf = requestAnimationFrame(tick);
+      points.rotation.y += 0.0003; points.rotation.x += 0.00012;
+      asteroids.forEach((a, i) => { a.rotation.y += 0.009 + i * 0.002; a.rotation.x += 0.005; });
+      renderer.render(scene, camera);
+    };
+    tick();
+    return () => { alive = false; cancelAnimationFrame(raf); window.removeEventListener('resize', resize); renderer.dispose(); };
+  }, []);
+  return <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.45 }} />;
+}
+
+// ─── Three.js: Per-card Document Planet ──────────────────────────────────────
+function DocPlanet({ typeColor, docType }: { typeColor: string; docType: string }) {
+  const uid = `dp${typeColor.replace(/[^a-z0-9]/gi, '')}${docType}`;
+  const shapes: Record<string, React.ReactNode> = {
+    Deck: <polygon points="26,8 44,20 44,32 26,44 8,32 8,20" fill={typeColor} opacity="0.85" />,
+    Sheet: <rect x="10" y="10" width="32" height="32" rx="4" fill={typeColor} opacity="0.85" />,
+    Video: <ellipse cx="26" cy="26" rx="18" ry="10" fill="none" stroke={typeColor} strokeWidth="3" opacity="0.85" />,
+    Bundle: <polygon points="26,6 46,18 46,34 26,46 6,34 6,18" fill={typeColor} opacity="0.85" />,
+  };
+  const shape = shapes[docType] || <polygon points="26,6 44,38 8,38" fill={typeColor} opacity="0.85" />;
+  return (
+    <div style={{ width: 52, height: 52, flexShrink: 0 }}>
+      <svg width={52} height={52} viewBox="0 0 52 52">
+        <defs>
+          <radialGradient id={`${uid}g`} cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.5" />
+            <stop offset="100%" stopColor={typeColor} stopOpacity="0" />
+          </radialGradient>
+          <style>{`
+            @keyframes ${uid}spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+            @keyframes ${uid}dot{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+            .${uid}shape{transform-box:fill-box;transform-origin:center;animation:${uid}spin 6s linear infinite}
+            .${uid}ring{transform-box:fill-box;transform-origin:center;animation:${uid}dot 3s linear infinite}
+          `}</style>
+        </defs>
+        {/* Glow */}
+        <circle cx="26" cy="26" r="22" fill={typeColor} opacity="0.08" />
+        {/* Shape */}
+        <g className={`${uid}shape`}>{shape}</g>
+        {/* Shine overlay */}
+        <circle cx="26" cy="26" r="20" fill={`url(#${uid}g)`} />
+        {/* Orbital ring */}
+        <g className={`${uid}ring`}>
+          <ellipse cx="26" cy="26" rx="24" ry="8" fill="none" stroke={typeColor} strokeWidth="1" opacity="0.5" />
+          <circle cx="50" cy="26" r="2" fill={typeColor} opacity="0.9" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+// ─── Three.js: Mentor Galaxy Background ──────────────────────────────────────
+function MentorGalaxyBg() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+    renderer.setPixelRatio(1);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+    camera.position.z = 7;
+    const resize = () => {
+      const w = canvas.clientWidth || 900, h = canvas.clientHeight || 500;
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    };
+    resize();
+    const N = 700;
+    const pos = new Float32Array(N * 3);
+    const col = new Float32Array(N * 3);
+    const starPalette = [new THREE.Color(0xffd4a0), new THREE.Color(0xa0c4ff), new THREE.Color(0xffffff), new THREE.Color(0xc8a0ff), new THREE.Color(0xa0ffd4)];
+    for (let i = 0; i < N; i++) {
+      const arm = Math.floor(Math.random() * 3);
+      const r = 0.5 + Math.random() * 9;
+      const angle = (arm * (Math.PI * 2 / 3)) + r * 0.35 + (Math.random() - 0.5) * 0.6;
+      pos[i * 3] = Math.cos(angle) * r + (Math.random() - 0.5) * 1.2;
+      pos[i * 3 + 1] = Math.sin(angle) * r + (Math.random() - 0.5) * 1.2;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 1.8;
+      const c = starPalette[Math.floor(Math.random() * starPalette.length)];
+      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const galaxy = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.058, vertexColors: true, transparent: true, opacity: 0.85 }));
+    scene.add(galaxy);
+    scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffd4a0, transparent: true, opacity: 0.35 })));
+    const nodes: THREE.Vector3[] = [];
+    for (let i = 0; i < 22; i++) {
+      const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 5;
+      nodes.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, (Math.random() - 0.5) * 0.8));
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.038, 6, 6), new THREE.MeshBasicMaterial({ color: 0xc8a0ff, transparent: true, opacity: 0.45 }));
+      dot.position.copy(nodes[i]); scene.add(dot);
+    }
+    for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+      if (nodes[i].distanceTo(nodes[j]) < 3.8)
+        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([nodes[i], nodes[j]]), new THREE.LineBasicMaterial({ color: 0xc8a0ff, transparent: true, opacity: 0.055 })));
+    }
+    window.addEventListener('resize', resize);
+    let raf: number;
+    let alive = true;
+    const tick = () => {
+      if (!alive) return;
+      raf = requestAnimationFrame(tick);
+      galaxy.rotation.z += 0.00018;
+      renderer.render(scene, camera);
+    };
+    tick();
+    return () => { alive = false; cancelAnimationFrame(raf); window.removeEventListener('resize', resize); renderer.dispose(); };
+  }, []);
+  return <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.5 }} />;
+}
+
+// ─── Three.js: Mentor Avatar Orb ─────────────────────────────────────────────
+function MentorOrb({ available, color }: { available: boolean; color: string }) {
+  const uid = `mo${color.replace(/[^a-z0-9]/gi, '')}`;
+  return (
+    <div style={{ width: 64, height: 64, flexShrink: 0 }}>
+      <svg width={64} height={64} viewBox="0 0 64 64">
+        <defs>
+          <radialGradient id={`${uid}g`} cx="35%" cy="30%" r="65%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.9" />
+            <stop offset="55%" stopColor={color} />
+            <stop offset="100%" stopColor={color} stopOpacity={available ? "0.8" : "0.4"} />
+          </radialGradient>
+          <style>{`
+            @keyframes ${uid}ring{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+            @keyframes ${uid}pulse{0%,100%{opacity:0.15}50%{opacity:0.3}}
+            .${uid}r{transform-box:fill-box;transform-origin:center;animation:${uid}ring 3s linear infinite}
+            .${uid}p{animation:${uid}pulse 2s ease-in-out infinite}
+          `}</style>
+        </defs>
+        {/* Outer pulse for available */}
+        {available && <circle className={`${uid}p`} cx="32" cy="32" r="30" fill={color} opacity="0.15" />}
+        {/* Core sphere */}
+        <circle cx="32" cy="32" r="22" fill={color} opacity={available ? "0.2" : "0.08"} />
+        <circle cx="32" cy="32" r="20" fill={`url(#${uid}g)`} opacity={available ? 1 : 0.6} />
+        <circle cx="26" cy="27" r="4" fill="white" opacity="0.2" />
+        {/* Orbital ring — only for available */}
+        {available && (
+          <g className={`${uid}r`}>
+            <ellipse cx="32" cy="32" rx="29" ry="9" fill="none" stroke={color} strokeWidth="1.2" opacity="0.6" />
+            <circle cx="61" cy="32" r="2.5" fill={color} opacity="1" />
+          </g>
+        )}
+      </svg>
+    </div>
+  );
+}
+
+// ─── Three.js: Accretion Disk Background ─────────────────────────────────────
+function AccretionBg() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+    renderer.setPixelRatio(1);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+    camera.position.set(0, 4, 8); camera.lookAt(0, 0, 0);
+    const resize = () => {
+      const w = canvas.clientWidth || 900, h = canvas.clientHeight || 600;
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    };
+    resize();
+    scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), new THREE.MeshBasicMaterial({ color: 0x000005 })));
+    const ehRing = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.032, 8, 52), new THREE.MeshBasicMaterial({ color: 0xa78bfa, transparent: true, opacity: 0.88 }));
+    scene.add(ehRing);
+    const layers = [
+      { r0: 0.42, r1: 1.1, N: 200, col: new THREE.Color(1.0, 0.90, 0.55), speed: 0.013, thick: 0.07, op: 0.95 },
+      { r0: 1.1, r1: 2.4, N: 240, col: new THREE.Color(1.0, 0.48, 0.14), speed: 0.007, thick: 0.14, op: 0.85 },
+      { r0: 2.4, r1: 3.9, N: 190, col: new THREE.Color(0.62, 0.16, 0.78), speed: 0.004, thick: 0.22, op: 0.68 },
+      { r0: 3.9, r1: 6.2, N: 140, col: new THREE.Color(0.18, 0.32, 0.96), speed: 0.002, thick: 0.36, op: 0.45 },
+    ];
+    const diskRings: { mesh: THREE.Points; speed: number }[] = [];
+    layers.forEach(l => {
+      const pos = new Float32Array(l.N * 3);
+      for (let i = 0; i < l.N; i++) {
+        const r = l.r0 + Math.random() * (l.r1 - l.r0);
+        const a = Math.random() * Math.PI * 2;
+        pos[i * 3] = Math.cos(a) * r; pos[i * 3 + 1] = (Math.random() - 0.5) * l.thick; pos[i * 3 + 2] = Math.sin(a) * r;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: l.col, size: 0.058, transparent: true, opacity: l.op }));
+      scene.add(pts); diskRings.push({ mesh: pts, speed: l.speed });
+    });
+    for (const s of [1, -1]) {
+      scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.32 * s, 0), new THREE.Vector3(0, 5.5 * s, 0)]), new THREE.LineBasicMaterial({ color: 0xa78bfa, transparent: true, opacity: 0.16 })));
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.38, 4.2, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.045, side: THREE.DoubleSide }));
+      cone.position.y = 2.4 * s; if (s === -1) cone.rotation.z = Math.PI; scene.add(cone);
+    }
+    scene.add(new THREE.PointLight(0xff7030, 2.8, 14));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.12));
+    window.addEventListener('resize', resize);
+    let raf: number;
+    let alive = true;
+    const tick = () => {
+      if (!alive) return;
+      raf = requestAnimationFrame(tick);
+      diskRings.forEach(({ mesh, speed }) => { mesh.rotation.y += speed; });
+      ehRing.rotation.z += 0.016;
+      renderer.render(scene, camera);
+    };
+    tick();
+    return () => { alive = false; cancelAnimationFrame(raf); window.removeEventListener('resize', resize); renderer.dispose(); };
+  }, []);
+  return <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.38 }} />;
+}
+
+// ─── Three.js: Armillary KPI Orb ─────────────────────────────────────────────
+function ArmillaryOrb({ color }: { color: string }) {
+  const uid = `ao${color.replace(/[^a-z0-9]/gi, '')}`;
+  return (
+    <div style={{ width: 52, height: 52, flexShrink: 0 }}>
+      <svg width={52} height={52} viewBox="0 0 52 52">
+        <defs>
+          <radialGradient id={`${uid}g`} cx="35%" cy="30%" r="65%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.9" />
+            <stop offset="60%" stopColor={color} />
+            <stop offset="100%" stopColor={color} stopOpacity="0.7" />
+          </radialGradient>
+          <style>{`
+            @keyframes ${uid}1{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+            @keyframes ${uid}2{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+            @keyframes ${uid}3{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+            .${uid}r1{transform-box:fill-box;transform-origin:center;animation:${uid}1 3.2s linear infinite}
+            .${uid}r2{transform-box:fill-box;transform-origin:center;animation:${uid}2 4.5s linear infinite}
+            .${uid}r3{transform-box:fill-box;transform-origin:center;animation:${uid}3 2.1s linear infinite}
+          `}</style>
+        </defs>
+        <g className={`${uid}r1`}>
+          <ellipse cx="26" cy="26" rx="23" ry="23" fill="none" stroke={color} strokeWidth="1.2" opacity="0.55" />
+          <circle cx="49" cy="26" r="2.2" fill={color} opacity="0.95" />
+        </g>
+        <g className={`${uid}r2`}>
+          <ellipse cx="26" cy="26" rx="23" ry="7" fill="none" stroke={color} strokeWidth="1" opacity="0.45" />
+        </g>
+        <g className={`${uid}r3`}>
+          <ellipse cx="26" cy="26" rx="17" ry="10" fill="none" stroke={color} strokeWidth="1" opacity="0.4" />
+          <circle cx="43" cy="26" r="1.6" fill="white" opacity="0.85" />
+        </g>
+        <circle cx="26" cy="26" r="10" fill={color} opacity="0.12" />
+        <circle cx="26" cy="26" r="8" fill={`url(#${uid}g)`} />
+        <circle cx="22" cy="23" r="2.5" fill="white" opacity="0.22" />
+      </svg>
+    </div>
+  );
+}
+// AsteroidKPIRow
+const ASTEROID_COLORS = ['#8b5cf6', '#10b981', '#f59e0b', '#06b6d4'];
+
+function AsteroidKPIRow({ stats }: { stats: { total: number; raised: number; funded: number; avgScore: number } }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dotRef = useRef<HTMLDivElement>(null);
+  const stateRef = useRef({ pos: 0, dir: 1 });
+  const rafRef = useRef<number>(0);
+
+  const cards = [
+    { label: 'Total Portfolios', val: stats.total, change: '+2 this month', sub: 'Active companies', icon: Building2, color: ASTEROID_COLORS[0] },
+    { label: 'Capital Raised', val: `₹${(stats.raised / 1e6).toFixed(1)}M`, change: '↑ +₹32.5M', sub: 'Total deployed', icon: Wallet, color: ASTEROID_COLORS[1] },
+    { label: 'Funded / Exited', val: stats.funded, change: '2 this cohort', sub: 'Successful exits', icon: Award, color: ASTEROID_COLORS[2] },
+    { label: 'Avg IncuScore™', val: stats.avgScore, change: '↑ +3.2 pts', sub: 'Quality index', icon: Target, color: ASTEROID_COLORS[3] },
+  ];
+
+  useEffect(() => {
+    const dot = dotRef.current;
+    const track = trackRef.current;
+    if (!dot || !track) return;
+    let alive = true;
+
+    const animate = () => {
+      if (!alive) return;
+      const s = stateRef.current;
+      const w = track.clientWidth;
+      s.pos += s.dir * 1.8;
+      if (s.pos >= w - 10) s.dir = -1;
+      if (s.pos <= 0) s.dir = 1;
+      const pct = s.pos / w;
+      const col = pct < 0.25 ? ASTEROID_COLORS[0] : pct < 0.5 ? ASTEROID_COLORS[1] : pct < 0.75 ? ASTEROID_COLORS[2] : ASTEROID_COLORS[3];
+      dot.style.left = `${s.pos}px`;
+      dot.style.background = col;
+      dot.style.boxShadow = `0 0 14px 6px ${col}90, 0 0 32px 14px ${col}35`;
+      rafRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+    return () => { alive = false; cancelAnimationFrame(rafRef.current); };
+  }, []);
+
+  return (
+    <div style={{ flexShrink: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
+        {cards.map(c => {
+          const Icon = c.icon;
+          return (
+            <div key={c.label} style={{
+              background: `linear-gradient(135deg,${c.color}12 0%,transparent 65%)`,
+              border: `1px solid ${c.color}28`, borderRadius: 16, padding: '18px 20px',
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <div style={{ position: 'absolute', top: 0, right: 0, width: 100, height: 100, borderRadius: '50%', background: `radial-gradient(circle,${c.color}22 0%,transparent 70%)`, transform: 'translate(35%,-35%)', pointerEvents: 'none' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase', letterSpacing: '0.09em', margin: 0 }}>{c.label}</p>
+                <div style={{ width: 32, height: 32, borderRadius: 10, background: `${c.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 18px ${c.color}40` }}>
+                  <Icon style={{ width: 15, height: 15, color: c.color, filter: `drop-shadow(0 0 5px ${c.color})` }} />
+                </div>
+              </div>
+              <p style={{ fontSize: 28, fontWeight: 700, color: 'white', margin: 0, lineHeight: 1 }}>{c.val}</p>
+              <p style={{ fontSize: 10, fontWeight: 600, color: c.color, margin: 0, marginTop: 6 }}>{c.change}</p>
+              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.18)', margin: 0, marginTop: 2 }}>{c.sub}</p>
+            </div>
+          );
+        })}
+      </div>
+      <div ref={trackRef} style={{ position: 'relative', height: 2, marginTop: 12, borderRadius: 1, background: 'linear-gradient(90deg,rgba(139,92,246,0.28) 0%,rgba(16,185,129,0.28) 33%,rgba(245,158,11,0.28) 66%,rgba(6,182,212,0.28) 100%)' }}>
+        <div ref={dotRef} style={{ position: 'absolute', width: 10, height: 10, borderRadius: '50%', top: '50%', transform: 'translateY(-50%)', background: '#8b5cf6', pointerEvents: 'none' }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+const glass = "bg-white/[0.03] border border-white/[0.07] rounded-2xl";
+const input = "w-full px-3 py-2 text-xs bg-black/40 border border-white/10 rounded-xl focus:outline-none focus:border-violet-500/60 text-white placeholder-white/20 transition";
+
+function ScoreRing({ score, size = 36 }) {
+  const r = 14, c = 2 * Math.PI * r, pct = (score / 100) * c;
+  const col = score >= 90 ? '#10b981' : score >= 75 ? '#06b6d4' : score >= 60 ? '#f59e0b' : '#8b5cf6';
+  return (
+    <svg width={size} height={size} viewBox="0 0 36 36" style={{ flexShrink: 0 }}>
+      <circle cx="18" cy="18" r={r} fill="none" stroke="rgba(255,255,255,.07)" strokeWidth="3" />
+      <circle cx="18" cy="18" r={r} fill="none" stroke={col} strokeWidth="3"
+        strokeDasharray={`${pct} ${c}`} strokeLinecap="round" transform="rotate(-90 18 18)" />
+      <text x="18" y="22" textAnchor="middle" fontSize="8" fontWeight="700" fill={col}>{score}</text>
+    </svg>
+  );
+}
+
+function FilterPills({ options, value, onChange }) {
+  return (
+    <div className="flex gap-2 flex-wrap items-center">
+      {options.map(opt => (
+        <button key={opt} onClick={() => onChange(opt)}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all ${value === opt
+            ? 'bg-white text-black border-transparent shadow-sm'
+            : 'bg-white/[0.04] border-white/10 text-white/40 hover:text-white/70 hover:border-white/20'
+            }`}>{opt}</button>
+      ))}
+    </div>
+  );
+}
+
+
+// ─── HubPage ──────────────────────────────────────────────────────────────────
+function HubPage() {
+  const { user, isLoading: authLoading } = useAuth();
+  const [rsvpEvent, setRsvpEvent] = useState(null);
+  const [rsvpedIds, setRsvpedIds] = useState([]);
+  const [vcSearch, setVcSearch] = useState('');
+  const [startups, setStartups] = useState(EXTENDED_STARTUPS);
+  const [tab, setTab] = useState('overview');
+  const [search, setSearch] = useState('');
+  const [editingDoc, setEditingDoc] = useState<typeof VAULT_DOCS[0] | null>(null);
+  const [incuScoreState, setIncuScoreState] = useState<{
+    phase: 0 | 1 | 2;
+    loading: boolean;
+    score: number | null;
+    band: string;
+    remark: string;
+    strengths: string[];
+    improvements: string[];
+    keywords: string[];
+    message: string;
+    readyForVCs: boolean;
+    delta: number | null;
+    startupName: string;
+  } | null>(null);
+  const [docStartupLinks, setDocStartupLinks] = useState<Record<string, string>>({});
+  const [uploadGuardOpen, setUploadGuardOpen] = useState(false);
+
+  // Per-tab filter states — each isolated
+  const [pipelineSector, setPipelineSector] = useState('All');
+  const [vaultType, setVaultType] = useState('All');
+  const [mentorFilter, setMentorFilter] = useState('All');
+  const [eventType, setEventType] = useState('All');
+  const [notifOpen, setNotifOpen] = useState(false);
+  // Modals
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [newS, setNewS] = useState({ name: '', tagline: '', description: '', founder: '', industry: 'SaaS', fundingGoal: '' });
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState('');
+  const [uploadPending, setUploadPending] = useState(false);
+  const [vaultDocs, setVaultDocs] = useState<VaultDoc[]>(VAULT_DOCS as unknown as VaultDoc[]);
+  const [vaultLoading, setVaultLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStartups = async () => {
+      const { data, error } = await supabase
+        .from('startups')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        const loaded = data.map(s => ({
+          id: s.id, name: s.name, tagline: s.tagline,
+          description: s.description, founder: s.founder,
+          industry: s.industry, stage: s.stage,
+          fundingGoal: s.funding_goal, raised: s.raised,
+          metrics: { members: s.members, pitchScore: s.pitch_score },
+        }));
+        setStartups(prev => [...loaded, ...EXTENDED_STARTUPS]);
+      }
+    };
+    fetchStartups();
+  }, []);
+
+  useEffect(() => {
+    const fetchDocs = async () => {
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        // Rebuild startup-doc links from startup_name column
+        const links: Record<string, string> = {};
+        data.forEach(doc => {
+          if (doc.startup_name) links[doc.name] = doc.startup_name;
+        });
+        setDocStartupLinks(links);
+        // Mock docs shown only if no real doc with same name exists
+        const dbNames = new Set(data.map(d => d.name));
+        const filteredMock = (VAULT_DOCS as unknown as VaultDoc[]).filter(d => !dbNames.has(d.name));
+        setVaultDocs([...filteredMock, ...data]);
+      } else {
+        setVaultDocs(VAULT_DOCS as unknown as VaultDoc[]);
+      }
+      setVaultLoading(false);
+    };
+    fetchDocs();
+  }, []);
+
+  useEffect(() => {
+    const closeMenus = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest('.vault-menu-trigger')) return;
+      document.querySelectorAll('.vault-menu').forEach(m => {
+        (m as HTMLElement).style.display = 'none';
+      });
+    };
+    document.addEventListener('click', closeMenus);
+    return () => document.removeEventListener('click', closeMenus);
+  }, []);
+
+
+  const handleUploadFile = (file: File) => {
+    setSelectedFile(file);
+    setUploadError('');
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const type = {
+      pdf: 'Doc', pptx: 'Deck', ppt: 'Deck', xlsx: 'Sheet', xls: 'Sheet',
+      csv: 'Sheet', mp4: 'Video', mov: 'Video', zip: 'Bundle', rar: 'Bundle', docx: 'Doc', doc: 'Doc',
+    }[ext] || 'Doc';
+
+    const nameField = document.getElementById('vup-name') as HTMLInputElement | null;
+    const typeSelect = document.getElementById('vup-type') as HTMLSelectElement | null;
+    if (nameField) nameField.value = file.name.replace(/\.[^.]+$/, '');
+    if (typeSelect) typeSelect.value = type;
+
+    const dropZone = document.getElementById('vup-drop');
+    if (dropZone) {
+      dropZone.innerHTML = `
+        <div style="font-size:13px;color:white;font-weight:600">${file.name}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px">${(file.size / 1024).toFixed(1)} KB</div>
+      `;
+    }
+  };
+
+  const handleUploadSubmit = async () => {
+    const nameEl = document.getElementById('vup-name') as HTMLInputElement | null;
+    const typeEl = document.getElementById('vup-type') as HTMLSelectElement | null;
+    const statusEl = document.getElementById('vup-status') as HTMLSelectElement | null;
+    const name = nameEl?.value?.trim();
+    if (!name) return;
+
+    const btnEl = document.getElementById('vup-submit') as HTMLButtonElement | null;
+    if (btnEl) { btnEl.textContent = 'Uploading…'; btnEl.disabled = true; }
+    setUploadPending(true);
+    setUploadError('');
+
+    try {
+      // Build FormData — file travels to the SERVER, which uploads it via service-role key
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('type', typeEl?.value || 'Doc');
+      formData.append('status', statusEl?.value || 'Draft');
+      if (selectedFile) {
+        formData.append('file', selectedFile);
+      }
+      const latestStartup = startups.find(s => !EXTENDED_STARTUPS.find(es => es.id === s.id));
+      if (latestStartup) formData.append('startup_name', latestStartup.name);
+
+      // POST as multipart — do NOT set Content-Type header (browser adds boundary)
+      const response = await fetch('/api/documents', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.error || `Server error (${response.status})`);
+      }
+
+      const data = await response.json();
+      const latestUserStartup = startups.find(s => !EXTENDED_STARTUPS.find(es => es.id === s.id));
+      // Attach startup_name to local doc object so link survives refresh
+      const docWithLink = { ...data, startup_name: latestUserStartup?.name || '' };
+      setVaultDocs(prev =>
+        editingDoc
+          ? prev.map(doc => doc.name === editingDoc.name ? docWithLink : doc)
+          : [...prev, docWithLink]
+      );
+      setUploadError('');
+      setUploadOpen(false);
+      setEditingDoc(null);
+      setSelectedFile(null);
+      if (btnEl) { btnEl.textContent = 'Add to Vault →'; btnEl.disabled = false; }
+
+      // Store link by startup NAME (not id) so it matches after refresh
+      if (latestUserStartup) {
+        setDocStartupLinks(prev => ({ ...prev, [name]: latestUserStartup.name }));
+      }
+      // Phase 2 — rescore based on document
+
+      // Phase 2 — rescore based on document
+      const relatedStartup = startups[0];
+      if (relatedStartup) {
+        setIncuScoreState({
+          phase: 0, loading: true, score: null, band: '',
+          remark: '', strengths: [], improvements: [],
+          keywords: [], message: '', readyForVCs: false,
+          delta: null, startupName: relatedStartup.name,
+        });
+        try {
+          const p2res = await fetch('/api/incuscore/phase2', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              previousScore: relatedStartup.metrics.pitchScore,
+              startupName: relatedStartup.name,
+              documentName: name,
+              documentType: typeEl?.value || 'Doc',
+              documentStatus: statusEl?.value || 'Draft',
+              industry: relatedStartup.industry,
+              description: relatedStartup.description ?? '',
+            }),
+          });
+          const p2result = await p2res.json();
+          setStartups(prev => prev.map(s =>
+            s.id === relatedStartup.id
+              ? { ...s, metrics: { ...s.metrics, pitchScore: p2result.finalScore } }
+              : s
+          ));
+          setIncuScoreState({
+            phase: 2,
+            loading: false,
+            score: p2result.finalScore,
+            band: p2result.band,
+            remark: p2result.remark,
+            strengths: p2result.documentInsights ?? [],
+            improvements: [],
+            keywords: p2result.keywords ?? [],
+            message: p2result.finalMessage,
+            readyForVCs: p2result.readyForVCs,
+            delta: p2result.delta,
+            startupName: relatedStartup.name,
+          });
+        } catch {
+          setIncuScoreState(null);
+        }
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Upload failed. Please retry.';
+      setUploadError(message);
+      console.error('Upload failed:', message);
+      if (btnEl) { btnEl.textContent = 'Failed — retry'; btnEl.disabled = false; }
+    } finally {
+      setUploadPending(false);
+    }
+  };
+
+
+  useEffect(() => {
+    if (uploadOpen) {
+      setSelectedFile(null);
+      setUploadError('');
+    }
+  }, [uploadOpen]);
+
+  const stats = useMemo(() => ({
+    total: startups.length,
+    funded: startups.filter(s => s.stage === 'Funding Secured').length,
+    raised: startups.reduce((a, c) => a + c.raised, 0),
+    avgScore: Math.round(startups.reduce((a, c) => a + c.metrics.pitchScore, 0) / startups.length),
+  }), [startups]);
+
+  const userStartups = useMemo(() =>
+    startups.filter(s => !EXTENDED_STARTUPS.find(es => es.id === s.id)),
+    [startups]);
+  const hasUserStartup = userStartups.length > 0;
+
+  const totalCommitted = INVESTORS.filter(i => i.status === 'Committed').reduce((a, c) => a + c.amount, 0);
+  const totalTarget = 60000000;
+  const fundingProgress = totalCommitted / totalTarget;
+  const maxInvestor = Math.max(...INVESTORS.map(i => i.amount));
+
+  // Filtered data for each tab
+  const filteredPipeline = useMemo(() => startups.filter(s => {
+    const q = search.toLowerCase();
+    const matchSearch = s.name.toLowerCase().includes(q) || s.founder.toLowerCase().includes(q);
+    const matchSector = pipelineSector === 'All' || s.industry === pipelineSector;
+    return matchSearch && matchSector;
+  }), [startups, search, pipelineSector]);
+
+  const filteredDocs = useMemo(() =>
+    vaultDocs.filter(d => vaultType === 'All' || d.type === vaultType),
+    [vaultDocs, vaultType]);
+
+  const filteredMentors = useMemo(() =>
+    MENTORS.filter(m => {
+      if (mentorFilter === 'All') return true;
+      if (mentorFilter === 'Available') return m.avail;
+      return m.tags.some(t => t === mentorFilter);
+    }), [mentorFilter]);
+
+  const filteredEvents = useMemo(() =>
+    ALL_EVENTS.filter(ev => eventType === 'All' || ev.type === eventType),
+    [eventType]);
+
+  const advance = (id, e) => {
+    e.stopPropagation();
+    setStartups(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      const idx = STAGE_ORDER.indexOf(s.stage);
+      if (idx < STAGE_ORDER.length - 1) {
+        const newStage = STAGE_ORDER[idx + 1];
+        const newRaised = idx === STAGE_ORDER.length - 2 ? s.fundingGoal : s.raised;
+        fetch('/api/startups/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, stage: newStage, raised: newRaised }),
+        }).catch(console.error);
+        return { ...s, stage: newStage, raised: newRaised };
+      }
+      return s;
+    }));
+  };
+
+  const removeStartup = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const startup = startups.find(s => s.id === id);
+    if (!startup) return;
+
+    // Find linked docs by startup NAME — works after refresh because
+    // startup_name is persisted on each doc in Supabase and loaded back
+    const linkedDocNames = vaultDocs
+      .filter(d => {
+        const byLinkState = docStartupLinks[d.name] === startup.name;
+        const byDocField = (d as any).startup_name === startup.name;
+        return byLinkState || byDocField;
+      })
+      .map(d => d.name);
+
+    // Remove from local vault state
+    if (linkedDocNames.length > 0) {
+      setVaultDocs(prev => prev.filter(d => !linkedDocNames.includes(d.name)));
+    }
+
+    // Remove startup from local state
+    setStartups(prev => prev.filter(s => s.id !== id));
+
+    // Clean up link state
+    setDocStartupLinks(prev => {
+      const updated = { ...prev };
+      linkedDocNames.forEach(n => delete updated[n]);
+      return updated;
+    });
+
+    // Persist deletion to Supabase — passes startupName so server
+    // can delete linked documents by startup_name column
+    fetch('/api/startups/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, startupName: startup.name }),
+    }).catch(console.error);
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegisterOpen(false);
+
+    setIncuScoreState({
+      phase: 0, loading: true, score: null, band: '',
+      remark: '', strengths: [], improvements: [],
+      keywords: [], message: '', readyForVCs: false,
+      delta: null, startupName: newS.name,
+    });
+
+    try {
+      const res = await fetch('/api/incuscore/phase1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newS.name,
+          founder: newS.founder,
+          industry: newS.industry,
+          tagline: newS.tagline,
+          fundingGoal: Number(newS.fundingGoal) || 0,
+          description: newS.description,
+        }),
+      });
+      const result = await res.json();
+
+      const newStartup = {
+        ...newS,
+        id: `st-${Date.now()}`,
+        stage: 'Ideation',
+        raised: 0,
+        fundingGoal: Number(newS.fundingGoal) || 0,
+        metrics: { members: 1, pitchScore: result.total ?? 68 },
+      };
+      setStartups(prev => [newStartup, ...prev]);
+      fetch('/api/startups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: newStartup.id, name: newStartup.name, tagline: newStartup.tagline,
+          description: newStartup.description, founder: newStartup.founder,
+          industry: newStartup.industry, stage: newStartup.stage,
+          fundingGoal: newStartup.fundingGoal, raised: newStartup.raised,
+          pitchScore: result.total ?? 68, members: 1,
+        }),
+      }).catch(console.error);
+
+      setIncuScoreState({
+        phase: 1,
+        loading: false,
+        score: result.total,
+        band: result.band,
+        remark: result.remark,
+        strengths: result.strengths ?? [],
+        improvements: result.improvements ?? [],
+        keywords: result.keywords ?? [],
+        message: result.investorMessage,
+        readyForVCs: result.total >= 76,
+        delta: null,
+        startupName: newS.name,
+      });
+    } catch {
+      setStartups(prev => [{
+        ...newS,
+        id: `st-${Date.now()}`,
+        stage: 'Ideation',
+        raised: 0,
+        fundingGoal: Number(newS.fundingGoal) || 0,
+        metrics: { members: 1, pitchScore: 68 },
+      }, ...prev]);
+      setIncuScoreState(null);
+    }
+
+    setNewS({ name: '', tagline: '', description: '', founder: '', industry: 'SaaS', fundingGoal: '' });
+  };
+  const handleSave = e => {
+    e.preventDefault();
+    const updated = { ...editTarget, fundingGoal: Number(editTarget.fundingGoal) || 0, raised: editTarget.stage === 'Funding Secured' ? Number(editTarget.fundingGoal) || 0 : Number(editTarget.raised) || 0 };
+    setStartups(prev => prev.map(s => s.id === editTarget.id ? updated : s));
+    setEditTarget(null);
+    fetch('/api/startups/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: updated.id, name: updated.name, tagline: updated.tagline,
+        description: updated.description, founder: updated.founder,
+        industry: updated.industry, stage: updated.stage,
+        fundingGoal: updated.fundingGoal, raised: updated.raised,
+      }),
+    }).catch(console.error);
+  };
+
+  const navItems = [
+    { id: 'overview', label: 'Command Center', icon: LayoutDashboard },
+    { id: 'pipeline', label: 'Pipeline', icon: GitBranch },
+    { id: 'vault', label: 'Pitch Vault', icon: FolderKey },
+    { id: 'network', label: 'Mentor Network', icon: Users },
+    { id: 'events', label: 'Event Arena', icon: CalendarDays },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'funding', label: 'Funding Tracker', icon: DollarSign },
+  ];
+
+  const STATUS_COLOR = { Committed: '#10b981', 'In Diligence': '#f59e0b', 'In Discussion': '#06b6d4' };
+  const TYPE_COLOR = { Deck: '#8b5cf6', Doc: '#06b6d4', Sheet: '#10b981', Video: '#f59e0b', Bundle: '#f472b6' };
+  const STAT_COLOR = { Final: '#10b981', Draft: '#475569', Review: '#f59e0b' };
+  const EVENT_COLOR = { Pitching: '#8b5cf6', Workshop: '#06b6d4', Mentorship: '#f59e0b', Hackathon: '#10b981' };
+
+  // Date parser for events: "June 15, 2026" → { month:'JUN', day:'15', year:'2026' }
+  const parseDate = (dateStr) => {
+    const parts = dateStr.split(' ');
+    return { month: parts[0].substring(0, 3).toUpperCase(), day: (parts[1] || '').replace(',', ''), year: parts[2] || '' };
+  };
+
+  if (!authLoading && !user) return <AuthGate />;
+
+  return (
+    <div className="flex h-screen bg-black text-white overflow-hidden" style={{ fontFamily: 'inherit' }}>
+
+      {/* ── SIDEBAR ──────────────────────────────────────────────────────── */}
+      <aside className="w-56 flex flex-col border-r border-white/[0.06] bg-black shrink-0">
+        <a href="/" className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06] hover:bg-violet-500/[0.06] transition-all group">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/40 group-hover:text-violet-400 transition-colors shrink-0">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          <span className="text-[11px] font-bold tracking-[0.05em] text-white/60 group-hover:text-white/80 transition-colors">Incutrack</span>
+          <span className="ml-auto text-[8px] font-semibold tracking-[0.06em] uppercase text-white/25">Home</span>
+        </a>
+
+        <div className="px-4 py-4 border-b border-white/[0.06]">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="shrink-0" style={{ width: 48, height: 48, overflow: 'hidden' }}>
+              <div style={{ transform: 'scale(0.75)', transformOrigin: 'top left' }}>
+                <MiniCrystal />
+              </div>
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-extrabold tracking-[0.06em] uppercase text-white">Explore Hub</span>
+              <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-violet-400/85">Startup Portal</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse shrink-0" />
+            <span className="text-[9px] font-bold tracking-[0.06em] text-white/60">LIVE GROWTH TRACKING</span>
+          </div>
+        </div>
+
+        <nav className="flex-1 p-3 flex flex-col gap-0.5 overflow-y-auto">
+          {navItems.map(item => {
+            const Icon = item.icon;
+            const active = tab === item.id;
+            return (
+              <button key={item.id} onClick={() => setTab(item.id)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all border ${active ? 'bg-violet-500/15 text-violet-300 border-violet-500/25'
+                  : 'text-white/35 hover:text-white/70 hover:bg-white/[0.04] border-transparent'
+                  }`}>
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="text-xs font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-white/[0.06] space-y-2.5">
+          {[
+            { label: 'Portfolios', val: stats.total, color: 'text-violet-400' },
+            { label: 'Capital', val: `₹${(stats.raised / 1e6).toFixed(1)}M`, color: 'text-emerald-400' },
+            { label: 'Avg Score', val: stats.avgScore, color: 'text-sky-400' },
+          ].map(s => (
+            <div key={s.label} className="flex justify-between items-center">
+              <span className="text-[11px] text-white/25">{s.label}</span>
+              <span className={`text-xs font-bold ${s.color}`}>{s.val}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-4 border-t border-white/[0.06]">
+          <div className="flex items-center gap-3 px-3 py-2.5 bg-white/[0.04] border border-white/[0.07] rounded-xl">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-xs font-bold shrink-0">AP</div>
+            <div className="overflow-hidden">
+              <p className="text-xs font-semibold text-white truncate">Ashutosh Palai</p>
+              <p className="text-[10px] text-emerald-400">Hub Admin</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── MAIN AREA ────────────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+
+        {/* Topbar */}
+        <header className="flex items-center justify-between px-8 py-4 border-b border-white/[0.06] bg-black shrink-0 relative">
+          <div>
+            <h2 className="text-base font-semibold text-white">{navItems.find(n => n.id === tab)?.label}</h2>
+            <p className="text-[11px] text-white/25 mt-0.5">Cohort 12 · IIT KGP Innovation Cell · Live</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-white/25" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search startups…"
+                className="pl-9 pr-4 py-2 w-52 text-xs bg-white/[0.04] border border-white/[0.08] rounded-full focus:outline-none focus:border-violet-500/50 text-white placeholder-white/20 transition" />
+            </div>
+            <div onClick={() => setNotifOpen(p => !p)} className="relative w-8 h-8 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center cursor-pointer hover:bg-white/[0.07] transition">
+              <Bell className="h-3.5 w-3.5 text-white/40" />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-violet-400 rounded-full" />
+            </div>
+            {notifOpen && (
+              <div style={{ position: 'absolute', top: 52, right: 160, width: 300, background: '#000000', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, zIndex: 100, overflow: 'hidden', boxShadow: '0 16px 48px rgba(0,0,0,0.8)', opacity: 1 }}>
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>Notifications</span>
+                  <span style={{ fontSize: 10, color: '#a78bfa', cursor: 'pointer', fontWeight: 600 }}>Mark all read</span>
+                </div>
+                <div className="notif-scroll" style={{ maxHeight: 280, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(99,102,241,0.5) transparent' }}>
+                  {ACTIVITY.map((a, i) => {
+                    const Icon = a.icon;
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer', background: i === 0 ? 'rgba(139,92,246,0.05)' : 'transparent' }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, background: `${a.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Icon style={{ width: 13, height: 13, color: a.color }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', margin: 0, lineHeight: 1.4 }}>{a.text}</p>
+                          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', margin: '3px 0 0' }}>{a.time}</p>
+                        </div>
+                        {i === 0 && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa', flexShrink: 0, marginTop: 4 }} />}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', cursor: 'pointer' }}>View all activity</span>
+                </div>
+              </div>
+            )}
+            <button onClick={() => setRegisterOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-gradient-to-r from-violet-600 to-sky-500 text-white hover:opacity-90 transition shadow-lg shadow-violet-500/20">
+              <Plus className="h-3.5 w-3.5" /> Register Startup
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto">
+
+          {/* ── COMMAND CENTER ────────────────────────────────────────────── */}
+          {tab === 'overview' && (
+            <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 28px', boxSizing: 'border-box', overflow: 'hidden' }}>
+
+              {/* Constellation bg */}
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0, opacity: 0.35 }}>
+                <ConstellationBg />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '45%', background: 'linear-gradient(to top, black, transparent)' }} />
+              </div>
+
+              {/* ── KPI cards + asteroid ───────────────────────────────── */}
+              <div style={{ position: 'relative', zIndex: 1, flexShrink: 0 }}>
+                <AsteroidKPIRow stats={stats} />
+              </div>
+
+              {/* ── Table + Activity ──────────────────────────────────── */}
+              <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 296px', gap: 16 }}>
+
+                {/* Portfolio table */}
+                <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+                  {/* Table header */}
+                  <div style={{ flexShrink: 0, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>Portfolio Leaderboard</span>
+                    <button onClick={() => setTab('pipeline')} style={{ fontSize: 11, color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      View all <ChevronRight style={{ width: 12, height: 12 }} />
+                    </button>
+                  </div>
+
+                  {/* Column headers */}
+                  <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: '36px 1fr 120px 148px 90px 56px 100px', padding: '8px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    {['#', 'COMPANY', 'FOUNDER', 'STAGE', 'INDUSTRY', 'SCORE', 'RAISED'].map(h => (
+                      <span key={h} style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>{h}</span>
+                    ))}
+                  </div>
+
+                  {/* Scrollable rows */}
+                  <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+                    {[...startups].sort((a, b) => b.metrics.pitchScore - a.metrics.pitchScore).map((s, i) => {
+                      const sc = STAGE_COLORS[s.stage];
+                      const sd = STAGE_DIM[s.stage];
+                      const pct = s.fundingGoal > 0 ? Math.min((s.raised / s.fundingGoal) * 100, 100) : 0;
+                      const scoreCol = s.metrics.pitchScore >= 90 ? '#10b981' : s.metrics.pitchScore >= 80 ? '#06b6d4' : s.metrics.pitchScore >= 70 ? '#f59e0b' : '#8b5cf6';
+                      const founderShort = (() => { const p = s.founder.split(' '); return p.length > 1 ? `${p[0]} ${p[1][0]}.` : p[0]; })();
+
+                      // rank medal colors
+                      const rankColor = i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7c3a' : 'rgba(255,255,255,0.18)';
+
+                      return (
+                        <div
+                          key={s.id}
+                          onClick={() => setEditTarget({ ...s })}
+                          style={{
+                            margin: '6px 12px',
+                            borderRadius: 12,
+                            padding: '12px 16px',
+                            display: 'grid',
+                            gridTemplateColumns: '36px 1fr 110px 148px 90px 52px 110px',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            // card gradient uses the stage color as tint
+                            background: `linear-gradient(120deg, ${sc}14 0%, rgba(255,255,255,0.018) 55%, ${scoreCol}08 100%)`,
+                            border: `1px solid ${sc}30`,
+                            borderLeft: `3px solid ${sc}`,
+                            transition: 'transform 0.15s, box-shadow 0.15s',
+                          }}
+                          onMouseEnter={e => {
+                            const el = e.currentTarget as HTMLDivElement;
+                            el.style.transform = 'translateX(2px)';
+                            el.style.boxShadow = `0 4px 28px ${sc}22, inset 0 0 0 1px ${sc}40`;
+                          }}
+                          onMouseLeave={e => {
+                            const el = e.currentTarget as HTMLDivElement;
+                            el.style.transform = 'translateX(0)';
+                            el.style.boxShadow = 'none';
+                          }}
+                        >
+                          {/* subtle inner glow top-right */}
+                          <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: `radial-gradient(circle, ${sc}22 0%, transparent 70%)`, pointerEvents: 'none' }} />
+
+                          {/* rank */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 6, background: `${rankColor}18`, border: `1px solid ${rankColor}44`, flexShrink: 0 }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: rankColor }}>{i + 1}</span>
+                          </div>
+
+                          {/* company */}
+                          <div style={{ paddingRight: 8 }}>
+                            <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0, letterSpacing: '0.01em' }}>{s.name}</p>
+                            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', margin: 0, marginTop: 2 }}>
+                              {s.tagline.length > 34 ? s.tagline.slice(0, 34) + '…' : s.tagline}
+                            </p>
+                          </div>
+
+                          {/* founder */}
+                          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.01em' }}>{founderShort}</span>
+
+                          {/* stage pill */}
+                          <div>
+                            <span style={{
+                              fontSize: 9, fontWeight: 800, padding: '4px 11px', borderRadius: 999,
+                              color: sc, background: sd, border: `1px solid ${sc}55`,
+                              display: 'inline-block', whiteSpace: 'nowrap', letterSpacing: '0.04em', textTransform: 'uppercase',
+                              boxShadow: `0 0 10px ${sc}35`,
+                            }}>
+                              {s.stage}
+                            </span>
+                          </div>
+
+                          {/* industry */}
+                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.38)', fontWeight: 500 }}>{s.industry}</span>
+
+                          {/* score */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: scoreCol, filter: `drop-shadow(0 0 6px ${scoreCol}90)`, lineHeight: 1 }}>
+                              {s.metrics.pitchScore}
+                            </span>
+                            <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>score</span>
+                          </div>
+
+                          {/* raised + bar */}
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: '#34d399', filter: 'drop-shadow(0 0 4px rgba(52,211,153,0.7))' }}>
+                                ₹{(s.raised / 1e5).toFixed(0)}L
+                              </span>
+                              <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)' }}>{pct.toFixed(0)}%</span>
+                            </div>
+                            <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+                              <div style={{
+                                height: '100%', borderRadius: 2, width: `${pct}%`,
+                                background: `linear-gradient(90deg, ${sc}, ${scoreCol})`,
+                                boxShadow: `0 0 8px ${sc}80`,
+                                transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)',
+                              }} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Live Activity */}
+                <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <div style={{ flexShrink: 0, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.9)', flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>Live Activity</span>
+                  </div>
+                  <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {ACTIVITY.map((a, i) => {
+                        const Icon = a.icon;
+                        return (
+                          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 8, background: `${a.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 0 10px ${a.color}40` }}>
+                              <Icon style={{ width: 13, height: 13, color: a.color }} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', margin: 0, lineHeight: 1.45 }}>{a.text}</p>
+                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', margin: 0, marginTop: 3 }}>{a.time}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Pipeline Health ───────────────────────────────────── */}
+              <div style={{
+                position: 'relative', zIndex: 1, flexShrink: 0,
+                background: 'rgba(255,255,255,0.022)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 16, padding: '16px 22px', overflow: 'hidden',
+              }}>
+                {/* sweep gradient bg */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,rgba(139,92,246,0.05) 0%,rgba(6,182,212,0.05) 25%,rgba(245,158,11,0.05) 55%,rgba(16,185,129,0.05) 75%,rgba(52,211,153,0.05) 100%)', pointerEvents: 'none' }} />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, position: 'relative' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>Pipeline Health</span>
+                    <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', color: '#a78bfa', fontWeight: 700, letterSpacing: '0.06em' }}>LIVE</span>
+                  </div>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)' }}>{startups.length} total companies</span>
+                </div>
+
+                {/* Node row */}
+                <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                  {STAGE_ORDER.map((stage, idx) => {
+                    const count = startups.filter(s => s.stage === stage).length;
+                    const col = STAGE_COLORS[stage];
+                    const pct = startups.length ? (count / startups.length) * 100 : 0;
+                    const isLast = idx === STAGE_ORDER.length - 1;
+                    const nextCol = !isLast ? STAGE_COLORS[STAGE_ORDER[idx + 1]] : col;
+
+                    return (
+                      <div key={stage} style={{ display: 'flex', alignItems: 'center', flex: isLast ? 'none' : 1 }}>
+
+                        {/* Stage node */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+
+                          {/* Orb */}
+                          <div style={{ position: 'relative', width: 52, height: 52 }}>
+                            {/* Pulse rings — only when populated */}
+                            {count > 0 && <>
+                              <div style={{
+                                position: 'absolute', inset: -5, borderRadius: '50%',
+                                border: `1px solid ${col}55`,
+                                animation: 'ph-pulse 2.2s ease-out infinite',
+                              }} />
+                              <div style={{
+                                position: 'absolute', inset: -11, borderRadius: '50%',
+                                border: `1px solid ${col}22`,
+                                animation: 'ph-pulse 2.2s ease-out infinite',
+                                animationDelay: '0.6s',
+                              }} />
+                            </>}
+
+                            {/* Core orb */}
+                            <div style={{
+                              width: 52, height: 52, borderRadius: '50%',
+                              background: `radial-gradient(circle at 38% 32%, ${col}55 0%, ${col}25 45%, ${col}0a 100%)`,
+                              border: `1.5px solid ${col}80`,
+                              boxShadow: count > 0 ? `0 0 22px ${col}50, 0 0 8px ${col}30, inset 0 0 14px ${col}20` : `0 0 6px ${col}15`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              position: 'relative', zIndex: 1,
+                            }}>
+                              <span style={{
+                                fontSize: count >= 10 ? 15 : 18,
+                                fontWeight: 800, color: col,
+                                filter: count > 0 ? `drop-shadow(0 0 10px ${col})` : 'none',
+                              }}>{count}</span>
+                            </div>
+                          </div>
+
+                          {/* Label */}
+                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.38)', fontWeight: 500, whiteSpace: 'nowrap', textAlign: 'center' }}>
+                            {stage}
+                          </span>
+
+                          {/* Proportion strip */}
+                          <div style={{ width: 52, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
+                            <div style={{
+                              height: '100%', borderRadius: 2,
+                              width: `${pct}%`,
+                              background: col,
+                              boxShadow: `0 0 6px ${col}90`,
+                              transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)',
+                            }} />
+                          </div>
+                        </div>
+
+                        {/* Connector */}
+                        {!isLast && (
+                          <div style={{ flex: 1, height: 2, position: 'relative', margin: '0 6px', marginBottom: 26 }}>
+                            {/* Static gradient line */}
+                            <div style={{
+                              position: 'absolute', inset: 0, borderRadius: 1,
+                              background: `linear-gradient(90deg, ${col}50, ${nextCol}50)`,
+                            }} />
+                            {/* Flowing shimmer — CSS keyframe via style tag injected once */}
+                            <div style={{
+                              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 1,
+                              background: `linear-gradient(90deg, transparent 0%, ${nextCol}ee 50%, transparent 100%)`,
+                              backgroundSize: '60% 100%',
+                              animation: 'ph-flow 1.8s linear infinite',
+                              opacity: 0.7,
+                            }} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Keyframes — injected once */}
+                <style>{`
+    @keyframes ph-pulse {
+      0%   { transform: scale(1);   opacity: 0.7; }
+      100% { transform: scale(1.5); opacity: 0;   }
+    }
+    @keyframes ph-flow {
+      0%   { background-position: -60% 0; }
+      100% { background-position: 160% 0; }
+    }
+  `}</style>
+              </div>
+
+            </div>
+          )}
+
+          {/* ── PIPELINE ─────────────────────────────────────────────────── */}
+          {tab === 'pipeline' && (() => {
+            const STAGE_ICONS: Record<string, string> = { Ideation: '◈', Validation: '⬡', 'MVP Built': '▣', Growth: '⟁', 'Funding Secured': '✦' };
+            const STAGE_DESC: Record<string, string> = { Ideation: 'Concept stage', Validation: 'Testing fit', 'MVP Built': 'Product ready', Growth: 'Scaling up', 'Funding Secured': 'Round closed' };
+            return (
+              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 12 }}>
+
+                {/* ── CSS ambient + multiple 3D decorations ── */}
+                <style>{`
+                  @keyframes pl-drift { 0%,100%{transform:translate(0,0)} 40%{transform:translate(14px,-18px)} 70%{transform:translate(-10px,10px)} }
+                  @keyframes pl-spin  { from{transform:rotate(0deg)}  to{transform:rotate(360deg)} }
+                  @keyframes pl-rspin { from{transform:rotate(0deg)}  to{transform:rotate(-360deg)} }
+                  @keyframes pl-pulse { 0%,100%{opacity:.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.1)} }
+                  @keyframes pl-flow  { 0%{background-position:-60% 0} 100%{background-position:160% 0} }
+                  @keyframes pl-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+                  @keyframes pl-morph { 0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%} 50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%} }
+                  @keyframes pl-rise  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+                  .pl-card { transition:box-shadow .2s ease,border-color .2s ease; animation:pl-rise .3s ease both; }
+                  .pl-card:hover { box-shadow:0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px var(--bc,rgba(255,255,255,0.14)); border-color:var(--bc,rgba(255,255,255,0.14)) !important; }
+                  .pl-adv:hover  { filter:brightness(1.2); transform:scale(1.05); }
+                  .pl-adv { transition:all .18s; }
+                `}</style>
+
+                {/* BG layer */}
+                <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+                  {/* Blobs */}
+                  <div style={{ position: 'absolute', top: '5%', left: '18%', width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,0.07),transparent 70%)', animation: 'pl-drift 11s ease-in-out infinite' }} />
+                  <div style={{ position: 'absolute', bottom: '8%', right: '12%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle,rgba(6,182,212,0.06),transparent 70%)', animation: 'pl-drift 14s ease-in-out infinite reverse' }} />
+                  <div style={{ position: 'absolute', top: '48%', left: '4%', width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle,rgba(16,185,129,0.05),transparent 70%)', animation: 'pl-drift 9s ease-in-out infinite 3s' }} />
+
+                  {/* 3D Element 1 — Orrery top-right (4 rings) */}
+                  <div style={{ position: 'absolute', top: -45, right: 30, width: 240, height: 240 }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: 22, height: 22, marginLeft: -11, marginTop: -11, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%,#fbbf24,#b45309)', boxShadow: '0 0 24px rgba(245,158,11,0.9)', animation: 'pl-pulse 2.5s ease-in-out infinite' }} />
+                    {[{ w: 72, c: '#8b5cf6', sp: '3.2s' }, { w: 114, c: '#06b6d4', sp: '5.6s', rev: true }, { w: 166, c: '#10b981', sp: '9.2s' }, { w: 220, c: '#f59e0b', sp: '14s', rev: true }].map((o, i) => (
+                      <div key={i} style={{ position: 'absolute', top: '50%', left: '50%', width: o.w, height: o.w, marginLeft: -o.w / 2, marginTop: -o.w / 2, borderRadius: '50%', border: `1px solid ${o.c}${i < 2 ? '35' : '20'}` }}>
+                        <div style={{ position: 'absolute', top: i % 2 === 0 ? -5 : 'auto', bottom: i % 2 === 1 ? -5 : 'auto', left: '50%', width: 10, height: 10, marginLeft: -5, borderRadius: '50%', background: o.c, boxShadow: `0 0 10px ${o.c}`, animation: `pl-spin ${o.sp} linear infinite ${o.rev ? 'reverse' : ''}`, transformOrigin: `5px ${o.w / 2 + 5}px` }} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 3D Element 2 — Morphing blob bottom-left */}
+                  <div style={{ position: 'absolute', bottom: 24, left: 16, width: 110, height: 110, background: 'linear-gradient(135deg,rgba(139,92,246,0.13),rgba(6,182,212,0.08))', animation: 'pl-morph 7s ease-in-out infinite', filter: 'blur(0.5px)', border: '1px solid rgba(139,92,246,0.18)' }} />
+
+                  {/* 3D Element 3 — Rotating double-square diamond mid-bottom */}
+                  <div style={{ position: 'absolute', bottom: '20%', left: '45%' }}>
+                    <div style={{ position: 'relative', width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ position: 'absolute', width: 40, height: 40, border: '2px solid rgba(245,158,11,0.4)', borderRadius: 4, animation: 'pl-spin 9s linear infinite', transform: 'rotate(45deg)' }} />
+                      <div style={{ position: 'absolute', width: 22, height: 22, border: '1px solid rgba(245,158,11,0.6)', borderRadius: 2, background: 'rgba(245,158,11,0.07)', animation: 'pl-rspin 6s linear infinite', transform: 'rotate(45deg)' }} />
+                    </div>
+                  </div>
+
+                  {/* 3D Element 4 — Hexagon top-left area */}
+                  <div style={{ position: 'absolute', top: '32%', left: '2%', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 60, height: 60 }}>
+                    <div style={{ width: 46, height: 46, border: '2px solid rgba(6,182,212,0.3)', borderRadius: 8, animation: 'pl-spin 11s linear infinite', boxShadow: '0 0 16px rgba(6,182,212,0.15)', transform: 'rotate(45deg)' }} />
+                    <div style={{ position: 'absolute', width: 24, height: 24, border: '1px solid rgba(6,182,212,0.5)', borderRadius: 4, animation: 'pl-rspin 7s linear infinite', boxShadow: '0 0 10px rgba(6,182,212,0.2)', transform: 'rotate(45deg)' }} />
+                  </div>
+
+                  {/* 3D Element 5 — Star/cross center */}
+                  <div style={{ position: 'absolute', top: '18%', left: '32%', width: 44, height: 44, opacity: .32, animation: 'pl-spin 15s linear infinite' }}>
+                    {[0, 45, 90, 135].map(a => <div key={a} style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1.5, background: `linear-gradient(90deg,transparent,${a < 90 ? '#8b5cf6' : '#06b6d4'},transparent)`, marginTop: -0.75, transform: `rotate(${a}deg)` }} />)}
+                  </div>
+
+                  {/* 3D Element 6 — SVG triangle bottom-right */}
+                  <div style={{ position: 'absolute', bottom: '22%', right: '20%', opacity: .28, animation: 'pl-float 6s ease-in-out 1s infinite' }}>
+                    <svg width="52" height="46"><polygon points="26,2 50,44 2,44" fill="none" stroke="rgba(16,185,129,0.65)" strokeWidth="1.5" /><polygon points="26,14 42,40 10,40" fill="rgba(16,185,129,0.06)" stroke="rgba(16,185,129,0.28)" strokeWidth="1" /></svg>
+                  </div>
+
+                  {/* Particles */}
+                  {[{ x: '8%', y: '40%', s: 4, c: '#8b5cf6', d: '0s' }, { x: '35%', y: '88%', s: 3, c: '#06b6d4', d: '.9s' }, { x: '62%', y: '14%', s: 5, c: '#10b981', d: '2.7s' }, { x: '88%', y: '58%', s: 3, c: '#f59e0b', d: '.5s' }, { x: '50%', y: '74%', s: 4, c: '#8b5cf6', d: '1.8s' }, { x: '72%', y: '82%', s: 3, c: '#06b6d4', d: '3.3s' }, { x: '18%', y: '62%', s: 3, c: '#f59e0b', d: '2s' }].map((p, i) => (
+                    <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, width: p.s, height: p.s, borderRadius: '50%', background: p.c, boxShadow: `0 0 ${p.s * 2.5}px ${p.c}`, opacity: .45, animation: `pl-float ${3.5 + i * .5}s ease-in-out ${p.d} infinite` }} />
+                  ))}
+
+                  {/* Flowing lines */}
+                  {[{ t: '28%', c: '#8b5cf6', d: '0s' }, { t: '58%', c: '#06b6d4', d: '1.8s' }, { t: '82%', c: '#10b981', d: '3.2s' }].map((l, i) => (
+                    <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: l.t, height: 1, background: `linear-gradient(90deg,transparent,${l.c}15,transparent)`, backgroundSize: '40% 100%', animation: `pl-flow 7s linear ${l.d} infinite` }} />
+                  ))}
+                </div>
+
+                {/* ── Header ── */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 5 }}><Filter style={{ width: 11, height: 11 }} />Sector</span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {['All', 'SaaS', 'FinTech', 'DeepTech'].map(s => {
+                        const active = pipelineSector === s;
+                        return <button key={s} onClick={() => setPipelineSector(s)} style={{ padding: '5px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .18s', background: active ? 'rgba(139,92,246,0.28)' : 'rgba(255,255,255,0.04)', color: active ? '#a78bfa' : 'rgba(255,255,255,0.35)', border: `1px solid ${active ? 'rgba(139,92,246,0.55)' : 'rgba(255,255,255,0.08)'}`, boxShadow: active ? '0 0 16px rgba(139,92,246,0.4)' : 'none' }}>{s}</button>;
+                      })}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {STAGE_ORDER.map(stage => {
+                      const cnt = filteredPipeline.filter(s => s.stage === stage).length; const sc = STAGE_COLORS[stage];
+                      return cnt > 0 ? (<div key={stage} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 999, background: `${sc}12`, border: `1px solid ${sc}28` }}><span style={{ width: 5, height: 5, borderRadius: '50%', background: sc, boxShadow: `0 0 5px ${sc}`, display: 'inline-block' }} /><span style={{ fontSize: 9, fontWeight: 700, color: sc }}>{cnt}</span><span style={{ fontSize: 8, color: 'rgba(255,255,255,0.22)' }}>{stage.split(' ')[0]}</span></div>) : null;
+                    })}
+                    <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.08)' }} />
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)' }}>{filteredPipeline.length} startups</span>
+                  </div>
+                </div>
+
+                {/* ── Funnel bar ── */}
+                <div style={{ flexShrink: 0, position: 'relative', zIndex: 1, display: 'flex', height: 26, borderRadius: 13, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.3)' }}>
+                  {STAGE_ORDER.map((stage, i) => {
+                    const cnt = filteredPipeline.filter(s => s.stage === stage).length;
+                    const pct = Math.max((cnt / Math.max(filteredPipeline.length, 1)) * 100, 4);
+                    const sc = STAGE_COLORS[stage]; const isLast = i === STAGE_ORDER.length - 1;
+                    return (
+                      <div key={stage} style={{ height: '100%', flex: `0 0 ${pct}%`, background: `linear-gradient(90deg,${sc}50,${sc}28)`, borderRight: isLast ? 'none' : '1px solid rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', boxShadow: `inset 0 0 18px ${sc}18` }}>
+                        {pct > 10 && <><span style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.55)', whiteSpace: 'nowrap' }}>{stage.split(' ')[0]}</span><span style={{ fontSize: 8, fontWeight: 800, color: sc }}>{cnt}</span></>}
+                      </div>
+                    );
+                  })}
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.05) 50%,transparent)', backgroundSize: '60% 100%', animation: 'pl-flow 2.5s linear infinite', pointerEvents: 'none' }} />
+                </div>
+
+                {/* ── Kanban — 5 equal columns, each with rigid scroll ── */}
+                <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+                  {STAGE_ORDER.map((stage, stageIdx) => {
+                    const sc = STAGE_COLORS[stage];
+                    const cards = filteredPipeline.filter(s => s.stage === stage);
+                    const icon = STAGE_ICONS[stage]; const desc = STAGE_DESC[stage];
+                    const isLast = stageIdx === STAGE_ORDER.length - 1;
+                    return (
+                      <div key={stage} style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', borderRadius: 16, border: `1px solid ${sc}28`, background: `linear-gradient(170deg,${sc}09 0%,rgba(6,6,18,0.94) 60%)`, overflow: 'hidden', position: 'relative' }}>
+                        {/* Top glow */}
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${sc}88,transparent)`, pointerEvents: 'none' }} />
+                        {/* Corner radial */}
+                        <div style={{ position: 'absolute', top: -36, right: -36, width: 120, height: 120, borderRadius: '50%', background: `radial-gradient(circle,${sc}10,transparent 70%)`, pointerEvents: 'none' }} />
+
+                        {/* Column header — always visible, never scrolls */}
+                        <div style={{ padding: '12px 12px 8px', flexShrink: 0, borderBottom: `1px solid ${sc}16` }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                              <div style={{ width: 28, height: 28, borderRadius: 8, background: `${sc}16`, border: `1px solid ${sc}32`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, boxShadow: `0 0 12px ${sc}35`, flexShrink: 0 }}>{icon}</div>
+                              <div>
+                                <p style={{ fontSize: 11, fontWeight: 700, color: 'white', margin: 0 }}>{stage}</p>
+                                <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.28)', margin: 0 }}>{desc}</p>
+                              </div>
+                            </div>
+                            <div style={{ minWidth: 20, height: 20, borderRadius: 999, background: `${sc}20`, border: `1px solid ${sc}42`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px' }}>
+                              <span style={{ fontSize: 10, fontWeight: 800, color: sc, filter: `drop-shadow(0 0 4px ${sc})` }}>{cards.length}</span>
+                            </div>
+                          </div>
+                          <div style={{ height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.05)' }}>
+                            <div style={{ height: '100%', borderRadius: 1, width: `${Math.min((cards.length / 2) * 100, 100)}%`, background: `linear-gradient(90deg,${sc},${sc}55)`, boxShadow: `0 0 6px ${sc}70`, transition: 'width .5s' }} />
+                          </div>
+                        </div>
+
+                        {/* ── Scrollable area — cards have FIXED height so they're uniform ── */}
+                        <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', padding: '8px 8px 6px', display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
+                          {cards.length === 0 && (
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, opacity: .18 }}>
+                              <div style={{ width: 28, height: 28, borderRadius: 8, border: `1px dashed ${sc}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{icon}</div>
+                              <span style={{ fontSize: 9, color: 'white' }}>Empty stage</span>
+                            </div>
+                          )}
+                          {cards.map((s, ci) => {
+                            const scoreCol = s.metrics.pitchScore >= 90 ? '#10b981' : s.metrics.pitchScore >= 75 ? '#06b6d4' : '#f59e0b';
+                            return (
+                              /* FIXED height = perfectly uniform cards, no layout shifts */
+                              <div key={s.id} className="pl-card" style={{ ['--bc' as string]: `${sc}50`, height: 192, flexShrink: 0, borderRadius: 13, border: `1px solid ${sc}20`, background: `linear-gradient(145deg,${sc}0c 0%,rgba(0,0,0,0.6) 100%)`, padding: '11px 12px', cursor: 'pointer', position: 'relative', overflow: 'hidden', animationDelay: `${ci * 0.06}s`, display: 'flex', flexDirection: 'column' }}
+                                onClick={() => setEditTarget({ ...s })}>
+                                {/* Top shimmer */}
+                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${sc}65,transparent)` }} />
+
+                                {/* Row 1: name + score ring */}
+                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6, flexShrink: 0 }}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</p>
+                                    <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 7px', borderRadius: 999, color: sc, background: `${sc}18`, border: `1px solid ${sc}32`, display: 'inline-block', marginTop: 3, letterSpacing: '.05em' }}>{s.industry}</span>
+                                  </div>
+                                  <ScoreRing score={s.metrics.pitchScore} size={32} />
+                                </div>
+
+                                {/* Row 2: tagline — exactly 2 lines clamped */}
+                                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', lineHeight: 1.55, margin: '7px 0', flex: 1, minHeight: 0, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{s.tagline}</p>
+
+                                {/* Row 3: 3 metric chips */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5, flexShrink: 0, marginBottom: 8 }}>
+                                  {[['MRR', isNaN(s.metrics.mrr) ? 'N/A' : '₹' + Math.round(s.metrics.mrr / 1000) + 'K'], ['Users', isNaN(s.metrics.users) || s.metrics.users === 0 ? 'N/A' : s.metrics.users > 999 ? Math.round(s.metrics.users / 1000) + 'K' : String(s.metrics.users)], ['Score', String(s.metrics.pitchScore)]].map(([lbl, val], mi) => (
+                                    <div key={lbl} style={{ padding: '4px 0', borderRadius: 7, background: mi === 2 ? `${scoreCol}10` : 'rgba(255,255,255,0.04)', border: `1px solid ${mi === 2 ? scoreCol + '25' : 'rgba(255,255,255,0.07)'}`, textAlign: 'center' }}>
+                                      <p style={{ fontSize: 7, color: 'rgba(255,255,255,0.25)', margin: 0, textTransform: 'uppercase', letterSpacing: '.05em' }}>{lbl}</p>
+                                      <p style={{ fontSize: 11, fontWeight: 800, color: mi === 2 ? scoreCol : 'white', margin: 0 }}>{val}</p>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Row 4: footer */}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 7, borderTop: `1px solid ${sc}16`, flexShrink: 0 }}>
+                                  <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '40%' }}>👤 {s.founder}</span>
+
+                                  {/* Three-dot menu */}
+                                  <div className="vault-menu-trigger" style={{ position: 'relative' }}>
+                                    <MoreHorizontal
+                                      style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.25)', cursor: 'pointer', transition: 'color 0.2s' }}
+                                      onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.8)')}
+                                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.25)')}
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        document.querySelectorAll('.vault-menu').forEach(m => (m as HTMLElement).style.display = 'none');
+                                        const menu = e.currentTarget.nextSibling as HTMLElement;
+                                        if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                                      }}
+                                    />
+                                    <div className="vault-menu" style={{ display: 'none', position: 'absolute', right: 0, bottom: 20, background: '#0d0d18', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, overflow: 'hidden', zIndex: 50, minWidth: 130, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
+                                      <button
+                                        onClick={e => { e.stopPropagation(); setEditTarget({ ...s }); }}
+                                        style={{ width: '100%', padding: '9px 14px', background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#a78bfa', textAlign: 'left' }}
+                                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(167,139,250,0.1)')}
+                                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                                      >
+                                        ✏️ Edit
+                                      </button>
+                                      <button
+                                        onClick={e => removeStartup(s.id, e)}
+                                        style={{ width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#f87171', textAlign: 'left' }}
+                                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.1)')}
+                                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                                      >
+                                        🗑 Remove
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {!isLast ? (
+                                    <button className="pl-adv" onClick={e => advance(s.id, e)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 999, fontSize: 9, fontWeight: 700, background: `linear-gradient(90deg,${sc}35,${sc}15)`, color: sc, border: `1px solid ${sc}48`, boxShadow: `0 0 10px ${sc}28`, cursor: 'pointer', flexShrink: 0 }}>
+                                      Advance <ArrowRight style={{ width: 9, height: 9 }} />
+                                    </button>
+                                  ) : (
+                                    <span style={{ fontSize: 8, fontWeight: 700, padding: '3px 8px', borderRadius: 999, color: '#34d399', background: 'rgba(52,211,153,0.14)', border: '1px solid rgba(52,211,153,0.32)', flexShrink: 0 }}>✓ Secured</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Add — pinned bottom */}
+                        <div style={{ padding: '6px 8px', flexShrink: 0, borderTop: `1px solid ${sc}12` }}>
+                          <button style={{ width: '100%', padding: '6px', borderRadius: 10, border: `1px dashed ${sc}28`, background: `${sc}05`, color: `${sc}75`, fontSize: 10, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, transition: 'all .18s' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = sc; (e.currentTarget as HTMLButtonElement).style.color = sc; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = `${sc}28`; (e.currentTarget as HTMLButtonElement).style.color = `${sc}75`; }}>
+                            <Plus style={{ width: 11, height: 11 }} /> Add
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── PITCH VAULT ──────────────────────────────────────────────── */}
+          {tab === 'vault' && (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 28px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
+
+              {/* ── Nebula background ── */}
+              <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+                <VaultNebulaField />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.6) 100%)' }} />
+              </div>
+
+              {/* ── Filter row ── */}
+              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Filter style={{ width: 12, height: 12 }} />Type:
+                  </span>
+                  <FilterPills options={['All', 'Deck', 'Doc', 'Sheet', 'Video', 'Bundle']} value={vaultType} onChange={setVaultType} />
+                </div>
+                <button onClick={() => hasUserStartup ? setUploadOpen(true) : setUploadGuardOpen(true)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 18px', borderRadius: 999, fontSize: 12, fontWeight: 600, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(139,92,246,0.5)'; (e.currentTarget as HTMLButtonElement).style.color = '#c4b5fd'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.6)'; }}>
+                  <Upload style={{ width: 14, height: 14 }} /> Upload Document
+                </button>
+              </div>
+
+              {/* ── Stats strip ── */}
+              <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
+                {[
+                  { label: 'Total Documents', val: filteredDocs.length, color: '#8b5cf6', Icon: FolderKey },
+                  { label: 'Avg AI Score', val: Math.round(filteredDocs.reduce((a, d) => a + d.score, 0) / (filteredDocs.length || 1)), color: '#06b6d4', Icon: Target },
+                  { label: 'Total Views', val: filteredDocs.reduce((a, d) => a + d.views, 0) + '×', color: '#10b981', Icon: Activity },
+                  { label: 'Final Docs', val: filteredDocs.filter(d => d.status === 'Final').length, color: '#f59e0b', Icon: CheckCircle },
+                ].map(s => {
+                  const { Icon } = s;
+                  return (
+                    <div key={s.label} style={{ background: `linear-gradient(135deg,${s.color}15,rgba(0,0,0,0.6))`, border: `1px solid ${s.color}28`, borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, position: 'relative', overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+                      <div style={{ position: 'absolute', top: -16, right: -16, width: 72, height: 72, borderRadius: '50%', background: `radial-gradient(circle,${s.color}30,transparent 70%)`, pointerEvents: 'none' }} />
+                      <div style={{ width: 34, height: 34, borderRadius: 9, background: `${s.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 0 16px ${s.color}50` }}>
+                        <Icon style={{ width: 16, height: 16, color: s.color, filter: `drop-shadow(0 0 5px ${s.color})` }} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>{s.label}</p>
+                        <p style={{ fontSize: 20, fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.1 }}>{s.val}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── Card grid ── */}
+              {filteredDocs.length === 0 && (
+                <div style={{ textAlign: 'center', paddingTop: 60, color: 'rgba(255,255,255,0.2)', fontSize: 14, position: 'relative', zIndex: 1 }}>No documents of this type</div>
+              )}
+              <div className="analytics-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+                  {filteredDocs.map(d => {
+                    const tc = TYPE_COLOR[d.type] || '#8b5cf6';
+                    const sc = STAT_COLOR[d.status];
+                    const scoreCol = d.score >= 90 ? '#10b981' : d.score >= 75 ? '#06b6d4' : '#f59e0b';
+                    const r = 17;
+                    const circ = 2 * Math.PI * r;
+                    const dash = (d.score / 100) * circ;
+                    const maxViews = Math.max(...vaultDocs.map(x => x.views), 1);
+
+                    return (
+                      <div key={d.name}
+                        style={{
+                          background: `linear-gradient(135deg,${tc}14 0%,rgba(0,0,0,0.7) 55%,${scoreCol}07 100%)`,
+                          border: `1px solid ${tc}35`,
+                          borderTop: `2.5px solid ${tc}95`,
+                          borderRadius: 14,
+                          padding: '16px 16px 14px',
+                          cursor: 'pointer',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          backdropFilter: 'blur(14px)',
+                          transition: 'transform 0.2s, box-shadow 0.2s',
+                        }}
+                        onMouseEnter={e => {
+                          const el = e.currentTarget as HTMLDivElement;
+                          el.style.transform = 'translateY(-4px)';
+                          el.style.boxShadow = `0 14px 44px ${tc}30, 0 0 0 1px ${tc}50`;
+                        }}
+                        onMouseLeave={e => {
+                          const el = e.currentTarget as HTMLDivElement;
+                          el.style.transform = 'translateY(0)';
+                          el.style.boxShadow = 'none';
+                        }}
+                      >
+                        {/* Corner radial */}
+                        <div style={{ position: 'absolute', top: -28, right: -28, width: 120, height: 120, borderRadius: '50%', background: `radial-gradient(circle,${tc}25,transparent 70%)`, pointerEvents: 'none' }} />
+
+                        {/* Top: 3D planet + type badge + score ring */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            {/* 3D Document Planet */}
+                            <DocPlanet typeColor={tc} docType={d.type} />
+                            <div>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: tc, textTransform: 'uppercase', letterSpacing: '0.07em', padding: '3px 9px', borderRadius: 999, background: `${tc}20`, border: `1px solid ${tc}40`, display: 'inline-block', boxShadow: `0 0 12px ${tc}35` }}>
+                                {d.type}
+                              </span>
+                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.22)', margin: '5px 0 0' }}>{d.date}</p>
+                            </div>
+                          </div>
+
+                          {/* Orbital score ring */}
+                          <div style={{ position: 'relative', width: 46, height: 46, flexShrink: 0 }}>
+                            <svg width={46} height={46} viewBox="0 0 46 46">
+                              <circle cx="23" cy="23" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2.5" />
+                              <circle cx="23" cy="23" r={r} fill="none" stroke={scoreCol} strokeWidth="2.5"
+                                strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+                                transform="rotate(-90 23 23)"
+                                style={{ filter: `drop-shadow(0 0 5px ${scoreCol})` }}
+                              />
+                              <circle
+                                cx={23 + r * Math.cos((-Math.PI / 2) + (d.score / 100) * 2 * Math.PI)}
+                                cy={23 + r * Math.sin((-Math.PI / 2) + (d.score / 100) * 2 * Math.PI)}
+                                r="3" fill={scoreCol}
+                                style={{ filter: `drop-shadow(0 0 4px ${scoreCol})` }}
+                              />
+                            </svg>
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: scoreCol, lineHeight: 1, filter: `drop-shadow(0 0 6px ${scoreCol})` }}>{d.score}</span>
+                              <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em', marginTop: 1 }}>AI</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Doc name */}
+                        <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0, lineHeight: 1.35, paddingRight: 4 }}>{d.name}</p>
+
+                        {/* Gradient divider */}
+                        <div style={{ height: 1, background: `linear-gradient(90deg,${tc}50,rgba(255,255,255,0.04),transparent)`, margin: '11px 0' }} />
+
+                        {/* Bottom */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ width: 7, height: 7, borderRadius: '50%', background: sc, boxShadow: `0 0 8px ${sc}`, flexShrink: 0 }} />
+                            <span style={{ fontSize: 10, fontWeight: 700, color: sc }}>{d.status}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <Activity style={{ width: 11, height: 11, color: 'rgba(255,255,255,0.28)' }} />
+                            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{d.views}× views</span>
+                          </div>
+                          <div className="vault-menu-trigger" style={{ position: 'relative' }}>
+                            <MoreHorizontal
+                              style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.18)', cursor: 'pointer', transition: 'color 0.2s' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.85)')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.18)')}
+                              onClick={e => {
+                                e.stopPropagation();
+                                // Close all other open menus first
+                                document.querySelectorAll('.vault-menu').forEach(m => {
+                                  (m as HTMLElement).style.display = 'none';
+                                });
+                                const menu = e.currentTarget.nextSibling as HTMLElement;
+                                if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                              }}
+                            />
+                            <div className="vault-menu" style={{
+                              display: 'none', position: 'absolute', right: 0, bottom: 20,
+                              background: '#0d0d18', border: '1px solid rgba(255,255,255,0.1)',
+                              borderRadius: 10, overflow: 'hidden', zIndex: 50, minWidth: 140,
+                              boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                            }}>
+                              {/* Edit button */}
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setEditingDoc(d);
+                                  setUploadOpen(true);
+                                }}
+                                style={{
+                                  width: '100%', padding: '9px 14px', background: 'none',
+                                  border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)',
+                                  cursor: 'pointer', display: 'flex',
+                                  alignItems: 'center', gap: 8, fontSize: 12,
+                                  color: '#a78bfa', textAlign: 'left',
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(167,139,250,0.1)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                              >
+                                ✏️ Edit / Re-upload
+                              </button>
+                              {/* Remove button */}
+                              <button
+                                onClick={async e => {
+                                  e.stopPropagation();
+                                  // Remove from local state immediately
+                                  setVaultDocs(prev => prev.filter(doc => doc.name !== d.name));
+                                  // Remove from Supabase permanently
+                                  // Mock docs have no file_path — skip server call for them
+                                  if (d.file_path || d.file_url) {
+                                    fetch('/api/documents/delete', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ name: d.name, file_path: d.file_path }),
+                                    }).catch(console.error);
+                                  }
+                                }}
+                                style={{
+                                  width: '100%', padding: '9px 14px', background: 'none',
+                                  border: 'none', cursor: 'pointer', display: 'flex',
+                                  alignItems: 'center', gap: 8, fontSize: 12,
+                                  color: '#f87171', textAlign: 'left',
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.1)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                              >
+                                🗑 Remove
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Views bar */}
+                        <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                          <div style={{
+                            height: '100%', borderRadius: 2,
+                            width: `${Math.min((d.views / maxViews) * 100, 100)}%`,
+                            background: `linear-gradient(90deg,${tc},${scoreCol})`,
+                            boxShadow: `0 0 8px ${tc}80`,
+                            transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)',
+                          }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── MENTOR NETWORK ───────────────────────────────────────────── */}
+          {tab === 'network' && (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
+
+              {/* ── Galaxy background ── */}
+              <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                <MentorGalaxyBg />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.68) 100%)' }} />
+              </div>
+
+              {/* ── Filter bar ── */}
+              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px 16px', position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Filter style={{ width: 12, height: 12 }} />Filter:
+                  </span>
+                  <FilterPills options={['All', 'Available', 'SaaS', 'FinTech', 'DeepTech']} value={mentorFilter} onChange={setMentorFilter} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.9)' }} />
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
+                    <span style={{ color: '#10b981', fontWeight: 700 }}>{filteredMentors.filter(m => m.avail).length}</span> available now
+                  </span>
+                </div>
+              </div>
+
+              {/* ── Cards ── */}
+              {filteredMentors.length === 0 && (
+                <div style={{ textAlign: 'center', paddingTop: 80, color: 'rgba(255,255,255,0.2)', fontSize: 14, position: 'relative', zIndex: 1 }}>
+                  No mentors match this filter
+                </div>
+              )}
+              <div className="analytics-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 28px 24px', position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+                  {filteredMentors.map(m => {
+                    const mc = MENTOR_COLORS[m.id] || '#8b5cf6';
+                    return (
+                      <div key={m.id}
+                        style={{
+                          background: m.avail
+                            ? `linear-gradient(135deg,${mc}16 0%,rgba(0,0,0,0.75) 60%,rgba(16,185,129,0.04) 100%)`
+                            : 'linear-gradient(135deg,rgba(255,255,255,0.022) 0%,rgba(0,0,0,0.72) 100%)',
+                          border: `1px solid ${m.avail ? mc + '42' : 'rgba(255,255,255,0.07)'}`,
+                          borderTop: `2.5px solid ${m.avail ? mc + '95' : 'rgba(255,255,255,0.12)'}`,
+                          borderRadius: 16, padding: '20px',
+                          cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                          backdropFilter: 'blur(18px)',
+                          transition: 'transform 0.2s, box-shadow 0.2s',
+                        }}
+                        onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(-4px)'; el.style.boxShadow = `0 18px 52px ${mc}28, 0 0 0 1px ${mc}45`; }}
+                        onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(0)'; el.style.boxShadow = 'none'; }}
+                      >
+                        {/* Corner radial glow */}
+                        {m.avail && <div style={{ position: 'absolute', top: -32, right: -32, width: 140, height: 140, borderRadius: '50%', background: `radial-gradient(circle,${mc}28,transparent 70%)`, pointerEvents: 'none' }} />}
+                        {/* Top aurora line */}
+                        {m.avail && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${mc}80,transparent)`, pointerEvents: 'none' }} />}
+
+                        {/* ── Header: orb + info + availability ── */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 14 }}>
+                          {/* 3D orb with initials */}
+                          <div style={{ position: 'relative', flexShrink: 0 }}>
+                            <MentorOrb available={m.avail} color={mc} />
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: 'white', textShadow: `0 0 14px ${mc}, 0 0 28px ${mc}`, letterSpacing: '0.02em' }}>{m.avatar}</span>
+                            </div>
+                          </div>
+
+                          {/* Name / role / company */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <p style={{ fontSize: 14, fontWeight: 700, color: 'white', margin: 0, lineHeight: 1.2 }}>{m.name}</p>
+                              <div style={{
+                                width: 9, height: 9, borderRadius: '50%', flexShrink: 0, marginTop: 3,
+                                background: m.avail ? '#10b981' : 'rgba(255,255,255,0.18)',
+                                boxShadow: m.avail ? '0 0 10px rgba(16,185,129,0.9), 0 0 22px rgba(16,185,129,0.4)' : 'none',
+                              }} />
+                            </div>
+                            <p style={{ fontSize: 11, fontWeight: 600, color: mc, margin: 0, marginBottom: 3, filter: `drop-shadow(0 0 6px ${mc}60)` }}>{m.role}</p>
+                            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', margin: 0 }}>{m.company}</p>
+                          </div>
+                        </div>
+
+                        {/* Bio */}
+                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.42)', lineHeight: 1.65, margin: '0 0 14px', minHeight: 38 }}>
+                          {m.bio.length > 92 ? m.bio.slice(0, 92) + '…' : m.bio}
+                        </p>
+
+                        {/* Tags */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+                          {m.tags.map(t => (
+                            <span key={t} style={{ fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 999, color: mc, background: `${mc}15`, border: `1px solid ${mc}38`, letterSpacing: '0.05em', boxShadow: `0 0 8px ${mc}22` }}>
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Gradient divider */}
+                        <div style={{ height: 1, background: `linear-gradient(90deg,${mc}45,rgba(255,255,255,0.04),transparent)`, marginBottom: 14 }} />
+
+                        {/* Footer: rating + sessions + CTA */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Star style={{ width: 12, height: 12, color: '#fbbf24', fill: '#fbbf24' }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24' }}>{m.rating}</span>
+                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>·</span>
+                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)' }}>{m.sessions} sessions</span>
+                          </div>
+
+                          <button style={{
+                            fontSize: 10, fontWeight: 700, padding: '7px 14px', borderRadius: 999,
+                            cursor: m.avail ? 'pointer' : 'not-allowed',
+                            background: m.avail ? `linear-gradient(90deg,${mc}35,${mc}18)` : 'rgba(255,255,255,0.04)',
+                            color: m.avail ? mc : 'rgba(255,255,255,0.2)',
+                            border: `1px solid ${m.avail ? mc + '55' : 'rgba(255,255,255,0.08)'}`,
+                            boxShadow: m.avail ? `0 0 18px ${mc}32` : 'none',
+                            letterSpacing: '0.03em', transition: 'all 0.2s',
+                          }}>
+                            {m.avail ? 'Book Session →' : 'Unavailable'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── EVENT ARENA ──────────────────────────────────────────────── */}
+          {tab === 'events' && (() => {
+            const TYPE_META: Record<string, { color: string; icon: string }> = {
+              Pitching: { color: '#8b5cf6', icon: '🎯' },
+              Workshop: { color: '#06b6d4', icon: '⚡' },
+              Mentorship: { color: '#f59e0b', icon: '🌟' },
+              Hackathon: { color: '#10b981', icon: '🚀' },
+            };
+            const TYPES = ['All', 'Pitching', 'Workshop', 'Mentorship', 'Hackathon'];
+            return (
+              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 14 }}>
+
+                {/* ── Full CSS ambient layer ── */}
+                <style>{`
+                  @keyframes ea-drift  { 0%,100%{transform:translate(0,0)} 40%{transform:translate(16px,-14px)} 70%{transform:translate(-10px,12px)} }
+                  @keyframes ea-spin   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+                  @keyframes ea-rspin  { from{transform:rotate(0deg)} to{transform:rotate(-360deg)} }
+                  @keyframes ea-pulse  { 0%,100%{opacity:.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.1)} }
+                  @keyframes ea-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+                  @keyframes ea-hex    { 0%,100%{transform:rotate(0deg) scale(1)} 50%{transform:rotate(180deg) scale(1.05)} }
+                  @keyframes ea-morph  { 0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%} 50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%} }
+                  @keyframes ea-flow   { 0%{background-position:-100% 0} 100%{background-position:200% 0} }
+                  @keyframes ea-shimmer{ 0%,100%{opacity:0.4} 50%{opacity:0.9} }
+                  .ea-card { transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease; }
+                  .ea-card:hover { transform:translateY(-3px); box-shadow:0 22px 60px rgba(0,0,0,0.55), 0 0 0 1px var(--hc,rgba(255,255,255,0.15)); border-color:var(--hc,rgba(255,255,255,0.15)) !important; }
+                  .ea-card:hover .ea-glow { opacity:1 !important; }
+                  .ea-rsvp:hover { filter:brightness(1.15); transform:scale(1.04); }
+                  .ea-rsvp { transition:all .18s; }
+                `}</style>
+
+                {/* ── Background layer with MULTIPLE 3D CSS elements ── */}
+                <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+
+                  {/* Ambient blobs */}
+                  <div style={{ position: 'absolute', top: '6%', left: '8%', width: 380, height: 380, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,0.07),transparent 70%)', animation: 'ea-drift 10s ease-in-out infinite' }} />
+                  <div style={{ position: 'absolute', bottom: '12%', right: '8%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle,rgba(6,182,212,0.06),transparent 70%)', animation: 'ea-drift 13s ease-in-out infinite reverse' }} />
+                  <div style={{ position: 'absolute', top: '45%', left: '38%', width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle,rgba(16,185,129,0.05),transparent 70%)', animation: 'ea-drift 8s ease-in-out infinite 2s' }} />
+
+                  {/* 3D Element 1 — Orrery top-right */}
+                  <div style={{ position: 'absolute', top: -35, right: -35, width: 230, height: 230 }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: 22, height: 22, marginLeft: -11, marginTop: -11, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%,#c4b5fd,#7c3aed)', boxShadow: '0 0 22px rgba(139,92,246,0.9), 0 0 44px rgba(139,92,246,0.35)', animation: 'ea-pulse 2.8s ease-in-out infinite' }} />
+                    {[{ w: 76, c: '#8b5cf6', sp: '3.2s' }, { w: 120, c: '#06b6d4', sp: '5.8s', rev: true }, { w: 180, c: '#f59e0b', sp: '9.5s' }, { w: 226, c: '#10b981', sp: '14s', rev: true }].map((o, i) => (
+                      <div key={i} style={{ position: 'absolute', top: '50%', left: '50%', width: o.w, height: o.w, marginLeft: -o.w / 2, marginTop: -o.w / 2, borderRadius: '50%', border: `1px solid ${o.c}${i < 2 ? '38' : '22'}` }}>
+                        <div style={{ position: 'absolute', top: i % 2 ? 'auto' : -5, bottom: i % 2 ? -5 : 'auto', left: '50%', width: i < 2 ? 10 : 8, height: i < 2 ? 10 : 8, marginLeft: i < 2 ? -5 : -4, borderRadius: '50%', background: o.c, boxShadow: `0 0 10px ${o.c}`, animation: `ea-spin ${o.sp} linear infinite ${o.rev ? 'reverse' : ''}`, transformOrigin: `${i < 2 ? 5 : 4}px ${o.w / 2 + (i < 2 ? 5 : 4)}px` }} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 3D Element 2 — Morphing blob bottom-left */}
+                  <div style={{ position: 'absolute', bottom: 30, left: 20, width: 120, height: 120, background: 'linear-gradient(135deg,rgba(139,92,246,0.15),rgba(6,182,212,0.1))', animation: 'ea-morph 7s ease-in-out infinite', filter: 'blur(1px)', border: '1px solid rgba(139,92,246,0.2)' }} />
+
+                  {/* 3D Element 3 — Rotating hexagon mid-left */}
+                  <div style={{ position: 'absolute', top: '38%', left: '3%', width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 48, height: 48, border: '2px solid rgba(6,182,212,0.35)', borderRadius: 8, animation: 'ea-hex 6s ease-in-out infinite', boxShadow: '0 0 18px rgba(6,182,212,0.2)', transform: 'rotate(45deg)' }} />
+                    <div style={{ position: 'absolute', width: 28, height: 28, border: '1px solid rgba(6,182,212,0.5)', borderRadius: 4, animation: 'ea-hex 4s ease-in-out infinite reverse', boxShadow: '0 0 10px rgba(6,182,212,0.3)' }} />
+                  </div>
+
+                  {/* 3D Element 4 — Spinning diamond center-bottom */}
+                  <div style={{ position: 'absolute', bottom: '18%', left: '42%', width: 50, height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 36, height: 36, border: '2px solid rgba(245,158,11,0.4)', borderRadius: 4, animation: 'ea-spin 8s linear infinite', boxShadow: '0 0 16px rgba(245,158,11,0.25)', transform: 'rotate(45deg)' }} />
+                    <div style={{ position: 'absolute', width: 16, height: 16, background: 'rgba(245,158,11,0.12)', borderRadius: 2, animation: 'ea-rspin 5s linear infinite', boxShadow: '0 0 8px rgba(245,158,11,0.4)', transform: 'rotate(45deg)' }} />
+                  </div>
+
+                  {/* 3D Element 5 — Cross/star mid-right of left panel */}
+                  <div style={{ position: 'absolute', top: '22%', left: '28%', opacity: 0.35 }}>
+                    <div style={{ position: 'relative', width: 40, height: 40, animation: 'ea-spin 12s linear infinite' }}>
+                      <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,#8b5cf6,transparent)', marginTop: -1 }} />
+                      <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 2, background: 'linear-gradient(180deg,transparent,#8b5cf6,transparent)', marginLeft: -1 }} />
+                      <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,#06b6d4,transparent)', marginTop: -1, transform: 'rotate(45deg)' }} />
+                      <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,#10b981,transparent)', marginTop: -1, transform: 'rotate(-45deg)' }} />
+                    </div>
+                  </div>
+
+                  {/* 3D Element 6 — Triangle bottom-right area */}
+                  <div style={{ position: 'absolute', bottom: '25%', right: '23%', opacity: 0.3, animation: 'ea-float 5s ease-in-out 1s infinite' }}>
+                    <svg width="50" height="44" viewBox="0 0 50 44"><polygon points="25,2 48,42 2,42" fill="none" stroke="rgba(16,185,129,0.6)" strokeWidth="1.5" /><polygon points="25,12 40,38 10,38" fill="rgba(16,185,129,0.06)" stroke="rgba(16,185,129,0.3)" strokeWidth="1" /></svg>
+                  </div>
+
+                  {/* Floating particles */}
+                  {[{ x: '14%', y: '68%', s: 4, c: '#8b5cf6', d: '0s' }, { x: '44%', y: '18%', s: 3, c: '#06b6d4', d: '1.4s' }, { x: '68%', y: '52%', s: 5, c: '#10b981', d: '2.8s' }, { x: '80%', y: '28%', s: 3, c: '#f59e0b', d: '0.6s' }, { x: '24%', y: '82%', s: 3, c: '#06b6d4', d: '2s' }, { x: '55%', y: '88%', s: 4, c: '#8b5cf6', d: '3.5s' }, { x: '72%', y: '75%', s: 3, c: '#f59e0b', d: '1s' }].map((p, i) => (
+                    <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, width: p.s, height: p.s, borderRadius: '50%', background: p.c, boxShadow: `0 0 ${p.s * 2.5}px ${p.c}`, animation: `ea-float 4s ease-in-out ${p.d} infinite`, opacity: 0.5 }} />
+                  ))}
+
+                  {/* Flowing horizontal lines */}
+                  {[{ t: '30%', c: '#8b5cf6', d: '0s' }, { t: '60%', c: '#06b6d4', d: '1.5s' }, { t: '80%', c: '#10b981', d: '3s' }].map((l, i) => (
+                    <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: l.t, height: 1, background: `linear-gradient(90deg,transparent,${l.c}18,transparent)`, backgroundSize: '40% 100%', animation: `ea-flow 6s linear ${l.d} infinite` }} />
+                  ))}
+                </div>
+
+                {/* ── Header row ── */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 5 }}><Filter style={{ width: 11, height: 11 }} />Filter</span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {TYPES.map(t => {
+                        const active = eventType === t;
+                        const mc = t === 'All' ? '#8b5cf6' : (TYPE_META[t]?.color || '#8b5cf6');
+                        return <button key={t} onClick={() => setEventType(t)} style={{ padding: '5px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .18s', background: active ? `${mc}28` : 'rgba(255,255,255,0.04)', color: active ? mc : 'rgba(255,255,255,0.35)', border: `1px solid ${active ? mc + '50' : 'rgba(255,255,255,0.08)'}`, boxShadow: active ? `0 0 14px ${mc}35` : 'none', letterSpacing: '.03em' }}>{t}</button>;
+                      })}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {[['5', 'Events', '#8b5cf6'], [String(rsvpedIds.length), 'RSVPd', '#10b981'], ['₹5L', 'Prize', '#f59e0b']].map(([val, lbl, col]) => (
+                      <div key={lbl} style={{ padding: '4px 12px', borderRadius: 10, background: `${col}10`, border: `1px solid ${col}28`, textAlign: 'center' }}>
+                        <p style={{ fontSize: 13, fontWeight: 800, color: col, margin: 0, lineHeight: 1 }}>{val}</p>
+                        <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '.06em' }}>{lbl}</p>
+                      </div>
+                    ))}
+                    <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.4)', letterSpacing: '.03em' }}>
+                      <Plus style={{ width: 13, height: 13 }} /> Add Event
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Main: 2-col ── */}
+                <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 300px', gap: 14, position: 'relative', zIndex: 1 }}>
+
+                  {/* LEFT — scrollable rigid box */}
+                  <div style={{ borderRadius: 20, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(8,8,20,0.7)', backdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+                    <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.9)', flexShrink: 0, display: 'inline-block' }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>Upcoming Events</span>
+                      <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,0.28)' }}>{filteredEvents.length} scheduled</span>
+                    </div>
+
+                    <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
+                      {filteredEvents.length === 0 && <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.15)', fontSize: 13 }}>No events for this filter</div>}
+                      {filteredEvents.map(ev => {
+                        const ec = TYPE_META[ev.type]?.color || '#8b5cf6';
+                        const dp = parseDate(ev.date);
+                        const isRsvpd = rsvpedIds.includes(ev.id);
+                        return (
+                          <div key={ev.id} className="ea-card" style={{ ['--hc' as string]: `${ec}55`, borderRadius: 14, border: `1px solid ${ec}20`, background: `linear-gradient(135deg,${ec}08 0%,rgba(6,6,18,0.85) 100%)`, overflow: 'hidden', position: 'relative' }}>
+                            {/* Top bar */}
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,${ec}80,${ec}30,transparent)` }} />
+                            <div className="ea-glow" style={{ position: 'absolute', top: -50, left: -30, width: 160, height: 160, borderRadius: '50%', background: `radial-gradient(circle,${ec}14,transparent 70%)`, opacity: 0, transition: 'opacity .3s', pointerEvents: 'none' }} />
+
+                            {/* Card body — explicit grid to prevent squeezing */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '62px 1fr auto', gap: 0, alignItems: 'stretch', padding: '14px 16px' }}>
+
+                              {/* Date block */}
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 8px', marginRight: 14, borderRadius: 11, background: `${ec}12`, border: `1px solid ${ec}25`, flexShrink: 0, alignSelf: 'center' }}>
+                                <p style={{ fontSize: 9, fontWeight: 800, color: ec, margin: 0, textTransform: 'uppercase', letterSpacing: '.1em', lineHeight: 1 }}>{dp.month}</p>
+                                <p style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: '1px 0', lineHeight: 1, letterSpacing: '-1px' }}>{dp.day}</p>
+                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', margin: 0, lineHeight: 1 }}>{dp.year}</p>
+                              </div>
+
+                              {/* Content — always has room, never squished */}
+                              <div style={{ minWidth: 0, paddingRight: 14 }}>
+                                <h3 style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: '0 0 5px', lineHeight: 1.3, wordBreak: 'break-word' }}>{ev.title}</h3>
+                                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.36)', lineHeight: 1.55, margin: '0 0 8px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{ev.description}</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>
+                                    <Clock style={{ width: 11, height: 11, color: ec, flexShrink: 0 }} />{ev.time}
+                                  </span>
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>
+                                    <Building2 style={{ width: 11, height: 11, color: ec, flexShrink: 0 }} />{ev.location}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Right column — type badge + RSVP stacked, fixed width */}
+                              <div style={{ width: 96, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, flexShrink: 0 }}>
+                                <span style={{ fontSize: 9, fontWeight: 800, padding: '4px 10px', borderRadius: 999, color: ec, background: `${ec}18`, border: `1px solid ${ec}40`, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>{ev.type}</span>
+                                <button className="ea-rsvp" onClick={e => { e.stopPropagation(); if (!isRsvpd) setRsvpEvent(ev); }} style={{ width: '100%', padding: '7px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: isRsvpd ? 'default' : 'pointer', background: isRsvpd ? 'rgba(16,185,129,0.15)' : `linear-gradient(90deg,${ec}40,${ec}20)`, color: isRsvpd ? '#10b981' : ec, border: `1px solid ${isRsvpd ? 'rgba(16,185,129,0.4)' : ec + '50'}`, boxShadow: isRsvpd ? 'none' : `0 0 14px ${ec}28`, textAlign: 'center' }}>
+                                  {isRsvpd ? '✓ Going' : 'RSVP →'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* RIGHT — sidebar */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 11, minHeight: 0, overflow: 'hidden' }}>
+
+                    {/* Next Up */}
+                    {(() => {
+                      const next = filteredEvents[0]; if (!next) return null;
+                      const ec = TYPE_META[next.type]?.color || '#8b5cf6';
+                      const dp = parseDate(next.date);
+                      return (
+                        <div style={{ borderRadius: 16, border: `1px solid ${ec}35`, background: `linear-gradient(160deg,${ec}15 0%,rgba(8,8,20,0.97) 70%)`, padding: '16px', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${ec}90,transparent)` }} />
+                          <div style={{ position: 'absolute', top: -45, right: -45, width: 150, height: 150, borderRadius: '50%', background: `radial-gradient(circle,${ec}16,transparent 70%)`, pointerEvents: 'none' }} />
+                          {/* mini spinning ring decoration */}
+                          <div style={{ position: 'absolute', bottom: -20, left: -20, width: 80, height: 80, borderRadius: '50%', border: `1px solid ${ec}25`, animation: 'ea-spin 10s linear infinite', pointerEvents: 'none' }}>
+                            <div style={{ position: 'absolute', top: -4, left: '50%', width: 8, height: 8, marginLeft: -4, borderRadius: '50%', background: ec, boxShadow: `0 0 8px ${ec}`, transformOrigin: `4px 44px` }} />
+                          </div>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase', letterSpacing: '.12em', margin: '0 0 10px' }}>⚡ Next Up</p>
+                          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 12, background: `${ec}20`, border: `1px solid ${ec}40`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <span style={{ fontSize: 8, fontWeight: 800, color: ec, textTransform: 'uppercase', letterSpacing: '.08em' }}>{dp.month}</span>
+                              <span style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{dp.day}</span>
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0, lineHeight: 1.3 }}>{next.title}</p>
+                              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', margin: '4px 0 0' }}>{next.time}</p>
+                              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{next.location}</p>
+                            </div>
+                          </div>
+                          <button onClick={() => setRsvpEvent(next)} style={{ width: '100%', padding: '8px', borderRadius: 11, fontSize: 11, fontWeight: 700, background: `linear-gradient(90deg,${ec},${ec}80)`, color: 'white', border: 'none', cursor: 'pointer', boxShadow: `0 4px 18px ${ec}45`, letterSpacing: '.04em' }}>
+                            Reserve My Spot →
+                          </button>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Category Split */}
+                    <div style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(8,8,20,0.7)', padding: '14px 16px', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+                      {/* mini decorative spinning diamond */}
+                      <div style={{ position: 'absolute', top: -12, right: -12, width: 40, height: 40, border: '1px solid rgba(139,92,246,0.2)', borderRadius: 4, animation: 'ea-spin 12s linear infinite', opacity: .5 }} />
+                      <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '.1em', margin: '0 0 12px' }}>Category Split</p>
+                      {(['Pitching', 'Workshop', 'Mentorship', 'Hackathon'] as const).map(t => {
+                        const ec = TYPE_META[t]?.color || '#8b5cf6';
+                        const count = ALL_EVENTS.filter(e => e.type === t).length;
+                        const pct = Math.round((count / ALL_EVENTS.length) * 100);
+                        return (
+                          <div key={t} style={{ marginBottom: 9 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.42)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: ec, display: 'inline-block', boxShadow: `0 0 6px ${ec}` }} />{t}
+                              </span>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: ec }}>{count}</span>
+                            </div>
+                            <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.05)' }}>
+                              <div style={{ height: '100%', borderRadius: 2, width: `${pct}%`, background: `linear-gradient(90deg,${ec},${ec}60)`, boxShadow: `0 0 6px ${ec}55`, transition: 'width .5s' }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Your RSVPs */}
+                    <div style={{ flex: 1, minHeight: 0, borderRadius: 16, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(8,8,20,0.7)', padding: '14px 16px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexShrink: 0 }}>
+                        <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '.1em', margin: 0 }}>Your RSVPs</p>
+                        {rsvpedIds.length > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: '#10b981' }}>{rsvpedIds.length} going</span>}
+                      </div>
+                      <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
+                        {rsvpedIds.length === 0 ? (
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: .25 }}>
+                            <CalendarDays style={{ width: 28, height: 28, color: 'white' }} />
+                            <span style={{ fontSize: 11, color: 'white', textAlign: 'center', lineHeight: 1.5 }}>No RSVPs yet —<br />register for events</span>
+                          </div>
+                        ) : (
+                          ALL_EVENTS.filter(e => rsvpedIds.includes(e.id)).map(ev => {
+                            const ec = EVENT_COLOR[ev.type] || '#8b5cf6';
+                            const dp = parseDate(ev.date);
+                            return (
+                              <div key={ev.id} style={{ padding: '9px 11px', borderRadius: 11, background: `${ec}0c`, border: `1px solid ${ec}25`, borderLeft: `3px solid ${ec}75` }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                                  <p style={{ fontSize: 11, fontWeight: 600, color: 'white', margin: 0, lineHeight: 1.3, flex: 1 }}>{ev.title}</p>
+                                  <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 7px', borderRadius: 999, color: '#10b981', background: 'rgba(16,185,129,0.14)', border: '1px solid rgba(16,185,129,0.32)', flexShrink: 0 }}>✓</span>
+                                </div>
+                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)', margin: '4px 0 0' }}>{dp.month} {dp.day} · {ev.time}</p>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── ANALYTICS ────────────────────────────────────────────────── */}
+          {tab === 'analytics' && (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 14, padding: '20px 24px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
+
+              {/* ── Accretion disk background ── */}
+              <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                <AccretionBg />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.72) 100%)' }} />
+              </div>
+
+              {/* ── Row 1: KPI strip with Armillary orbs ── */}
+              <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, position: 'relative', zIndex: 1 }}>
+                {[
+                  { label: 'Total MRR', val: '₹80K', change: '+54%', period: 'vs last month', color: '#8b5cf6' },
+                  { label: 'Active Users', val: '1,580', change: '+68%', period: 'vs last month', color: '#06b6d4' },
+                  { label: 'Avg IncuScore™', val: '86.7', change: '+3.2', period: 'pts this cohort', color: '#10b981' },
+                  { label: 'Burn Multiple', val: '1.4×', change: '-0.3×', period: 'improving QoQ', color: '#f59e0b' },
+                ].map(k => (
+                  <div key={k.label} style={{
+                    background: `linear-gradient(135deg,${k.color}14 0%,rgba(0,0,0,0.72) 70%)`,
+                    border: `1px solid ${k.color}28`, borderTop: `2px solid ${k.color}80`,
+                    borderRadius: 14, padding: '14px 16px',
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    position: 'relative', overflow: 'hidden', backdropFilter: 'blur(18px)',
+                  }}>
+                    <div style={{ position: 'absolute', top: -22, right: -22, width: 95, height: 95, borderRadius: '50%', background: `radial-gradient(circle,${k.color}22,transparent 70%)`, pointerEvents: 'none' }} />
+                    <ArmillaryOrb color={k.color} />
+                    <div>
+                      <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase', letterSpacing: '0.09em', margin: 0, marginBottom: 6 }}>{k.label}</p>
+                      <p style={{ fontSize: 24, fontWeight: 800, color: 'white', margin: 0, lineHeight: 1 }}>{k.val}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: k.color, filter: `drop-shadow(0 0 5px ${k.color})` }}>{k.change}</span>
+                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>{k.period}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Row 2: Charts ── */}
+              <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, position: 'relative', zIndex: 1 }}>
+                {[
+                  { label: 'Portfolio MRR Growth', sub: '+54% MoM', data: MRR_DATA, color: '#8b5cf6', unit: 'K' },
+                  { label: 'Active User Acquisition', sub: '+68% MoM', data: USR_DATA, color: '#06b6d4', unit: '' },
+                ].map(c => (
+                  <div key={c.label} style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '18px 20px', backdropFilter: 'blur(18px)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${c.color}65,transparent)` }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: 'white', margin: 0 }}>{c.label}</p>
+                        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.22)', marginTop: 2, margin: 0 }}>Jan – Jun 2026</p>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, color: c.color, background: `${c.color}18`, border: `1px solid ${c.color}30` }}>{c.sub}</span>
+                    </div>
+                    <AreaChart data={c.data} color={c.color} h={88} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                      {c.data.map(d => (
+                        <div key={d.m} style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>{d.m}</div>
+                          <div style={{ fontSize: 10, fontWeight: 600, color: c.color }}>{d.v}{c.unit}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Row 3: Three redesigned panels ── */}
+              <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, position: 'relative', zIndex: 1 }}>
+
+                {/* ══ Sector Distribution — Donut + Legend ══ */}
+                <div style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', overflow: 'hidden', backdropFilter: 'blur(18px)', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(6,182,212,0.55),transparent)' }} />
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'white', margin: '0 0 10px 0', flexShrink: 0 }}>Sector Distribution</p>
+
+                  <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', gap: 14 }}>
+                    {/* SVG Donut */}
+                    {(() => {
+                      const r = 34, cx = 52, cy = 52;
+                      const circ = 2 * Math.PI * r;
+                      let cum = 0;
+                      return (
+                        <svg width={104} height={104} viewBox="0 0 104 104" style={{ flexShrink: 0 }}>
+                          <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="11" />
+                          {SECTOR_DATA.map(s => {
+                            const dash = (s.val / 100) * circ;
+                            const off = cum; cum += dash;
+                            return (
+                              <circle key={s.label} cx={cx} cy={cy} r={r}
+                                fill="none" stroke={s.color} strokeWidth="11"
+                                strokeDasharray={`${dash - 2} ${circ}`}
+                                strokeDashoffset={-off}
+                                transform={`rotate(-90 ${cx} ${cy})`}
+                                style={{ filter: `drop-shadow(0 0 6px ${s.color}90)` }}
+                              />
+                            );
+                          })}
+                          <text x={cx} y={cy - 5} textAnchor="middle" fontSize="20" fontWeight="800" fill="white">{SECTOR_DATA.length}</text>
+                          <text x={cx} y={cy + 10} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,0.28)" letterSpacing="1">SECTORS</text>
+                        </svg>
+                      );
+                    })()}
+
+                    {/* Legend */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 9 }}>
+                      {SECTOR_DATA.map(s => (
+                        <div key={s.label}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.color, flexShrink: 0, boxShadow: `0 0 7px ${s.color}` }} />
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.48)' }}>{s.label}</span>
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: s.color }}>{s.val}%</span>
+                          </div>
+                          <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.05)' }}>
+                            <div style={{ height: '100%', borderRadius: 2, width: `${s.val}%`, background: `linear-gradient(90deg,${s.color},${s.color}70)`, boxShadow: `0 0 8px ${s.color}70` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ══ IncuScore Rankings — Medal Cards ══ */}
+                <div style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', overflow: 'hidden', backdropFilter: 'blur(18px)', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,0.55),transparent)' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: 'white', margin: 0 }}>IncuScore™ Rankings</p>
+                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>out of 100</span>
+                  </div>
+
+                  <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {[...startups].sort((a, b) => b.metrics.pitchScore - a.metrics.pitchScore).map((s, i) => {
+                      const sc = s.metrics.pitchScore;
+                      const col = sc >= 90 ? '#10b981' : sc >= 80 ? '#06b6d4' : sc >= 70 ? '#f59e0b' : '#8b5cf6';
+                      const rc = i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7c3a' : 'rgba(255,255,255,0.18)';
+                      const barW = ((sc - 60) / 40) * 100;
+                      const isTop = i < 3;
+                      return (
+                        <div key={s.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '9px 11px', borderRadius: 10,
+                          background: isTop ? `${col}0a` : 'rgba(255,255,255,0.015)',
+                          border: `1px solid ${isTop ? col + '28' : 'rgba(255,255,255,0.04)'}`,
+                          borderLeft: `3px solid ${isTop ? col + '90' : 'rgba(255,255,255,0.08)'}`,
+                        }}>
+                          {/* Rank badge */}
+                          <div style={{ width: 22, height: 22, borderRadius: 6, background: `${rc}20`, border: `1px solid ${rc}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ fontSize: 9, fontWeight: 800, color: rc }}>{i + 1}</span>
+                          </div>
+
+                          {/* Name + bar */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                              <span style={{ fontSize: 11, color: isTop ? 'white' : 'rgba(255,255,255,0.5)', fontWeight: isTop ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 90 }}>{s.name}</span>
+                              <span style={{ fontSize: 14, fontWeight: 800, color: col, marginLeft: 6, flexShrink: 0, filter: `drop-shadow(0 0 6px ${col})`, lineHeight: 1 }}>{sc}</span>
+                            </div>
+                            <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', borderRadius: 3, width: `${barW}%`, background: `linear-gradient(90deg,${col},${col}88)`, boxShadow: `0 0 8px ${col}80` }} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ══ Stage Distribution — Pipeline Nodes ══ */}
+                <div style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', overflow: 'hidden', backdropFilter: 'blur(18px)', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,0.55),transparent)' }} />
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'white', margin: '0 0 10px 0', flexShrink: 0 }}>Stage Distribution</p>
+
+                  <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
+                      {/* Vertical connector line */}
+                      <div style={{ position: 'absolute', left: 17, top: 20, bottom: 20, width: 1, background: 'linear-gradient(180deg,rgba(255,255,255,0.06) 0%,rgba(255,255,255,0.02) 100%)', zIndex: 0 }} />
+
+                      {STAGE_ORDER.map((stage, idx) => {
+                        const count = startups.filter(s => s.stage === stage).length;
+                        const pct = startups.length ? (count / startups.length) * 100 : 0;
+                        const col = STAGE_COLORS[stage];
+                        const isLast = idx === STAGE_ORDER.length - 1;
+                        return (
+                          <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', position: 'relative', zIndex: 1 }}>
+
+                            {/* Node orb */}
+                            <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `radial-gradient(circle at 35% 35%, ${col}55, ${col}18)`, border: `1.5px solid ${col}70`, boxShadow: count > 0 ? `0 0 16px ${col}60, 0 0 6px ${col}40` : 'none' }}>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: col, filter: count > 0 ? `drop-shadow(0 0 6px ${col})` : 'none', lineHeight: 1 }}>{count}</span>
+                              {/* Pulse ring for populated stages */}
+                              {count > 0 && (
+                                <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', border: `1px solid ${col}35`, animation: 'ph-pulse 2s ease-out infinite' }} />
+                              )}
+                            </div>
+
+                            {/* Stage info */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                                <span style={{ fontSize: 11, color: count > 0 ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.28)', fontWeight: count > 0 ? 500 : 400 }}>{stage}</span>
+                                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>{pct.toFixed(0)}%</span>
+                              </div>
+                              <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', borderRadius: 2, width: `${pct}%`, background: `linear-gradient(90deg,${col},${col}70)`, boxShadow: `0 0 8px ${col}80`, transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)' }} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 8, paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Total in cohort</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>{startups.length} startups</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* ── FUNDING TRACKER ──────────────────────────────────────────── */}
+          {tab === 'funding' && (() => {
+            const committed = INVESTORS.filter(i => i.status === 'Committed');
+            const pipeline = INVESTORS.filter(i => i.status !== 'Committed');
+            const pipelinePotential = pipeline.reduce((a, c) => a + c.amount, 0);
+            return (
+              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 24px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 12 }}>
+
+                {/* ── CSS ambient ── */}
+                <style>{`
+                  @keyframes ft-drift { 0%,100%{transform:translate(0,0)} 45%{transform:translate(18px,-14px)} 70%{transform:translate(-10px,12px)} }
+                  @keyframes ft-spin  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+                  @keyframes ft-rspin { from{transform:rotate(0deg)} to{transform:rotate(-360deg)} }
+                  @keyframes ft-pulse { 0%,100%{opacity:.45;transform:scale(1)} 50%{opacity:1;transform:scale(1.09)} }
+                  @keyframes ft-flow  { 0%{background-position:-80% 0} 100%{background-position:180% 0} }
+                  @keyframes ft-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+                  @keyframes ft-morph { 0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%} 50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%} }
+                  @keyframes ft-bar   { from{width:0} to{width:var(--w)} }
+                  .ft-inv:hover { background:rgba(255,255,255,0.06) !important; transform:translateX(3px); }
+                  .ft-inv { transition:all .18s; }
+                `}</style>
+
+                {/* BG decorations */}
+                <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+                  <div style={{ position: 'absolute', top: '8%', left: '15%', width: 360, height: 360, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,0.07),transparent 70%)', animation: 'ft-drift 12s ease-in-out infinite' }} />
+                  <div style={{ position: 'absolute', bottom: '10%', right: '10%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle,rgba(16,185,129,0.06),transparent 70%)', animation: 'ft-drift 15s ease-in-out infinite reverse' }} />
+                  <div style={{ position: 'absolute', top: '45%', right: '30%', width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle,rgba(6,182,212,0.05),transparent 70%)', animation: 'ft-drift 9s ease-in-out infinite 2s' }} />
+                  {/* Orrery top-right */}
+                  <div style={{ position: 'absolute', top: -40, right: 20, width: 220, height: 220 }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: 20, height: 20, marginLeft: -10, marginTop: -10, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%,#a78bfa,#6d28d9)', boxShadow: '0 0 22px rgba(139,92,246,0.9)', animation: 'ft-pulse 2.8s ease-in-out infinite' }} />
+                    {[{ w: 68, c: '#8b5cf6', sp: '3.2s' }, { w: 110, c: '#10b981', sp: '5.5s', rev: true }, { w: 160, c: '#06b6d4', sp: '9s' }, { w: 212, c: '#f59e0b', sp: '13s', rev: true }].map((o, i) => (
+                      <div key={i} style={{ position: 'absolute', top: '50%', left: '50%', width: o.w, height: o.w, marginLeft: -o.w / 2, marginTop: -o.w / 2, borderRadius: '50%', border: `1px solid ${o.c}${i < 2 ? '38' : '22'}` }}>
+                        <div style={{ position: 'absolute', top: i % 2 === 0 ? -5 : 'auto', bottom: i % 2 === 1 ? -5 : 'auto', left: '50%', width: 10, height: 10, marginLeft: -5, borderRadius: '50%', background: o.c, boxShadow: `0 0 10px ${o.c}`, animation: `ft-spin ${o.sp} linear infinite ${o.rev ? 'reverse' : ''}`, transformOrigin: `5px ${o.w / 2 + 5}px` }} />
+                      </div>
+                    ))}
+                  </div>
+                  {/* Morphing blob bottom-left */}
+                  <div style={{ position: 'absolute', bottom: 20, left: 10, width: 120, height: 120, background: 'linear-gradient(135deg,rgba(139,92,246,0.12),rgba(6,182,212,0.07))', animation: 'ft-morph 8s ease-in-out infinite', border: '1px solid rgba(139,92,246,0.16)' }} />
+                  {/* Spinning diamond mid */}
+                  <div style={{ position: 'absolute', bottom: '25%', left: '42%', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 54, height: 54 }}>
+                    <div style={{ position: 'absolute', width: 42, height: 42, border: '2px solid rgba(16,185,129,0.35)', borderRadius: 4, animation: 'ft-spin 10s linear infinite', transform: 'rotate(45deg)' }} />
+                    <div style={{ position: 'absolute', width: 22, height: 22, border: '1px solid rgba(16,185,129,0.55)', background: 'rgba(16,185,129,0.06)', borderRadius: 2, animation: 'ft-rspin 6.5s linear infinite', transform: 'rotate(45deg)' }} />
+                  </div>
+                  {/* Particles */}
+                  {[{ x: '7%', y: '38%', s: 4, c: '#8b5cf6', d: '0s' }, { x: '32%', y: '85%', s: 3, c: '#10b981', d: '.8s' }, { x: '58%', y: '12%', s: 5, c: '#06b6d4', d: '2.5s' }, { x: '85%', y: '55%', s: 3, c: '#f59e0b', d: '.4s' }, { x: '48%', y: '72%', s: 3, c: '#8b5cf6', d: '1.7s' }, { x: '70%', y: '88%', s: 4, c: '#10b981', d: '3s' }].map((p, i) => (
+                    <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, width: p.s, height: p.s, borderRadius: '50%', background: p.c, boxShadow: `0 0 ${p.s * 2.5}px ${p.c}`, opacity: .42, animation: `ft-float ${3.5 + i * .6}s ease-in-out ${p.d} infinite` }} />
+                  ))}
+                  {/* Flow lines */}
+                  {[{ t: '32%', c: '#8b5cf6' }, { t: '64%', c: '#10b981' }, { t: '85%', c: '#06b6d4' }].map((l, i) => (
+                    <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: l.t, height: 1, background: `linear-gradient(90deg,transparent,${l.c}14,transparent)`, backgroundSize: '40% 100%', animation: `ft-flow 7s linear ${i * 2}s infinite` }} />
+                  ))}
+                </div>
+
+                {/* ═══════════════════════════════════════════════════════════
+                    TOP STRIP — headline KPIs spanning full width
+                ═══════════════════════════════════════════════════════════ */}
+                <div style={{ flexShrink: 0, position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10 }}>
+                  {[
+                    { label: 'Total Target', val: `₹${(totalTarget / 1e6).toFixed(0)}M`, sub: 'Series A goal', col: '#8b5cf6', icon: '⌖' },
+                    { label: 'Committed', val: `₹${(totalCommitted / 1e6).toFixed(1)}M`, sub: `${committed.length} investors`, col: '#10b981', icon: '✓' },
+                    { label: 'In Pipeline', val: `₹${(pipelinePotential / 1e6).toFixed(1)}M`, sub: `${pipeline.length} prospects`, col: '#f59e0b', icon: '◷' },
+                    { label: 'Funded', val: `${Math.round(fundingProgress * 100)}%`, sub: 'of target closed', col: '#06b6d4', icon: '↗' },
+                    { label: 'Remaining', val: `₹${((totalTarget - totalCommitted) / 1e6).toFixed(1)}M`, sub: 'to close round', col: '#ef4444', icon: '◯' }
+                  ].map(k => (
+                    <div key={k.label} style={{ borderRadius: 14, border: `1px solid ${k.col}25`, background: `linear-gradient(135deg,${k.col}10,rgba(0,0,0,0.7))`, padding: '12px 14px', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${k.col}80,transparent)` }} />
+                      <div style={{ position: 'absolute', top: -24, right: -24, width: 80, height: 80, borderRadius: '50%', background: `radial-gradient(circle,${k.col}14,transparent 70%)` }} />
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', margin: 0, textTransform: 'uppercase', letterSpacing: '.08em' }}>{k.label}</p>
+                        <span style={{ fontSize: 14 }}>{k.icon}</span>
+                      </div>
+                      <p style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1, letterSpacing: '-1px', filter: `drop-shadow(0 0 10px ${k.col}60)` }}>{k.val}</p>
+                      <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)', margin: '4px 0 0' }}>{k.sub}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ═══════════════════════════════════════════════════════════
+                    MAIN ROW — 3-column layout
+                ═══════════════════════════════════════════════════════════ */}
+                <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '320px 1fr 280px', gap: 12, position: 'relative', zIndex: 1 }}>
+
+                  {/* ── LEFT: Funding Orb Panel ── */}
+                  <div style={{ borderRadius: 20, border: '1px solid rgba(139,92,246,0.3)', background: 'linear-gradient(160deg,rgba(139,92,246,0.14) 0%,rgba(6,6,18,0.97) 70%)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,0.9),transparent)', pointerEvents: 'none' }} />
+                    <div style={{ position: 'absolute', bottom: -60, left: -60, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,0.1),transparent 70%)', pointerEvents: 'none' }} />
+
+                    {/* Header */}
+                    <div style={{ padding: '16px 18px 0', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', margin: 0, textTransform: 'uppercase', letterSpacing: '.1em' }}>Round Progress</p>
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 999, color: '#a78bfa', background: 'rgba(139,92,246,0.18)', border: '1px solid rgba(139,92,246,0.42)' }}>SEED</span>
+                      </div>
+                    </div>
+
+                    {/* Orb centred with SVG ring */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 18px', minHeight: 0 }}>
+                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                        <svg width={180} height={180} style={{ position: 'absolute' }}>
+                          <defs>
+                            <linearGradient id="ftRing" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor="#8b5cf6" />
+                              <stop offset="50%" stopColor="#06b6d4" />
+                              <stop offset="100%" stopColor="#10b981" />
+                            </linearGradient>
+                          </defs>
+                          <circle cx="90" cy="90" r="82" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="6" />
+                          <circle cx="90" cy="90" r="82" fill="none" stroke="url(#ftRing)" strokeWidth="6"
+                            strokeDasharray={`${fundingProgress * 2 * Math.PI * 82} ${2 * Math.PI * 82}`}
+                            strokeLinecap="round" transform="rotate(-90 90 90)"
+                            style={{ filter: 'drop-shadow(0 0 10px rgba(139,92,246,0.7))' }} />
+                          {/* Tick marks */}
+                          {[0, 25, 50, 75, 100].map(pct => {
+                            const a = (pct / 100) * Math.PI * 2 - Math.PI / 2;
+                            return <line key={pct} x1={90 + Math.cos(a) * 76} y1={90 + Math.sin(a) * 76} x2={90 + Math.cos(a) * 88} y2={90 + Math.sin(a) * 88} stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" />;
+                          })}
+                        </svg>
+                        <FundingOrb progress={fundingProgress} />
+                      </div>
+
+                      {/* Big number */}
+                      <p style={{ fontSize: 38, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1, letterSpacing: '-2px', textAlign: 'center' }}>₹{(totalCommitted / 1e6).toFixed(1)}<span style={{ fontSize: 18, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>M</span></p>
+                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', margin: '4px 0 0', textAlign: 'center' }}>of ₹{(totalTarget / 1e6).toFixed(0)}M target committed</p>
+
+                      {/* Gradient pill progress */}
+                      <div style={{ width: '100%', marginTop: 14 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                          <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)' }}>Progress</span>
+                          <span style={{ fontSize: 11, fontWeight: 800, background: 'linear-gradient(90deg,#a78bfa,#34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{Math.round(fundingProgress * 100)}% funded</span>
+                        </div>
+                        <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', borderRadius: 4, width: `${fundingProgress * 100}%`, background: 'linear-gradient(90deg,#7c3aed,#06b6d4,#10b981)', boxShadow: '0 0 18px rgba(139,92,246,0.7)', transition: 'width .8s ease' }} />
+                        </div>
+                      </div>
+
+                      {/* Round stages */}
+                      <div style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, marginTop: 12 }}>
+                        {([['Pre-seed', '₹5M', true, '#8b5cf6'], ['Seed', '₹30M', true, '#06b6d4'], ['Series A', '₹100M', false, 'rgba(255,255,255,0.15)']] as [string, string, boolean, string][]).map(([lbl, amt, done, col]) => (
+                          <div key={lbl} style={{ borderRadius: 10, padding: '8px 4px', textAlign: 'center', background: done ? `${col}15` : 'rgba(255,255,255,0.02)', border: `1px solid ${done ? col + '40' : 'rgba(255,255,255,0.06)'}`, position: 'relative', overflow: 'hidden' }}>
+                            {done && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${col}80,transparent)` }} />}
+                            <p style={{ fontSize: 8, fontWeight: 700, color: done ? col : 'rgba(255,255,255,0.2)', margin: 0, textTransform: 'uppercase', letterSpacing: '.06em' }}>{lbl}</p>
+                            <p style={{ fontSize: 14, fontWeight: 800, color: done ? 'white' : 'rgba(255,255,255,0.12)', margin: '3px 0 0' }}>{amt}</p>
+                            {done && <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px auto 0', fontSize: 8 }}>✓</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Remaining tag */}
+                    <div style={{ margin: '0 16px 16px', padding: '9px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>₹{((totalTarget - totalCommitted) / 1e6).toFixed(1)}M remaining · </span>
+                      <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700 }}>Close by Dec 2026</span>
+                    </div>
+                  </div>
+
+                  {/* ── CENTRE: Investor Table ── */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0, overflow: 'hidden' }}>
+
+                    {/* Committed investors */}
+                    <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(16,185,129,0.25)', background: 'linear-gradient(160deg,rgba(16,185,129,0.08) 0%,rgba(6,6,18,0.95) 60%)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      <div style={{ padding: '13px 16px', borderBottom: '1px solid rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.9)', display: 'inline-block' }} />
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Committed Capital</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 800, color: '#10b981' }}>₹{(totalCommitted / 1e6).toFixed(1)}M</span>
+                      </div>
+                      {/* Column headers */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 100px 80px', gap: 0, padding: '8px 16px 6px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        {['Investor', 'Type', 'Amount', 'Share'].map(h => <span key={h} style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{h}</span>)}
+                      </div>
+                      <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', padding: '6px 10px 10px', display: 'flex', flexDirection: 'column', gap: 5, minHeight: 0 }}>
+                        {committed.map((inv, i) => {
+                          const pct = Math.round((inv.amount / totalCommitted) * 100);
+                          return (
+                            <div key={i} className="ft-inv" style={{ display: 'grid', gridTemplateColumns: '1fr 90px 100px 80px', gap: 0, alignItems: 'center', padding: '10px 12px', borderRadius: 12, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.14)', borderLeft: '3px solid rgba(16,185,129,0.7)', cursor: 'pointer' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(16,185,129,0.14)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <Building2 style={{ width: 14, height: 14, color: '#10b981' }} />
+                                </div>
+                                <div style={{ minWidth: 0 }}>
+                                  <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.name}</p>
+                                </div>
+                              </div>
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', padding: '3px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'inline-block', textAlign: 'center' }}>{inv.type}</span>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>₹{(inv.amount / 1e6).toFixed(1)}M</span>
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+                                  <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981' }}>{pct}%</span>
+                                  <CheckCircle style={{ width: 11, height: 11, color: '#10b981' }} />
+                                </div>
+                                <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.07)' }}>
+                                  <div style={{ height: '100%', borderRadius: 2, width: `${pct}%`, background: 'linear-gradient(90deg,#10b981,#34d399)', boxShadow: '0 0 6px rgba(16,185,129,0.6)' }} />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Pipeline investors */}
+                    <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(245,158,11,0.22)', background: 'linear-gradient(160deg,rgba(245,158,11,0.07) 0%,rgba(6,6,18,0.95) 60%)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      <div style={{ padding: '13px 16px', borderBottom: '1px solid rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>In Pipeline</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 800, color: '#f59e0b' }}>₹{(pipelinePotential / 1e6).toFixed(1)}M potential</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 100px 100px', gap: 0, padding: '8px 16px 6px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        {['Investor', 'Type', 'Amount', 'Status'].map(h => <span key={h} style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{h}</span>)}
+                      </div>
+                      <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', padding: '6px 10px 10px', display: 'flex', flexDirection: 'column', gap: 5, minHeight: 0 }}>
+                        {pipeline.map((inv, i) => {
+                          const sc = STATUS_COLOR[inv.status] || '#f59e0b';
+                          return (
+                            <div key={i} className="ft-inv" style={{ display: 'grid', gridTemplateColumns: '1fr 90px 100px 100px', gap: 0, alignItems: 'center', padding: '10px 12px', borderRadius: 12, background: `${sc}06`, border: `1px solid ${sc}18`, borderLeft: `3px solid ${sc}65`, cursor: 'pointer' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                <div style={{ width: 32, height: 32, borderRadius: 10, background: `${sc}14`, border: `1px solid ${sc}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <Building2 style={{ width: 14, height: 14, color: sc }} />
+                                </div>
+                                <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.name}</p>
+                              </div>
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', padding: '3px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'inline-block', textAlign: 'center' }}>{inv.type}</span>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>₹{(inv.amount / 1e6).toFixed(1)}M</span>
+                              <span style={{ fontSize: 9, fontWeight: 700, padding: '4px 10px', borderRadius: 999, color: sc, background: `${sc}18`, border: `1px solid ${sc}40`, display: 'inline-block', textAlign: 'center' }}>{inv.status}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── RIGHT: 3 metric cards stacked ── */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0, overflow: 'hidden' }}>
+
+                    {/* RunwayGlobe card */}
+                    <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(139,92,246,0.28)', background: 'linear-gradient(160deg,rgba(139,92,246,0.13) 0%,rgba(6,6,18,0.97) 70%)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', padding: '14px 14px 12px' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,0.85),transparent)' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexShrink: 0 }}>
+                        <Clock style={{ width: 13, height: 13, color: '#a78bfa' }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Runway</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 8, fontWeight: 700, padding: '2px 8px', borderRadius: 999, color: '#a78bfa', background: 'rgba(139,92,246,0.18)', border: '1px solid rgba(139,92,246,0.4)' }}>HEALTHY</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minHeight: 0 }}>
+                        <RunwayGlobe />
+                        <div>
+                          <p style={{ fontSize: 36, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1, letterSpacing: '-2px' }}>18</p>
+                          <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.35)', margin: 0 }}>months</p>
+                          <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', marginTop: 5 }}>→ Dec 2027</p>
+                          <div style={{ display: 'flex', gap: 5, marginTop: 8 }}>
+                            {[['6mo', '#8b5cf6'], ['18mo', '#10b981'], ['24mo', '#06b6d4']].map(([v, c]) => (
+                              <div key={v} style={{ padding: '3px 6px', borderRadius: 6, background: `${c}14`, border: `1px solid ${c}28`, textAlign: 'center' }}>
+                                <p style={{ fontSize: 10, fontWeight: 800, color: c, margin: 0 }}>{v}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Monthly Burn card */}
+                    <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(245,158,11,0.28)', background: 'linear-gradient(160deg,rgba(245,158,11,0.11) 0%,rgba(18,9,4,0.97) 70%)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', padding: '14px 14px 12px' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(245,158,11,0.85),transparent)' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexShrink: 0 }}>
+                        <Activity style={{ width: 13, height: 13, color: '#f59e0b' }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Monthly Burn</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 8, fontWeight: 700, padding: '2px 8px', borderRadius: 999, color: '#f59e0b', background: 'rgba(245,158,11,0.18)', border: '1px solid rgba(245,158,11,0.4)' }}>MOD.</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexShrink: 0 }}>
+                        {(() => {
+                          const R = 36, cx = 42, cy = 46;
+                          const pt = (p: number) => ({ x: cx + R * Math.cos(Math.PI + p * Math.PI), y: cy + R * Math.sin(Math.PI + p * Math.PI) });
+                          const [p0, p1, p2, p3] = [pt(0), pt(0.38), pt(0.68), pt(1)];
+                          const nx = cx + R * Math.cos(Math.PI + 0.58 * Math.PI), ny = cy + R * Math.sin(Math.PI + 0.58 * Math.PI);
+                          const arc = (a: { x: number, y: number }, b: { x: number, y: number }, lg = 0) => `M${a.x.toFixed(1)},${a.y.toFixed(1)}A${R},${R},0,${lg},1,${b.x.toFixed(1)},${b.y.toFixed(1)}`;
+                          return (
+                            <svg width={84} height={54} viewBox="0 0 84 54" style={{ flexShrink: 0 }}>
+                              <path d={arc(p0, p3, 1)} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="9" strokeLinecap="round" />
+                              <path d={arc(p0, p1)} fill="none" stroke="#10b981" strokeWidth="9" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(16,185,129,0.6))' }} />
+                              <path d={arc(p1, p2)} fill="none" stroke="#f59e0b" strokeWidth="9" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(245,158,11,0.6))' }} />
+                              <path d={arc(p2, p3)} fill="none" stroke="#ef4444" strokeWidth="9" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(239,68,68,0.6))' }} />
+                              <line x1={cx} y1={cy} x2={nx.toFixed(1)} y2={ny.toFixed(1)} stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 7px rgba(245,158,11,1))' }} />
+                              <circle cx={cx} cy={cy} r="4.5" fill="#f59e0b" style={{ filter: 'drop-shadow(0 0 9px rgba(245,158,11,1))' }} />
+                            </svg>
+                          );
+                        })()}
+                        <div>
+                          <p style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1, letterSpacing: '-1px' }}>₹12.4<span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>L</span></p>
+                          <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', margin: '3px 0 0' }}>↓ ₹1.1L vs Q1</p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, flexShrink: 0 }}>
+                        {[['Last Mo', '₹13.5L', '#ef4444'], ['QoQ', '-8%', '#10b981']].map(([l, v, c]) => (
+                          <div key={l} style={{ padding: '5px 6px', borderRadius: 8, background: `${c}10`, border: `1px solid ${c}28`, textAlign: 'center' }}>
+                            <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)', margin: 0, textTransform: 'uppercase' }}>{l}</p>
+                            <p style={{ fontSize: 12, fontWeight: 800, color: c, margin: 0 }}>{v}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Post-Money Val card */}
+                    <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(16,185,129,0.28)', background: 'linear-gradient(160deg,rgba(16,185,129,0.11) 0%,rgba(4,18,12,0.97) 70%)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', padding: '14px 14px 12px' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,0.85),transparent)' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexShrink: 0 }}>
+                        <TrendingUp style={{ width: 13, height: 13, color: '#10b981' }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Post-Money Val.</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 8, fontWeight: 700, padding: '2px 8px', borderRadius: 999, color: '#10b981', background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)' }}>↑</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexShrink: 0 }}>
+                        {(() => {
+                          const orbits = [{ rx: 22, ry: 7, sp: '2.4s', r: 4.5 }, { rx: 36, ry: 12, sp: '3.8s', r: 3.5 }, { rx: 50, ry: 17, sp: '6s', r: 3 }];
+                          return (
+                            <svg width={108} height={68} viewBox="0 0 108 68" style={{ flexShrink: 0 }}>
+                              <defs>
+                                <style>{orbits.map((o, i) => `@keyframes fto${i}{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.ftob${i}{transform-box:fill-box;transform-origin:54px 34px;animation:fto${i} ${o.sp} linear infinite}`).join('')}</style>
+                                <radialGradient id="ftCore" cx="38%" cy="32%"><stop offset="0%" stopColor="#34d399" /><stop offset="100%" stopColor="#059669" /></radialGradient>
+                              </defs>
+                              <circle cx="54" cy="34" r="11" fill="url(#ftCore)" style={{ filter: 'drop-shadow(0 0 12px rgba(16,185,129,0.9))' }} />
+                              <circle cx="49" cy="29" r="3.5" fill="white" opacity="0.18" />
+                              {orbits.map((o, i) => (
+                                <g key={i}>
+                                  <ellipse cx="54" cy="34" rx={o.rx} ry={o.ry} fill="none" stroke="#10b981" strokeWidth="1" opacity={0.5 - i * 0.12} strokeDasharray="3 2" />
+                                  <g className={`ftob${i}`}><circle cx={54 + o.rx} cy="34" r={o.r} fill="#10b981" opacity={0.9 - i * 0.2} style={{ filter: 'drop-shadow(0 0 6px rgba(16,185,129,0.9))' }} /></g>
+                                </g>
+                              ))}
+                            </svg>
+                          );
+                        })()}
+                        <div>
+                          <p style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1, letterSpacing: '-1px' }}>₹12<span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Cr</span></p>
+                          <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', margin: '3px 0 0' }}>3.2× seed · ↑ ₹9.5Cr</p>
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 5, overflow: 'hidden' }}>
+                        {([['Pre-Incubation', '₹3Cr', true, '#475569'], ['Pre-seed', '₹5Cr', true, '#8b5cf6'], ['Seed', '₹12Cr', true, '#10b981'], ['Series A', '₹60Cr', false, '#06b6d4']] as [string, string, boolean, string][]).map(([lbl, val, done, col]) => (
+                          <div key={lbl} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: done ? col : 'rgba(255,255,255,0.08)', border: `1.5px solid ${done ? col : 'rgba(255,255,255,0.14)'}`, boxShadow: done ? `0 0 7px ${col}80` : 'none' }} />
+                            <span style={{ fontSize: 9, color: done ? 'rgba(255,255,255,0.48)' : 'rgba(255,255,255,0.18)', flex: 1 }}>{lbl}</span>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: done ? col : 'rgba(255,255,255,0.14)' }}>{val}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+        </main>
+      </div>
+
+      {/* ── MODAL: REGISTER ─────────────────────────────────────────────── */}
+      {registerOpen && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[#08080f] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="px-6 py-4 border-b border-white/[0.07] flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400 shadow-[0_0_8px_2px_rgba(167,139,250,0.8)]" />
+                <h3 className="text-sm font-semibold text-white">Register Portfolio Company</h3>
+              </div>
+              <button onClick={() => setRegisterOpen(false)} className="text-white/30 hover:text-white transition"><X className="h-4 w-4" /></button>
+            </div>
+            <form onSubmit={handleCreate} className="p-6 space-y-4">
+              <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Company Name</label>
+                <input type="text" required placeholder="e.g. NeuralKit" value={newS.name} onChange={e => setNewS({ ...newS, name: e.target.value })} className={input} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Founder</label>
+                  <input type="text" required placeholder="Primary contact" value={newS.founder} onChange={e => setNewS({ ...newS, founder: e.target.value })} className={input} /></div>
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Industry</label>
+                  <select value={newS.industry} onChange={e => setNewS({ ...newS, industry: e.target.value })} className={input + " bg-black/40"}>
+                    <option>SaaS</option><option>FinTech</option><option>DeepTech</option>
+                  </select></div>
+              </div>
+              <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Tagline</label>
+                <input type="text" required placeholder="One-line value prop…" value={newS.tagline} onChange={e => setNewS({ ...newS, tagline: e.target.value })} className={input} /></div>
+              <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Funding Goal (INR)</label>
+                <input type="number" required placeholder="e.g. 20000000" value={newS.fundingGoal} onChange={e => setNewS({ ...newS, fundingGoal: e.target.value })} className={input} /></div>
+              <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Description</label>
+                <textarea rows={3} required placeholder="Company overview…" value={newS.description} onChange={e => setNewS({ ...newS, description: e.target.value })} className={input + " resize-none"} /></div>
+              <button type="submit" className="w-full py-2.5 rounded-full text-sm font-semibold bg-gradient-to-r from-violet-600 to-sky-500 text-white hover:opacity-90 transition">
+                Inject Into Pipeline →
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: EDIT ─────────────────────────────────────────────────── */}
+      {editTarget && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[#08080f] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl border-t-2 border-t-violet-500/50">
+            <div className="px-6 py-4 border-b border-white/[0.07] flex justify-between items-center">
+              <div className="flex items-center gap-2"><Edit3 className="h-3.5 w-3.5 text-violet-400" />
+                <h3 className="text-sm font-semibold text-white">Edit — {editTarget.name}</h3></div>
+              <button onClick={() => setEditTarget(null)} className="text-white/30 hover:text-white transition"><X className="h-4 w-4" /></button>
+            </div>
+            <form onSubmit={handleSave} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Name</label>
+                  <input type="text" required value={editTarget.name} onChange={e => setEditTarget({ ...editTarget, name: e.target.value })} className={input} /></div>
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Founder</label>
+                  <input type="text" required value={editTarget.founder} onChange={e => setEditTarget({ ...editTarget, founder: e.target.value })} className={input} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Industry</label>
+                  <select value={editTarget.industry} onChange={e => setEditTarget({ ...editTarget, industry: e.target.value })} className={input + " bg-black/40"}>
+                    <option>SaaS</option><option>FinTech</option><option>DeepTech</option>
+                  </select></div>
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider text-violet-300/70">Pipeline Stage</label>
+                  <select value={editTarget.stage} onChange={e => setEditTarget({ ...editTarget, stage: e.target.value })} className={input + " bg-black/40 text-violet-300 border-violet-500/30"}>
+                    {STAGE_ORDER.map(s => <option key={s}>{s}</option>)}
+                  </select></div>
+              </div>
+              <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Tagline</label>
+                <input type="text" required value={editTarget.tagline} onChange={e => setEditTarget({ ...editTarget, tagline: e.target.value })} className={input} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Funding Target</label>
+                  <input type="number" required value={editTarget.fundingGoal} onChange={e => setEditTarget({ ...editTarget, fundingGoal: e.target.value })} className={input} /></div>
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Capital Raised</label>
+                  <input type="number" required value={editTarget.raised} onChange={e => setEditTarget({ ...editTarget, raised: e.target.value })} className={input + " text-emerald-400"} /></div>
+              </div>
+              <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Description</label>
+                <textarea rows={3} required value={editTarget.description} onChange={e => setEditTarget({ ...editTarget, description: e.target.value })} className={input + " resize-none"} /></div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setEditTarget(null)} className="flex-1 py-2.5 rounded-full text-xs font-medium bg-white/[0.04] border border-white/10 text-white/40 hover:text-white transition">Cancel</button>
+                <button type="submit" className="flex-1 py-2.5 rounded-full text-sm font-semibold bg-gradient-to-r from-violet-600 to-sky-500 text-white hover:opacity-90 transition flex items-center justify-center gap-2">
+                  <Save className="h-3.5 w-3.5" /> Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {rsvpEvent && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[#08080f] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl border-t-2 border-t-violet-500/50">
+            <div className="px-6 py-4 border-b border-white/[0.07] flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-3.5 w-3.5 text-violet-400" />
+                <h3 className="text-sm font-semibold text-white">Event Registration</h3>
+              </div>
+              <button onClick={() => setRsvpEvent(null)} className="text-white/30 hover:text-white transition">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4 space-y-2">
+                <p className="text-sm font-semibold text-white">{rsvpEvent.title}</p>
+                <p className="text-[11px] text-white/40">{rsvpEvent.date} · {rsvpEvent.time}</p>
+                <p className="text-[11px] text-white/30">{rsvpEvent.location}</p>
+              </div>
+              <div className="bg-violet-500/[0.07] border border-violet-500/20 rounded-xl p-4">
+                <p className="text-[10px] text-violet-400 uppercase tracking-wider mb-2">Registering as</p>
+                <p className="text-sm font-semibold text-white">Ashutosh Palai</p>
+                <p className="text-[11px] text-white/40">EduSphere · Hub Admin</p>
+              </div>
+              <p className="text-[10px] text-white/20 text-center">
+                A confirmation will be sent to the organiser team
+              </p>
+              <button
+                onClick={() => {
+                  setRsvpedIds(prev => [...prev, rsvpEvent.id]);
+                  setRsvpEvent(null);
+                }}
+                className="w-full py-2.5 rounded-full text-sm font-semibold bg-gradient-to-r from-violet-600 to-sky-500 text-white hover:opacity-90 transition"
+              >
+                Confirm Registration →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {uploadOpen && (() => {
+        const EXT_TO_TYPE: Record<string, string> = {
+          pdf: 'Doc', pptx: 'Deck', ppt: 'Deck', xlsx: 'Sheet', xls: 'Sheet',
+          csv: 'Sheet', mp4: 'Video', mov: 'Video', zip: 'Bundle', rar: 'Bundle', docx: 'Doc', doc: 'Doc',
+        };
+
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+            <div style={{ background: '#08080f', border: '1px solid rgba(255,255,255,0.09)', borderTop: '2px solid rgba(139,92,246,0.6)', borderRadius: 20, width: '100%', maxWidth: 460, boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }}>
+
+              {/* Header */}
+              <div style={{ padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(139,92,246,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 12px rgba(139,92,246,0.5)' }}>
+                    <Upload style={{ width: 13, height: 13, color: '#a78bfa' }} />
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>
+                    {editingDoc ? `Edit — ${editingDoc.name}` : 'Upload to Pitch Vault'}
+                  </span>
+                </div>
+                <button onClick={() => { setUploadOpen(false); setEditingDoc(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 4 }}>
+                  <X style={{ width: 16, height: 16 }} />
+                </button>
+              </div>
+
+              <div style={{ padding: '22px' }}>
+
+                {/* Drop zone */}
+                <div
+                  id="vup-drop"
+                  onClick={() => document.getElementById('vup-file-input')?.click()}
+                  onDragOver={e => { e.preventDefault(); (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.6)'; }}
+                  onDragLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                  onDrop={e => { e.preventDefault(); (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)'; if (e.dataTransfer.files[0]) handleUploadFile(e.dataTransfer.files[0]); }}
+                  style={{ border: '2px dashed rgba(255,255,255,0.08)', borderRadius: 14, padding: '28px 20px', textAlign: 'center', cursor: 'pointer', marginBottom: 18, transition: 'border-color 0.2s', background: 'rgba(255,255,255,0.015)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 100 }}
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Upload style={{ width: 16, height: 16, color: '#a78bfa' }} />
+                  </div>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Drop your file here or <span style={{ color: '#a78bfa', fontWeight: 600 }}>browse</span></span>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)' }}>PDF · PPTX · XLSX · DOCX · MP4 · ZIP</span>
+                </div>
+                <input id="vup-file-input" type="file" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleUploadFile(e.target.files[0]); }} />
+
+                {uploadError && <p style={{ fontSize: 12, color: '#f87171', marginBottom: 12 }}>{uploadError}</p>}
+
+                {/* Fields */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Document Name</label>
+                    <input id="vup-name" type="text" placeholder="e.g. NeuralKit Pitch Deck v5"
+                      style={{ width: '100%', padding: '9px 13px', fontSize: 12, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 10, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Type</label>
+                      <select id="vup-type" style={{ width: '100%', padding: '9px 13px', fontSize: 12, background: '#0d0d18', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, color: 'white', outline: 'none' }}>
+                        <option>Doc</option><option>Deck</option><option>Sheet</option><option>Video</option><option>Bundle</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 10, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Status</label>
+                      <select id="vup-status" style={{ width: '100%', padding: '9px 13px', fontSize: 12, background: '#0d0d18', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, color: 'white', outline: 'none' }}>
+                        <option>Draft</option><option>Review</option><option>Final</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                  <button onClick={() => setUploadOpen(false)} style={{ flex: 1, padding: '10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                  <button id="vup-submit" onClick={handleUploadSubmit} disabled={uploadPending} style={{ flex: 2, padding: '10px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: uploadPending ? 'rgba(124,58,237,0.4)' : 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: uploadPending ? 'wait' : 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.4)' }}>
+                    {uploadPending ? 'Uploading…' : 'Add to Vault →'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      {/* Upload Guard Modal */}
+      {uploadGuardOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
+          <div style={{ background: '#08080f', border: '1px solid rgba(139,92,246,0.3)', borderTop: '2px solid #8b5cf6', borderRadius: 20, width: '100%', maxWidth: 420, padding: 32, textAlign: 'center' }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 24 }}>🚀</div>
+            <p style={{ fontSize: 18, fontWeight: 700, color: 'white', margin: '0 0 10px' }}>Register Your Startup First</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.65, margin: '0 0 24px' }}>
+              Your pitch deck needs a home. Register your startup in the pipeline first — we'll calculate your IncuScore™ and then you can upload your deck for a deeper analysis.
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setUploadGuardOpen(false)}
+                style={{ flex: 1, padding: '10px', borderRadius: 999, fontSize: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button
+                onClick={() => { setUploadGuardOpen(false); setRegisterOpen(true); }}
+                style={{ flex: 2, padding: '10px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.4)' }}>
+                Register Startup →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {incuScoreState && (
+        <IncuScoreModal
+          state={incuScoreState}
+          onClose={() => setIncuScoreState(null)}
+        />
+      )}
+    </div>
+  );
+
+  function IncuScoreModal({ state, onClose }: {
+    state: NonNullable<typeof incuScoreState>;
+    onClose: () => void;
+  }) {
+    const bandColors: Record<string, string> = {
+      'Investor-Grade': '#10b981', 'Strong': '#06b6d4',
+      'Promising': '#f59e0b', 'Early Stage': '#8b5cf6', 'Pre-Idea': '#475569',
+    };
+    const col = bandColors[state.band] ?? '#8b5cf6';
+    const circ = 2 * Math.PI * 54;
+    const dash = ((state.score ?? 0) / 100) * circ;
+
+    if (state.loading) return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 72, height: 72, margin: '0 auto 24px', borderRadius: '50%', border: '3px solid rgba(139,92,246,0.25)', borderTop: '3px solid #8b5cf6', animation: 'is-spin 1s linear infinite' }} />
+          <style>{`@keyframes is-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes is-pulse{0%,100%{opacity:0.35}50%{opacity:1}}`}</style>
+          <p style={{ fontSize: 18, fontWeight: 700, color: 'white', margin: '0 0 8px' }}>Calculating IncuScore™</p>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', margin: '0 0 24px' }}>
+            {state.phase === 0 ? 'Analysing startup fundamentals…' : 'Evaluating your pitch document…'}
+          </p>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {['Market analysis', 'Team evaluation', 'Business model', 'Innovation scan'].map((t, i) => (
+              <span key={t} style={{ padding: '4px 12px', borderRadius: 999, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', fontSize: 10, color: '#a78bfa', animation: `is-pulse 1.6s ease-in-out ${i * 0.3}s infinite` }}>{t}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
+        <div style={{ background: '#08080f', border: `1px solid ${col}40`, borderTop: `3px solid ${col}`, borderRadius: 24, width: '100%', maxWidth: 520, boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 60px ${col}18`, padding: 32, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, borderRadius: '50%', background: `radial-gradient(circle,${col}12,transparent 70%)`, pointerEvents: 'none' }} />
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, padding: '4px 12px', borderRadius: 999, background: `${col}18`, border: `1px solid ${col}38`, color: col, letterSpacing: '0.06em' }}>
+              {state.phase === 1 ? 'PHASE 1 — STARTUP REGISTERED' : 'PHASE 2 — FINAL INCUSCORE™'}
+            </span>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>✕</button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 22 }}>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <svg width={132} height={132} viewBox="0 0 132 132">
+                <circle cx="66" cy="66" r="54" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+                <circle cx="66" cy="66" r="54" fill="none" stroke={col} strokeWidth="8"
+                  strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" transform="rotate(-90 66 66)"
+                  style={{ filter: `drop-shadow(0 0 12px ${col})` }} />
+                {state.delta !== null && (
+                  <text x="66" y="50" textAnchor="middle" fontSize="11" fill={state.delta >= 0 ? '#10b981' : '#f87171'} fontWeight="700">
+                    {state.delta >= 0 ? `+${state.delta}` : state.delta}
+                  </text>
+                )}
+                <text x="66" y="74" textAnchor="middle" fontSize="32" fontWeight="900" fill="white">{state.score}</text>
+                <text x="66" y="90" textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.28)" letterSpacing="1">INCUSCORE™</text>
+              </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{state.startupName}</p>
+              <p style={{ fontSize: 22, fontWeight: 800, color: col, margin: '0 0 8px', filter: `drop-shadow(0 0 10px ${col}55)` }}>{state.band}</p>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.65, margin: 0 }}>{state.remark}</p>
+            </div>
+          </div>
+
+          {state.strengths.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 8px' }}>✦ Strengths</p>
+              {state.strengths.map((s, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 4 }}>
+                  <span style={{ color: '#10b981', flexShrink: 0 }}>✓</span>{s}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {state.improvements.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 8px' }}>◈ To Improve</p>
+              {state.improvements.map((s, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 4 }}>
+                  <span style={{ color: '#f59e0b', flexShrink: 0 }}>→</span>{s}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+            {state.keywords.map(k => (
+              <span key={k} style={{ fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 999, color: col, background: `${col}14`, border: `1px solid ${col}30`, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k}</span>
+            ))}
+          </div>
+
+          <div style={{ padding: '14px 16px', borderRadius: 14, background: state.readyForVCs ? 'rgba(16,185,129,0.07)' : 'rgba(139,92,246,0.07)', border: `1px solid ${state.readyForVCs ? 'rgba(16,185,129,0.22)' : 'rgba(139,92,246,0.22)'}`, marginBottom: 20 }}>
+            <p style={{ fontSize: 12, color: state.readyForVCs ? '#34d399' : '#a78bfa', margin: 0, lineHeight: 1.65 }}>
+              {state.phase === 2 && state.readyForVCs
+                ? `🚀 Best of luck with your investor conversations, ${state.startupName}! Your IncuScore™ signals strong readiness for VC discussions.`
+                : state.message}
+            </p>
+          </div>
+
+          <button onClick={onClose} style={{ width: '100%', padding: '12px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: `linear-gradient(90deg,${col},${col}80)`, color: 'white', border: 'none', cursor: 'pointer', boxShadow: `0 4px 20px ${col}38` }}>
+            {state.phase === 1 ? 'Upload Pitch Deck to Improve Score →' : 'View Dashboard →'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+}
