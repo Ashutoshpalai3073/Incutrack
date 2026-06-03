@@ -240,7 +240,7 @@ function FundingOrb({ progress = 0.64 }) {
     tick();
     return () => { alive = false; cancelAnimationFrame(raf); renderer.dispose(); };
   }, [progress]);
-  return <canvas ref={ref} width={130} height={130} style={{ width: 130, height: 130 }} />;
+  return <canvas ref={ref} width={130} height={130} style={{ width: 130, height: 130, pointerEvents: 'none', touchAction: 'none', userSelect: 'none' }} />;
 }
 
 // ─── Three.js: Runway Globe ───────────────────────────────────────────────────
@@ -2788,7 +2788,7 @@ function HubPage() {
                 <div className="hub-funding-main" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '320px 1fr 280px', gap: 12, position: 'relative', zIndex: 1 }}>
 
                   {/* ── LEFT: Funding Orb Panel ── */}
-                  <div style={{ borderRadius: 20, border: '1px solid rgba(139,92,246,0.3)', background: 'linear-gradient(160deg,rgba(139,92,246,0.14) 0%,rgba(6,6,18,0.97) 70%)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ borderRadius: 20, border: '1px solid rgba(139,92,246,0.3)', background: 'linear-gradient(160deg,rgba(139,92,246,0.14) 0%,rgba(6,6,18,0.97) 70%)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', userSelect: 'none', WebkitUserSelect: 'none' }}>
                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,0.9),transparent)', pointerEvents: 'none' }} />
                     <div style={{ position: 'absolute', bottom: -60, left: -60, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,0.1),transparent 70%)', pointerEvents: 'none' }} />
 
@@ -2803,7 +2803,7 @@ function HubPage() {
                     {/* Orb centred with SVG ring */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 18px', minHeight: 0 }}>
                       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                        <svg width={180} height={180} style={{ position: 'absolute' }}>
+                        <svg width={180} height={180} style={{ position: 'absolute', pointerEvents: 'none', touchAction: 'none' }}>
                           <defs>
                             <linearGradient id="ftRing" x1="0" y1="0" x2="1" y2="1">
                               <stop offset="0%" stopColor="#8b5cf6" />
@@ -2836,7 +2836,7 @@ function HubPage() {
                           <span style={{ fontSize: 11, fontWeight: 800, background: 'linear-gradient(90deg,#a78bfa,#34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{Math.round(fundingProgress * 100)}% funded</span>
                         </div>
                         <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', borderRadius: 4, width: `${fundingProgress * 100}%`, background: 'linear-gradient(90deg,#7c3aed,#06b6d4,#10b981)', boxShadow: '0 0 18px rgba(139,92,246,0.7)', transition: 'width .8s ease' }} />
+                          <div style={{ height: '100%', borderRadius: 4, width: `${fundingProgress * 100}%`, background: 'linear-gradient(90deg,#7c3aed,#06b6d4,#10b981)', boxShadow: '0 0 18px rgba(139,92,246,0.7)' }} />
                         </div>
                       </div>
 
