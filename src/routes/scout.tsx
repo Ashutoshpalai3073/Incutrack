@@ -961,9 +961,9 @@ function ScoutPage() {
                                             </div>
                                             <span style={{ fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{shortlisted.length} shortlisted · {ALL_STARTUPS.length} tracked</span>
                                         </div>
-                                        <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
-                                            {/* Radar orb */}
-                                            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', position: 'relative' }}>
+                                        <div className="sc-cockpit-center-row" style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
+                                            {/* Radar orb — hidden on mobile via CSS */}
+                                            <div className="sc-radar-orb-wrap" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', position: 'relative' }}>
                                                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'ck-float 6s ease-in-out infinite' }}>
                                                     <RadarSphere />
                                                 </div>
@@ -1073,7 +1073,7 @@ function ScoutPage() {
                                     </div>
 
                                     {/* Node row */}
-                                    <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                                    <div className="sc-pipeline-health-row" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                                         {STAGE_ORDER.map((stage, idx) => {
                                             const count = startups.filter(s => s.stage === stage).length;
                                             const col = STAGE_COLORS[stage];

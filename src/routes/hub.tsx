@@ -1270,7 +1270,7 @@ function HubPage() {
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-violet-400 rounded-full" />
             </div>
             {notifOpen && (
-              <div style={{ position: 'absolute', top: 52, right: 160, width: 300, background: '#000000', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, zIndex: 100, overflow: 'hidden', boxShadow: '0 16px 48px rgba(0,0,0,0.8)', opacity: 1 }}>
+              <div className="hub-notif-dropdown" style={{ position: 'absolute', top: 52, right: 160, width: 300, background: '#000000', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, zIndex: 100, overflow: 'hidden', boxShadow: '0 16px 48px rgba(0,0,0,0.8)', opacity: 1 }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>Notifications</span>
                   <span style={{ fontSize: 10, color: '#a78bfa', cursor: 'pointer', fontWeight: 600 }}>Mark all read</span>
@@ -1496,7 +1496,7 @@ function HubPage() {
                 </div>
 
                 {/* Node row */}
-                <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                <div className="sc-pipeline-health-row" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                   {STAGE_ORDER.map((stage, idx) => {
                     const count = startups.filter(s => s.stage === stage).length;
                     const col = STAGE_COLORS[stage];
