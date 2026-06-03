@@ -884,3 +884,156 @@ img, video { max-width: 100%; height: auto; }
 @media (max-width: 480px) {
   .section-full { padding-top: 36px !important; padding-bottom: 32px !important; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SCOUT — 5 TABS COMPLETE MOBILE FIX
+   All content fully visible by scrolling. No clipping. No horizontal bleed.
+══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Main 2-col grids (Diligence, Demo Days, Deployment): 1-col stack ── */
+@media (max-width: 768px) {
+  .sc-tab-main-grid {
+    grid-template-columns: 1fr !important;
+    flex: none !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+  }
+}
+
+/* ── 2. Left panels (document vault, event list, deployment cards): expand ── */
+@media (max-width: 768px) {
+  .sc-tab-panel-left {
+    height: auto !important;
+    overflow: visible !important;
+    min-height: unset !important;
+  }
+  /* Headers inside left panels: stay compact */
+  .sc-tab-panel-left > [style*="flex-shrink"] {
+    flex-shrink: 0 !important;
+  }
+  /* All direct children of left panels: no flex-fill collapse */
+  .sc-tab-panel-left > *:not([aria-hidden="true"]) {
+    flex: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* ── 3. Right sidebars (audit log, next-up, allocation): expand to content ── */
+@media (max-width: 768px) {
+  .sc-tab-sidebar {
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    min-height: unset !important;
+  }
+  /* Each panel card inside the sidebar */
+  .sc-tab-sidebar > * {
+    flex: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    min-height: unset !important;
+    margin-bottom: 12px;
+  }
+  /* Children inside each sidebar panel (headers, sc-scroll lists, charts) */
+  .sc-tab-sidebar > * > *:not([aria-hidden="true"]) {
+    flex: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* ── 4. Network tab: 3-col card grid → 2-col tablet / 1-col phone ── */
+@media (max-width: 768px) {
+  .sc-network-scroll {
+    flex: none !important;
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+  .sc-network-cards {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 480px) {
+  .sc-network-cards {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 5. Demo Days: events grid 2-col → 1-col, scroll container expands ── */
+@media (max-width: 768px) {
+  .sc-demodays-events-scroll {
+    flex: none !important;
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+  .sc-demodays-event-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 6. Insights: 3×2 grid → 1-col stack, reset gridRow spans ── */
+@media (max-width: 768px) {
+  .sc-insights-main-grid {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto !important;
+    flex: none !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+  }
+  /* Every chart card: reset row span, expand to content, give min chart height */
+  .sc-insights-main-grid > * {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: 200px;
+    overflow: visible !important;
+    margin-bottom: 14px;
+  }
+  /* Sector breakdown (sc-insights-sector) reset */
+  .sc-insights-sector {
+    grid-row: auto !important;
+    grid-column: auto !important;
+    min-height: 280px;
+  }
+  /* Charts inside cards: full width */
+  .sc-insights-main-grid svg,
+  .sc-insights-main-grid canvas {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* ── 7. All sc-scroll inside panels: show full content ── */
+/* (Reinforces the global sc-scroll rule for panels specifically) */
+@media (max-width: 768px) {
+  .sc-tab-panel-left .sc-scroll,
+  .sc-tab-sidebar .sc-scroll {
+    flex: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+  }
+}
+
+/* ── 8. Diligence — doc cards: no minimum heights, full width ── */
+@media (max-width: 768px) {
+  .dr-doc-card {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* ── 9. Prevent any remaining clipping inside tab content on mobile ── */
+@media (max-width: 768px) {
+  .hub-tab-content > * > [style*="overflow: hidden"],
+  .hub-tab-content > * > [style*="overflow:hidden"] {
+    /* Can't target inline styles — handled by class-based rules above */
+  }
+}

@@ -1371,10 +1371,10 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── Main 2-col layout ── */}
-                                <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 290px', gap: 14, position: 'relative', zIndex: 1 }}>
+                                <div className="sc-tab-main-grid" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 290px', gap: 14, position: 'relative', zIndex: 1 }}>
 
                                     {/* ── LEFT: Document Vault ── */}
-                                    <div style={{ borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.025)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                                    <div className="sc-tab-panel-left" style={{ borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.025)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
                                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,.7),transparent)' }} />
 
                                         {/* vault header */}
@@ -1472,7 +1472,7 @@ function ScoutPage() {
                                     </div>
 
                                     {/* ── RIGHT column ── */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, overflow: 'hidden' }}>
+                                    <div className="sc-tab-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, overflow: 'hidden' }}>
 
                                         {/* ── Audit Log as timeline ── */}
                                         <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.025)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -1622,8 +1622,8 @@ function ScoutPage() {
                                 </button>
                             </div>
 
-                            <div className="sc-scroll" style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+                            <div className="sc-scroll sc-network-scroll" style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
+                                <div className="sc-network-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
                                     {NETWORK_CONTACTS.map(c => {
                                         const col = ({ SaaS: '#8b5cf6', FinTech: '#06b6d4', DeepTech: '#10b981' } as Record<string, string>)[c.tag] || '#f59e0b';
                                         const startup = ALL_STARTUPS.find(s => s.name === c.company);
@@ -1779,10 +1779,10 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── Main 2-col layout: scrollable grid + sidebar ── */}
-                                <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 292px', gap: 14, position: 'relative', zIndex: 1 }}>
+                                <div className="sc-tab-main-grid" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 292px', gap: 14, position: 'relative', zIndex: 1 }}>
 
                                     {/* ── LEFT: scrollable event grid ── */}
-                                    <div style={{ borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.024)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                                    <div className="sc-tab-panel-left" style={{ borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.024)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
                                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,.7),transparent)' }} />
 
                                         {/* vault header */}
@@ -1797,14 +1797,14 @@ function ScoutPage() {
                                         </div>
 
                                         {/* scrollable 2-col grid */}
-                                        <div className="sc-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
+                                        <div className="sc-scroll sc-demodays-events-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
                                             {filteredEvents.length === 0 && (
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200, gap: 12, opacity: .25 }}>
                                                     <CalendarDays style={{ width: 36, height: 36 }} />
                                                     <p style={{ fontSize: 13, color: 'white', margin: 0 }}>No events for this filter</p>
                                                 </div>
                                             )}
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                            <div className="sc-demodays-event-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                                                 {filteredEvents.map((ev, idx) => {
                                                     const pd = parseDate(ev.date);
                                                     const watched = watchedEvents.includes(ev.id);
@@ -1886,7 +1886,7 @@ function ScoutPage() {
                                     </div>
 
                                     {/* ── RIGHT sidebar ── */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, overflow: 'hidden' }}>
+                                    <div className="sc-tab-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, overflow: 'hidden' }}>
 
                                         {/* Next Up spotlight */}
                                         {(() => {
@@ -2130,10 +2130,10 @@ function ScoutPage() {
                             </div>
 
                             {/* ── Main grid ── */}
-                            <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 14, position: 'relative', zIndex: 1 }}>
+                            <div className="sc-insights-main-grid" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 14, position: 'relative', zIndex: 1 }}>
 
                                 {/* ── SECTOR BREAKDOWN — left column full height ── */}
-                                <div style={{ gridRow: '1 / 3', borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.026)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                                <div className="sc-insights-sector sc-tab-panel-left" style={{ gridRow: '1 / 3', borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.026)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
                                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,.7),transparent)' }} />
                                     <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                                         <PieChart style={{ width: 13, height: 13, color: '#a78bfa' }} />
@@ -2438,10 +2438,10 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── Main 2-col layout ── */}
-                                <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 296px', gap: 14, position: 'relative', zIndex: 1 }}>
+                                <div className="sc-tab-main-grid" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 296px', gap: 14, position: 'relative', zIndex: 1 }}>
 
                                     {/* ── LEFT: Deployment cards ── */}
-                                    <div style={{ borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.025)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                                    <div className="sc-tab-panel-left" style={{ borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.025)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
                                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,.7),transparent)' }} />
 
                                         {/* header */}
@@ -2567,7 +2567,7 @@ function ScoutPage() {
                                     </div>
 
                                     {/* ── RIGHT column ── */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, overflow: 'hidden' }}>
+                                    <div className="sc-tab-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, overflow: 'hidden' }}>
 
                                         {/* ── Portfolio Donut + fund split ── */}
                                         <div style={{ flexShrink: 0, borderRadius: 18, border: '1px solid rgba(139,92,246,.28)', background: 'linear-gradient(160deg,rgba(139,92,246,.12) 0%,rgba(5,5,9,.97) 70%)', padding: '16px', position: 'relative', overflow: 'hidden' }}>
