@@ -676,14 +676,9 @@ img, video { max-width: 100%; height: auto; }
 
 /* ─── GENERAL MOBILE BUTTON / PADDING FIXES ─────────────────────────────── */
 @media (max-width: 768px) {
-  /* Section container padding */
   .lp-section-content {
     padding-left: 16px !important;
     padding-right: 16px !important;
-  }
-  /* Hub/scout header section padding */
-  .hub-section-pad {
-    padding: 12px 14px !important;
   }
 }
 
@@ -705,3 +700,180 @@ img, video { max-width: 100%; height: auto; }
 
 /* ─── HUB h-dvh UTILITY (Tailwind v4 fallback) ──────────────────────────── */
 .h-dvh { height: 100dvh !important; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE — COMPLETE CONTENT VISIBILITY
+   Switches hub / scout from "app-shell / nested-scroll" to
+   "single outer scroll" so every element is reachable by scrolling.
+   All rules are inside max-width: 768px — desktop layout untouched.
+══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+  /* ── 1. Hub outer <main class="flex-1 overflow-y-auto"> is the scroller.
+         Tab panels inside it must grow beyond its height rather than clip. ── */
+
+  /* Hub overview tab uses hub-main-content, other tabs use hub-tab-content */
+  main > .hub-main-content,
+  main > .hub-tab-content {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    flex: none !important;
+  }
+
+  /* Scout: <main class="hub-main-content"> wraps hub-tab-content children */
+  .hub-main-content > .hub-tab-content {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    flex: none !important;
+  }
+
+  /* ── 2. Direct children of tab panels lose their flex: 1 fill
+         (parent is now height: auto — flex: 1 would collapse to 0) ── */
+
+  main > .hub-tab-content > *:not([aria-hidden="true"]),
+  main > .hub-main-content > *:not([aria-hidden="true"]),
+  .hub-main-content > .hub-tab-content > *:not([aria-hidden="true"]) {
+    flex: none !important;
+  }
+
+  /* ── 3. Two-column layout grids: already 1-col via lp-two-col CSS.
+         Remove fixed heights so children stack naturally. ── */
+
+  .lp-two-col {
+    height: auto !important;
+    min-height: unset !important;
+    overflow: visible !important;
+  }
+  .lp-two-col > * {
+    flex: none !important;
+    height: auto !important;
+    min-height: unset !important;
+    overflow: visible !important;
+    margin-bottom: 16px;
+  }
+
+  /* ── 4. Scrollable list / row containers: show ALL rows,
+         outer page scrolls instead of tiny inner scroll boxes ── */
+
+  .analytics-scroll {
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: visible !important;
+    flex: none !important;
+  }
+  .sc-scroll {
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    flex: none !important;
+  }
+
+  /* ── 5. Table wrappers: expand vertically, keep h-scroll ── */
+
+  .hub-table-wrap {
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+
+  /* ── 6. Pipeline kanban: give it a fixed height so it can
+         do horizontal scroll across columns on mobile ── */
+
+  .hub-pipeline-kanban {
+    flex: none !important;
+    height: 560px !important;
+    min-height: 560px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+  .hub-pipeline-kanban > * {
+    min-width: 220px !important;
+    max-width: 220px !important;
+    flex-shrink: 0 !important;
+    height: 100% !important;
+  }
+
+  /* ── 7. Three-column "cockpit" layouts stack to 1-col
+         (CSS already does grid→1fr; now make them auto height) ── */
+
+  .scout-cockpit-main,
+  .hub-funding-main,
+  .hub-events-main {
+    flex: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    min-height: unset !important;
+  }
+  .scout-cockpit-main > *,
+  .hub-funding-main > *,
+  .hub-events-main > * {
+    flex: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    min-height: unset !important;
+    margin-bottom: 16px;
+  }
+  /* Inner panels inside cockpit columns */
+  .scout-cockpit-main > * > * {
+    flex: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* ── 8. Hub / Scout inline chart containers: full width ── */
+
+  .hub-chart,
+  .hub-tab-content canvas:not([style*="position: fixed"]) {
+    width: 100% !important;
+  }
+
+  /* ── 9. Card grids already 1-col via hub-card-grid CSS.
+         Remove any residual fixed min-height from cards. ── */
+
+  .hub-card-grid > * {
+    min-height: unset !important;
+  }
+
+  /* ── 10. Filter pill rows: scrollable horizontally (already has class) ── */
+
+  .filter-pills-row,
+  .filter-pills-row > * { flex-shrink: 0 !important; }
+
+  /* ── 11. Vault document cards: stack nicely ── */
+
+  .hub-tab-content .hub-card-grid {
+    gap: 10px !important;
+  }
+
+  /* ── 12. Notification / small dropdowns: keep bounded ── */
+
+  .notif-scroll {
+    max-height: 340px !important;
+    overflow-y: auto !important;
+  }
+
+  /* ── 13. IncuScore modal inner: already handled, reinforce ── */
+
+  .incuscore-modal-inner {
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  /* ── 14. General: remove fixed heights on inner flex containers ── */
+
+  .hub-tab-content [style*="min-height: 0"] {
+    min-height: auto !important;
+  }
+}
+
+/* ─── LANDING PAGE SECTION VERTICAL PADDING ─────────────────────────────── */
+@media (max-width: 768px) {
+  .section-full { padding-top: 48px !important; padding-bottom: 40px !important; }
+}
+@media (max-width: 480px) {
+  .section-full { padding-top: 36px !important; padding-bottom: 32px !important; }
+}

@@ -1208,6 +1208,10 @@ function Index() {
   const pinchAccum = useRef(0)
 
   useEffect(() => {
+    // On touch-primary devices, let native scroll handle the mobile layout
+    const isTouchDevice = 'ontouchstart' in window && navigator.maxTouchPoints > 0;
+    if (isTouchDevice) return;
+
     let resetTimer: ReturnType<typeof setTimeout>
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
@@ -1281,26 +1285,7 @@ function Index() {
     return () => { window.removeEventListener('wheel', onWheel); clearTimeout(resetTimer) }
   }, [])
 
-  useEffect(() => {
-    let touchStartY = 0
-    const onTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY
-    }
-    const onTouchMove = (e: TouchEvent) => { e.preventDefault() }
-    const onTouchEnd = (e: TouchEvent) => {
-      const diff = touchStartY - e.changedTouches[0].clientY
-      if (Math.abs(diff) < 50) return
-      window.dispatchEvent(new WheelEvent('wheel', { deltaY: diff, bubbles: true }))
-    }
-    window.addEventListener('touchstart', onTouchStart, { passive: false })
-    window.addEventListener('touchmove', onTouchMove, { passive: false })
-    window.addEventListener('touchend', onTouchEnd)
-    return () => {
-      window.removeEventListener('touchstart', onTouchStart)
-      window.removeEventListener('touchmove', onTouchMove)
-      window.removeEventListener('touchend', onTouchEnd)
-    }
-  }, [])
+  // Touch handler removed — mobile landing uses native scroll (isTouchDevice guard above)
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -1410,14 +1395,50 @@ function Index() {
   }
 
   return (
-    <main className="lp-main-wrapper" style={{ background: "#020208", color: "white", fontFamily: "Inter, system-ui, sans-serif", overflowX: "hidden", scrollBehavior: "smooth", overflowY: "hidden", height: "100dvh", touchAction: "none" }}>
+    <main className="lp-main-wrapper" style={{ background: "#020208", color: "white", fontFamily: "Inter, system-ui, sans-serif", overflowX: "hidden", scrollBehavior: "smooth", overflowY: "hidden", height: "100dvh" }}>
 
       <style>{`
         html, body {
           overflow: hidden;
           height: 100dvh;
           width: 100vw;
-          touch-action: none;
+        }
+
+        /* ── Mobile: sections stack & scroll instead of fixed zoom ── */
+        @media (max-width: 768px) {
+          html, body {
+            overflow: visible !important;
+            height: auto !important;
+            min-height: 100dvh !important;
+          }
+          .lp-fixed-section {
+            position: relative !important;
+            inset: unset !important;
+            opacity: 1 !important;
+            transform: none !important;
+            pointer-events: auto !important;
+            z-index: auto !important;
+            display: block !important;
+          }
+          .lp-hero-fixed {
+            position: relative !important;
+            inset: unset !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            height: 100dvh !important;
+          }
+          .lp-section-nav-overlay {
+            position: relative !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+          }
+          .lp-main-wrapper {
+            overflow-y: auto !important;
+            height: auto !important;
+            overflow-x: hidden !important;
+          }
+          /* Section canvas backgrounds: hidden on mobile for perf */
+          .lp-bg-canvas-only { display: none !important; }
         }
 
         ::-webkit-scrollbar {
@@ -2320,7 +2341,7 @@ function Index() {
             ))}
           </div>
           <div style={{ borderTop: "1px solid rgba(255,255,255,.05)", paddingTop: 24, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: 12.5, color: "rgba(255,255,255,.2)", margin: 0 }}>© 2026 Incutrack. All rights reserved. Built with ♦ at IIT BBS Innovation Cell.</p>
+            <p style={{ fontSize: 12.5, color: "rgba(255,255,255,.2)", margin: 0 }}>© 2026 Incutrack. All rights reserved. Built with ♦ at IIT KGP Innovation Cell.</p>
             <div style={{ display: "flex", gap: 5 }}>
               {["#8b5cf6", "#06b6d4", "#10b981", "#f59e0b"].map((c, i) => (
                 <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: c, opacity: 0.6 }} />
