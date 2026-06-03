@@ -1193,6 +1193,17 @@ function Index() {
   const [bhOpacity, setBhOpacity] = useState(1)
   const [heroVisible, setHeroVisible] = useState(true)
   const [activeSectionIdx, setActiveSectionIdx] = useState(-1)
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  // Mobile-aware section padding
+  const SS = isMobile
+    ? { maxWidth: 1200, margin: "0 auto", padding: "0 16px" }
+    : { maxWidth: 1200, margin: "0 auto", padding: "0 40px" }
 
   const { user, isLoading, logout, deleteAccount } = useAuth();
   const navigate = useNavigate();
@@ -1763,13 +1774,13 @@ function Index() {
         <div className="ambient-blob" style={{ width: 600, height: 600, background: "#8b5cf6", top: "-10%", left: "-5%", opacity: 0.07 }} />
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#06b6d4", bottom: "5%", right: "0%", opacity: 0.06 }} />
 
-        <div className={`section-inner ${SC}`} style={{ ...S }}>
+        <div className={`section-inner ${SC}`} style={{ ...SS }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)", marginBottom: 20 }}>
               <Layers style={{ width: 12, height: 12, color: "#a78bfa" }} />
               <span style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", letterSpacing: ".1em", textTransform: "uppercase" }}>Platform Overview</span>
             </div>
-            <h2 style={{ fontSize: 38, fontWeight: 900, letterSpacing: "-.02em", margin: "0 0 10px", background: "linear-gradient(180deg,white 40%,rgba(255,255,255,.38))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <h2 style={{ fontSize: isMobile ? 24 : 38, fontWeight: 900, letterSpacing: "-.02em", margin: "0 0 10px", background: "linear-gradient(180deg,white 40%,rgba(255,255,255,.38))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               Everything your startup needs,<br />in one place
             </h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,.4)", maxWidth: 500, margin: "0 auto", lineHeight: 1.5 }}>
@@ -1777,7 +1788,7 @@ function Index() {
             </p>
           </div>
 
-          <div className="lp-features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+          <div className="lp-features-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
             {[
               { Icon: GitBranch, color: "#8b5cf6", title: "Pipeline Management", desc: "Visualise your journey through every stage — Ideation to Funding Secured. Kanban-style with real-time updates." },
               { Icon: BarChart3, color: "#06b6d4", title: "Growth Analytics", desc: "Track MRR, user acquisition, burn rate, and runway in one unified dashboard. Know where you stand before every investor meeting." },
@@ -1817,14 +1828,14 @@ function Index() {
         <div className="ambient-blob" style={{ width: 700, height: 700, background: "#8b5cf6", top: "-15%", right: "-10%", opacity: 0.06 }} />
         <div className="ambient-blob" style={{ width: 400, height: 400, background: "#a78bfa", bottom: "0%", left: "5%", opacity: 0.05 }} />
 
-        <div className={`section-inner ${SC}`} style={{ ...S }}>
-          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
+        <div className={`section-inner ${SC}`} style={{ ...SS }}>
+          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : 80, alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 28 }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)" }}>
                 <Rocket style={{ width: 12, height: 12, color: "#a78bfa" }} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", letterSpacing: ".1em", textTransform: "uppercase" }}>For Founders</span>
               </div>
-              <h2 style={{ fontSize: 42, fontWeight: 900, letterSpacing: "-.02em", margin: 0, lineHeight: 1.1 }}>
+              <h2 style={{ fontSize: isMobile ? 28 : 42, fontWeight: 900, letterSpacing: "-.02em", margin: 0, lineHeight: 1.1 }}>
                 <span style={{ background: "linear-gradient(135deg,white 40%,rgba(255,255,255,.5))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Stop managing chaos.</span><br />
                 <span style={{ background: "linear-gradient(135deg,#a78bfa,#67e8f9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Start building momentum.</span>
               </h2>
@@ -1872,7 +1883,7 @@ function Index() {
                     {[1, 2, 3, 4, 5].map(i => <Star key={i} style={{ width: 11, height: 11, color: "#f59e0b", fill: "#f59e0b" }} />)}
                   </div>
                 </blockquote>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 18 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr 1fr" : "1fr 1fr 1fr", gap: 10, marginTop: 18 }}>
                   {[["₹1.2Cr", "MRR"], ["+180%", "Growth"], ["92", "IncuScore™"]].map(([val, label]) => (
                     <div key={label} style={{ textAlign: "center", padding: "10px 0", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)" }}>
                       <p style={{ fontSize: 17, fontWeight: 900, color: "white", margin: 0 }}>{val}</p>
@@ -1916,8 +1927,8 @@ function Index() {
         <div className="ambient-blob" style={{ width: 600, height: 600, background: "#06b6d4", top: "-10%", left: "-8%", opacity: 0.06 }} />
         <div className="ambient-blob" style={{ width: 450, height: 450, background: "#10b981", bottom: "0%", right: "5%", opacity: 0.05 }} />
 
-        <div className={`section-inner ${SC}`} style={{ ...S }}>
-          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 56, alignItems: "center" }}>
+        <div className={`section-inner ${SC}`} style={{ ...SS }}>
+          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : 56, alignItems: "center" }}>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <GlassCard accentColor="#06b6d4">
@@ -1941,7 +1952,7 @@ function Index() {
                     {[1, 2, 3, 4, 5].map(i => <Star key={i} style={{ width: 10, height: 10, color: "#f59e0b", fill: "#f59e0b" }} />)}
                   </div>
                 </blockquote>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 8, marginTop: 12 }}>
                   {[["14", "Deals Tracked"], ["+40%", "Portfolio ROI"], ["95%", "Speed"]].map(([val, label]) => (
                     <div key={label} style={{ textAlign: "center", padding: "8px 0", borderRadius: 8, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)" }}>
                       <p style={{ fontSize: 16, fontWeight: 900, color: "white", margin: 0 }}>{val}</p>
@@ -2022,17 +2033,17 @@ function Index() {
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#f59e0b", top: "10%", right: "5%", opacity: 0.04 }} />
         <div className="ambient-blob" style={{ width: 600, height: 600, background: "#8b5cf6", bottom: "-10%", left: "-5%", opacity: 0.05 }} />
 
-        <div className={`section-inner ${SC}`} style={{ ...S }}>
+        <div className={`section-inner ${SC}`} style={{ ...SS }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(245,158,11,.1)", border: "1px solid rgba(245,158,11,.25)", marginBottom: 16 }}>
               <MessageSquare style={{ width: 12, height: 12, color: "#fbbf24" }} />
               <span style={{ fontSize: 11, fontWeight: 700, color: "#fbbf24", letterSpacing: ".1em", textTransform: "uppercase" }}>Testimonials</span>
             </div>
-            <h2 style={{ fontSize: 46, fontWeight: 900, letterSpacing: "-.02em", margin: 0, background: "linear-gradient(180deg,white 40%,rgba(255,255,255,.38))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <h2 style={{ fontSize: isMobile ? 28 : 46, fontWeight: 900, letterSpacing: "-.02em", margin: 0, background: "linear-gradient(180deg,white 40%,rgba(255,255,255,.38))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               Loved by builders &amp; backers
             </h2>
           </div>
-          <div className="lp-features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+          <div className="lp-features-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
             {[
               { name: "Meera Iyer", role: "Founder · ClimateOS", initials: "MI", gradient: "linear-gradient(135deg,#064e3b,#065f46,#34d399)", ring: "#10b981", text: "IncuScore™ told us exactly what investors would push back on before we walked into the room. Fixed those gaps, raised ₹3Cr in 6 weeks.", rating: 5 },
               { name: "Pawan Kumar", role: "CTO · QuantumGrid", initials: "PK", gradient: "linear-gradient(135deg,#0c4a6e,#0369a1,#38bdf8)", ring: "#06b6d4", text: "Our lead investor said it was the most professional due diligence process they'd ever seen from a seed-stage company.", rating: 5 },
@@ -2078,15 +2089,15 @@ function Index() {
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#8b5cf6", top: "5%", left: "-5%", opacity: 0.06 }} />
         <div className="ambient-blob" style={{ width: 400, height: 400, background: "#10b981", bottom: "10%", right: "0%", opacity: 0.05 }} />
 
-        <div className={`section-inner ${SC}`} style={{ ...S }}>
+        <div className={`section-inner ${SC}`} style={{ ...SS }}>
           {/* ── top two-column grid ── */}
-          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 52, alignItems: "center" }}>
+          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : 52, alignItems: "center" }}>
             <div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)", marginBottom: 24 }}>
                 <Award style={{ width: 12, height: 12, color: "#a78bfa" }} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", letterSpacing: ".1em", textTransform: "uppercase" }}>About Incutrack</span>
               </div>
-              <h2 style={{ fontSize: 40, fontWeight: 900, letterSpacing: "-.02em", margin: "0 0 20px", lineHeight: 1.15, background: "linear-gradient(135deg,white,rgba(255,255,255,.5))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              <h2 style={{ fontSize: isMobile ? 26 : 40, fontWeight: 900, letterSpacing: "-.02em", margin: "0 0 20px", lineHeight: 1.15, background: "linear-gradient(135deg,white,rgba(255,255,255,.5))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 Building infrastructure for the next generation of companies
               </h2>
               <p style={{ fontSize: 15, color: "rgba(255,255,255,.45)", lineHeight: 1.8, margin: "0 0 18px" }}>
@@ -2117,7 +2128,7 @@ function Index() {
           </div>
 
           {/* ── stat cards ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 16, alignItems: "stretch" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12, marginTop: 16, alignItems: "stretch" }}>
             {([
               { value: "2026",   label: "Founded",    sub: "IIT KGP · Kharagpur", color: "#a78bfa", ringColor: "#7c3aed" },
               { value: "2,400+", label: "Founders",   sub: "actively building",    color: "#22d3ee", ringColor: "#0891b2" },
@@ -2174,13 +2185,13 @@ function Index() {
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#06b6d4", top: "-5%", right: "0%", opacity: 0.05 }} />
         <div className="ambient-blob" style={{ width: 400, height: 400, background: "#8b5cf6", bottom: "10%", left: "5%", opacity: 0.05 }} />
 
-        <div className={`section-inner ${SC}`} style={{ ...S }}>
+        <div className={`section-inner ${SC}`} style={{ ...SS }}>
           <div style={{ textAlign: "center", marginBottom: 18 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(6,182,212,.1)", border: "1px solid rgba(6,182,212,.25)", marginBottom: 10 }}>
               <Mail style={{ width: 12, height: 12, color: "#22d3ee" }} />
               <span style={{ fontSize: 11, fontWeight: 700, color: "#22d3ee", letterSpacing: ".1em", textTransform: "uppercase" }}>Get in Touch</span>
             </div>
-            <h2 style={{ fontSize: 34, fontWeight: 900, letterSpacing: "-.02em", margin: "0 0 8px", background: "linear-gradient(180deg,white 40%,rgba(255,255,255,.38))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <h2 style={{ fontSize: isMobile ? 24 : 34, fontWeight: 900, letterSpacing: "-.02em", margin: "0 0 8px", background: "linear-gradient(180deg,white 40%,rgba(255,255,255,.38))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               Let's build something great
             </h2>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,.38)", maxWidth: 460, margin: "0 auto" }}>
@@ -2188,7 +2199,7 @@ function Index() {
             </p>
           </div>
 
-          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : 28 }}>
             <GlassCard accentColor="#06b6d4">
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "white", margin: "0 0 14px" }}>Send us a message</h3>
               {contactSent ? (
@@ -2286,8 +2297,8 @@ function Index() {
       }}>
       <StarFieldCanvas />
       <footer style={{ borderTop: "1px solid rgba(255,255,255,.05)", padding: "50px 0 36px", background: "rgba(2,2,8,1)" }}>
-        <div style={{ ...S }}>
-          <div className="lp-footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
+        <div style={{ ...SS }}>
+          <div className="lp-footer-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "2fr 1fr 1fr 1fr", gap: isMobile ? 24 : 48, marginBottom: 48 }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#a78bfa", boxShadow: "0 0 10px rgba(167,139,250,.7)", display: "inline-block" }} />

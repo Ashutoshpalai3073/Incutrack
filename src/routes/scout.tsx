@@ -617,6 +617,13 @@ function ScoutPage() {
     const navigate = useNavigate();
     const [tab, setTab] = useState('cockpit');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
     const [scoutSearch, setScoutSearch] = useState('');
     const [dealSector, setDealSector] = useState('All');
     const [eventType, setEventType] = useState('All');
@@ -815,9 +822,8 @@ function ScoutPage() {
                                 <rect y="12.2" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)"/>
                             </svg>
                         </button>
-                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,.22)' }}>Scout Hub</span>
-                        <ChevronRight style={{ width: 12, height: 12, color: 'rgba(255,255,255,.15)' }} />
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,.8)' }}>{TABS.find(t => t.id === tab)?.label}</span>
+                        {!isMobile && <><span style={{ fontSize: 11, color: 'rgba(255,255,255,.22)' }}>Scout Hub</span><ChevronRight style={{ width: 12, height: 12, color: 'rgba(255,255,255,.15)' }} /></>}
+                        <span style={{ fontSize: isMobile ? 13 : 12, fontWeight: 700, color: 'rgba(255,255,255,.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? 150 : undefined }}>{TABS.find(t => t.id === tab)?.label}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div className="scout-topbar-search" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 13px', borderRadius: 10, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
@@ -832,8 +838,8 @@ function ScoutPage() {
                             <Bell style={{ width: 13, height: 13, color: 'rgba(255,255,255,.5)' }} />
                             <div style={{ position: 'absolute', top: 6, right: 7, width: 6, height: 6, borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 6px #ef4444', border: '1.5px solid #050509' }} />
                         </button>
-                        <button onClick={() => setRegisterOpen(true)} className="sc-btn" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, background: 'linear-gradient(90deg,rgba(124,58,237,.8),rgba(14,165,233,.7))', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'white', boxShadow: '0 4px 16px rgba(124,58,237,.35)' }}>
-                            <Plus style={{ width: 12, height: 12 }} /> Add Mandate
+                        <button onClick={() => setRegisterOpen(true)} className="sc-btn" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '6px 10px' : '7px 14px', borderRadius: 10, background: 'linear-gradient(90deg,rgba(124,58,237,.8),rgba(14,165,233,.7))', border: 'none', cursor: 'pointer', fontSize: isMobile ? 10 : 11, fontWeight: 700, color: 'white', boxShadow: '0 4px 16px rgba(124,58,237,.35)', whiteSpace: 'nowrap' }}>
+                            <Plus style={{ width: 12, height: 12 }} />{isMobile ? 'Add' : 'Add Mandate'}
                         </button>
                     </div>
                 </header>
@@ -1460,7 +1466,7 @@ function ScoutPage() {
                                                             <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
                                                                 <div style={{ height: '100%', borderRadius: 2, width: doc.access ? '100%' : '35%', background: doc.access ? `linear-gradient(90deg,${tc},${tc}70)` : 'linear-gradient(90deg,#f59e0b,#f59e0b60)', boxShadow: `0 0 6px ${doc.access ? tc : '#f59e0b'}55`, transition: 'width .6s ease' }} />
                                                             </div>
-                                                            <span style={{ fontSize: 9, fontWeight: 700, color: doc.access ? tc : '#f59e0b', flexShrink: 0 }}>
+                                                            <span style={{ fontSize: 9, fontWeight: 700, color: doc.access ? tc : '#f59e0b', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
                                                                 {doc.access ? 'Access Granted' : 'Pending Approval'}
                                                             </span>
                                                             <div style={{ width: 8, height: 8, borderRadius: '50%', background: doc.access ? '#10b981' : '#f59e0b', boxShadow: `0 0 6px ${doc.access ? '#10b981' : '#f59e0b'}`, flexShrink: 0, animation: doc.access ? 'none' : 'sc-pulse2 1.8s ease-in-out infinite' }} />
@@ -2142,7 +2148,7 @@ function ScoutPage() {
                                     </div>
 
                                     {/* SVG Donut + legend */}
-                                    <div style={{ padding: '14px 16px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div style={{ padding: '14px 16px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, maxWidth: isMobile ? 220 : undefined, margin: isMobile ? '0 auto' : undefined }}>
                                         {(() => {
                                             const r = 44, cx = 52, cy = 52;
                                             const circ = 2 * Math.PI * r;
@@ -2182,7 +2188,7 @@ function ScoutPage() {
                                             <div key={s.sector} className="sc-card" style={{ borderRadius: 14, border: `1px solid ${s.color}22`, background: `linear-gradient(135deg,${s.color}0d 0%,rgba(0,0,0,.55) 100%)`, padding: '12px 13px', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
                                                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${s.color}60,transparent)` }} />
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                                                    <SectorPlanet color={s.color} size={38} />
+                                                    {!isMobile && <SectorPlanet color={s.color} size={38} />}
                                                     <div style={{ flex: 1, minWidth: 0 }}>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                                                             <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>{s.sector}</span>
@@ -2216,7 +2222,7 @@ function ScoutPage() {
                                             <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '.06em' }}>6-month gain</p>
                                         </div>
                                     </div>
-                                    <AreaChart data={ROI_DATA} color="#10b981" h={100} />
+                                    <AreaChart data={ROI_DATA} color="#10b981" h={isMobile ? 160 : 100} />
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 4, marginTop: 8, flexShrink: 0 }}>
                                         {ROI_DATA.map((d, i) => (
                                             <div key={d.m} style={{ textAlign: 'center', padding: '5px 0', borderRadius: 8, background: i === ROI_DATA.length - 1 ? 'rgba(16,185,129,.1)' : 'rgba(255,255,255,.03)', border: `1px solid ${i === ROI_DATA.length - 1 ? 'rgba(16,185,129,.3)' : 'rgba(255,255,255,.06)'}` }}>
