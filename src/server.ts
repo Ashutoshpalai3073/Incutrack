@@ -583,28 +583,10 @@ function getAuthAdmin(env: Env) {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-async function sendOTPEmail(to: string, otp: string, apiKey: string): Promise<void> {
-  if (!apiKey) {
-    console.log(`[DEV — no RESEND_API_KEY] OTP for ${to}: ${otp}`);
-    return;
-  }
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: 'Incutrack <Incutrack@drusti.online>',
-      to: [to],
-      subject: 'Your Incutrack verification code',
-      text: `Your Incutrack one-time code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it with anyone.\n\nIf you did not request this, please ignore this email.\n\n— Incutrack Team`,
-      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0"><tr><td align="center"><table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e4e4e7"><tr><td style="background:#7c3aed;padding:24px 32px"><p style="margin:0;color:#ffffff;font-size:20px;font-weight:700">Incutrack</p></td></tr><tr><td style="padding:32px"><p style="margin:0 0 8px;font-size:16px;color:#111827;font-weight:600">Your verification code</p><p style="margin:0 0 24px;font-size:14px;color:#6b7280">Use the code below to complete your sign in. It expires in 10 minutes.</p><div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px;text-align:center;margin-bottom:24px"><p style="margin:0;font-size:40px;font-weight:800;letter-spacing:12px;color:#7c3aed">${otp}</p></div><p style="margin:0;font-size:13px;color:#9ca3af">If you did not request this code, you can safely ignore this email.</p></td></tr><tr><td style="padding:16px 32px;border-top:1px solid #f3f4f6"><p style="margin:0;font-size:12px;color:#9ca3af">© 2026 Incutrack · IIT KGP Innovation Cell · Kharagpur, West Bengal</p></td></tr></table></td></tr></table></body></html>`,
-      headers: { 'X-Entity-Ref-ID': `incutrack-otp-${Date.now()}` },
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    console.error('[resend] OTP email failed:', err);
-    throw new Error('Failed to send OTP email. Please try again.');
-  }
+function getAnonClient() {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const key = process.env.VITE_SUPABASE_ANON_KEY || '';
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
 // ─── Auth: Sign Up ────────────────────────────────────────────────────────────
@@ -646,21 +628,17 @@ async function handleSignUp(request: Request, env: Env): Promise<Response> {
       return jsonRes({ case: 'name_taken', message: 'This name is already taken by another account.' }, 409);
     }
 
-    const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    const { error: otpErr } = await admin.from('otps').insert({ email, code: otp, expires_at: expiresAt, used: 0 });
-    console.log('[signup] OTP insert error:', JSON.stringify(otpErr));
-    if (otpErr) { console.error('[signup] OTP insert error (full):', otpErr); return jsonRes({ message: 'Failed to create OTP. Please try again.' }, 500); }
-
-    const resendKey = env.RESEND_API_KEY || process.env.RESEND_API_KEY || '';
-    try {
-      await sendOTPEmail(email, otp, resendKey);
-    } catch (emailErr) {
-      console.error('[signup] Email send failed:', emailErr);
-      return jsonRes({ message: 'Failed to send OTP email. Please verify your email address and try again.' }, 500);
+    const anonClient = getAnonClient();
+    const { error: otpErr } = await anonClient.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
+    });
+    if (otpErr) {
+      console.error('[signup] Supabase OTP error:', otpErr);
+      return jsonRes({ message: 'Failed to send verification code. Please try again.' }, 500);
     }
 
-    console.log('[signup] OTP sent successfully to:', email);
+    console.log('[signup] OTP sent via Supabase Auth to:', email);
     return jsonRes({ ok: true, message: 'OTP sent. Check your email.' });
   } catch (err) {
     console.error('[signup] unexpected error:', err);
@@ -684,25 +662,20 @@ async function handleVerifyOTP(request: Request, env: Env): Promise<Response> {
   const admin  = getAuthAdmin(env);
   const secret = env.JWT_SECRET || process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
-  const { data: otpRow } = await admin
-    .from('otps')
-    .select('*')
-    .eq('email', email)
-    .eq('code', code)
-    .eq('used', 0)
-    .gte('expires_at', new Date().toISOString())
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const anonClient = getAnonClient();
+  const { error: verifyErr } = await anonClient.auth.verifyOtp({
+    email,
+    token: code,
+    type: 'email',
+  });
 
-  if (!otpRow) {
-    const { data: anyOtp } = await admin.from('otps').select('used,expires_at').eq('email', email).eq('code', code).maybeSingle();
-    if (anyOtp?.used) return jsonRes({ message: 'Invalid OTP. Please try again.' }, 400);
-    if (anyOtp && new Date(anyOtp.expires_at) < new Date()) return jsonRes({ message: 'OTP has expired. Please request a new one.' }, 400);
+  if (verifyErr) {
+    console.error('[verify-otp] Supabase verify error:', verifyErr);
+    if (verifyErr.message?.toLowerCase().includes('expired')) {
+      return jsonRes({ message: 'OTP has expired. Please request a new one.' }, 400);
+    }
     return jsonRes({ message: 'Invalid OTP. Please try again.' }, 400);
   }
-
-  await admin.from('otps').update({ used: 1 }).eq('id', otpRow.id);
 
   let user: Record<string, unknown>;
 
@@ -756,17 +729,14 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
       return jsonRes({ case: 'google_conflict', message: 'This email is registered with Google login. Please use the Continue with Google button to log in.' }, 409);
     }
 
-    const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    const { error: otpErr } = await admin.from('otps').insert({ email, code: otp, expires_at: expiresAt, used: 0 });
-    if (otpErr) { console.error('[login] OTP insert error:', otpErr); return jsonRes({ message: 'Failed to create OTP. Please try again.' }, 500); }
-
-    const resendKey = env.RESEND_API_KEY || process.env.RESEND_API_KEY || '';
-    try {
-      await sendOTPEmail(email, otp, resendKey);
-    } catch (emailErr) {
-      console.error('[login] Email send failed:', emailErr);
-      return jsonRes({ message: 'Failed to send OTP email. Please try again.' }, 500);
+    const anonClient = getAnonClient();
+    const { error: otpErr } = await anonClient.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
+    });
+    if (otpErr) {
+      console.error('[login] Supabase OTP error:', otpErr);
+      return jsonRes({ message: 'Failed to send verification code. Please try again.' }, 500);
     }
 
     return jsonRes({ ok: true, message: 'OTP sent. Check your email.' });
