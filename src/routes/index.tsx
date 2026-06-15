@@ -2251,7 +2251,7 @@ function Index() {
               {[
                 { Icon: Mail, color: "#06b6d4", label: "Email", value: "hello@incutrack.in" },
                 { Icon: Phone, color: "#10b981", label: "Phone", value: "+91 98765 43210" },
-                { Icon: MapPin, color: "#8b5cf6", label: "Location", value: "IIT BBS Innovation Cell · Bhubaneswar, Odisha" },
+                { Icon: MapPin, color: "#8b5cf6", label: "Location", value: "IIT KGP Innovation Cell · Kharagpur, West Bengal" },
                 { Icon: Globe, color: "#f59e0b", label: "Website", value: "www.incutrack.in" },
               ].map(({ Icon, color, label, value }) => (
                 <div key={label} style={{ display: "flex", gap: 12, alignItems: "center" }}>

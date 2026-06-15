@@ -88,7 +88,10 @@ export function Chatbot() {
                     zIndex: 9998,
                     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
                     overflow: 'hidden'
-                }}>
+                }}
+                onWheel={e => e.stopPropagation()}
+                onTouchMove={e => e.stopPropagation()}
+                >
                     {/* Header */}
                     <div style={{
                         background: 'linear-gradient(135deg, #7c3aed22, #06b6d422)',
@@ -114,11 +117,18 @@ export function Chatbot() {
 
                     {/* Messages */}
                     <div style={{
-                        flex: 1, overflowY: 'auto', padding: '16px',
+                        flex: 1, overflowY: 'scroll', padding: '16px',
                         display: 'flex', flexDirection: 'column', gap: '10px',
                         scrollbarWidth: 'thin',
                         scrollbarColor: '#6366f1 transparent',
-                    }}>
+                        WebkitOverflowScrolling: 'touch',
+                        overscrollBehavior: 'contain',
+                        pointerEvents: 'auto',
+                        userSelect: 'text',
+                    }}
+                    onWheel={e => e.stopPropagation()}
+                    onTouchMove={e => e.stopPropagation()}
+                    >
                         {messages.map((msg, i) => (
                             <div key={i} style={{
                                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',

@@ -592,15 +592,12 @@ async function sendOTPEmail(to: string, otp: string, apiKey: string): Promise<vo
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: 'Incutrack <noreply@drusti.online>',
+      from: 'Incutrack <Incutrack@drusti.online>',
       to: [to],
-      subject: 'Your Incutrack login code',
-      html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
-        <h2 style="color:#8b5cf6">Your one-time code</h2>
-        <p style="font-size:36px;font-weight:900;letter-spacing:10px;color:#1a1a2e;margin:20px 0">${otp}</p>
-        <p style="color:#666">This code expires in 10 minutes. Do not share it with anyone.</p>
-        <p style="color:#999;font-size:12px">If you didn't request this, you can safely ignore this email.</p>
-      </div>`,
+      subject: 'Your Incutrack verification code',
+      text: `Your Incutrack one-time code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it with anyone.\n\nIf you did not request this, please ignore this email.\n\n— Incutrack Team`,
+      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0"><tr><td align="center"><table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e4e4e7"><tr><td style="background:#7c3aed;padding:24px 32px"><p style="margin:0;color:#ffffff;font-size:20px;font-weight:700">Incutrack</p></td></tr><tr><td style="padding:32px"><p style="margin:0 0 8px;font-size:16px;color:#111827;font-weight:600">Your verification code</p><p style="margin:0 0 24px;font-size:14px;color:#6b7280">Use the code below to complete your sign in. It expires in 10 minutes.</p><div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px;text-align:center;margin-bottom:24px"><p style="margin:0;font-size:40px;font-weight:800;letter-spacing:12px;color:#7c3aed">${otp}</p></div><p style="margin:0;font-size:13px;color:#9ca3af">If you did not request this code, you can safely ignore this email.</p></td></tr><tr><td style="padding:16px 32px;border-top:1px solid #f3f4f6"><p style="margin:0;font-size:12px;color:#9ca3af">© 2026 Incutrack · IIT KGP Innovation Cell · Kharagpur, West Bengal</p></td></tr></table></td></tr></table></body></html>`,
+      headers: { 'X-Entity-Ref-ID': `incutrack-otp-${Date.now()}` },
     }),
   });
   if (!res.ok) {

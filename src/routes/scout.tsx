@@ -817,9 +817,9 @@ function ScoutPage() {
                             style={{ alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', flexShrink: 0 }}
                         >
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <rect y="2" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)"/>
-                                <rect y="7.1" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)"/>
-                                <rect y="12.2" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)"/>
+                                <rect y="2" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)" />
+                                <rect y="7.1" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)" />
+                                <rect y="12.2" width="16" height="1.8" rx="1" fill="rgba(255,255,255,0.7)" />
                             </svg>
                         </button>
                         {!isMobile && <><span style={{ fontSize: 11, color: 'rgba(255,255,255,.22)' }}>Scout Hub</span><ChevronRight style={{ width: 12, height: 12, color: 'rgba(255,255,255,.15)' }} /></>}
@@ -2340,18 +2340,17 @@ function ScoutPage() {
                     ))()}
 
                     {/* ══ 7. DEPLOYMENT TRACKER ══ */}
-                    {tab === 'deployment' && (() => {
-                        const totalD = DEPLOYMENTS.reduce((a, c) => a + c.amount, 0);
-                        const fundTotal = totalD + dryPowder;
+{tab === 'deployment' && (() => {
+    const totalD = DEPLOYMENTS.reduce((a, c) => a + c.amount, 0);
+    const fundTotal = totalD + dryPowder;
 
-                        return (
-                            <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
-                                <DeploymentGalaxy />
+    return (
+        <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
+            <DeploymentGalaxy />
 
-                                {/* ── keyframes ── */}
-                                <style>{`
+            {/* ── keyframes ── */}
+            <style>{`
               @keyframes dp-spin   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-              @keytml dp-rspin  { from{transform:rotate(0deg)} to{transform:rotate(-360deg)} }
               @keyframes dp-rspin  { from{transform:rotate(0deg)} to{transform:rotate(-360deg)} }
               @keyframes dp-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
               @keyframes dp-drift  { 0%,100%{transform:translate(0,0)} 45%{transform:translate(15px,-12px)} 70%{transform:translate(-10px,10px)} }
@@ -2365,393 +2364,397 @@ function ScoutPage() {
               .dp-card:hover { transform:translateY(-3px) translateX(2px); }
               .dp-btn { transition:all .18s ease; }
               .dp-btn:hover { transform:translateY(-1px); filter:brightness(1.15); }
+              .dp-sidebar-scroll { scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.18) transparent; }
+              .dp-sidebar-scroll::-webkit-scrollbar { width:6px; }
+              .dp-sidebar-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,.14); border-radius:3px; }
+              .dp-sidebar-scroll::-webkit-scrollbar-track { background:transparent; }
             `}</style>
 
-                                {/* ── CSS ambient BG layer ── */}
-                                <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-                                    {/* blobs */}
-                                    <div style={{ position: 'absolute', top: '5%', left: '12%', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,.07),transparent 70%)', animation: 'dp-drift 12s ease-in-out infinite' }} />
-                                    <div style={{ position: 'absolute', bottom: '10%', right: '8%', width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle,rgba(16,185,129,.06),transparent 70%)', animation: 'dp-drift 15s ease-in-out infinite reverse' }} />
-                                    <div style={{ position: 'absolute', top: '42%', right: '28%', width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle,rgba(6,182,212,.05),transparent 70%)', animation: 'dp-drift 9s ease-in-out infinite 2s' }} />
+            {/* ── CSS ambient BG layer ── */}
+            <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+                {/* blobs */}
+                <div style={{ position: 'absolute', top: '5%', left: '12%', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,.07),transparent 70%)', animation: 'dp-drift 12s ease-in-out infinite' }} />
+                <div style={{ position: 'absolute', bottom: '10%', right: '8%', width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle,rgba(16,185,129,.06),transparent 70%)', animation: 'dp-drift 15s ease-in-out infinite reverse' }} />
+                <div style={{ position: 'absolute', top: '42%', right: '28%', width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle,rgba(6,182,212,.05),transparent 70%)', animation: 'dp-drift 9s ease-in-out infinite 2s' }} />
 
-                                    {/* orrery top-right */}
-                                    <div style={{ position: 'absolute', top: -40, right: -40, width: 220, height: 220 }}>
-                                        <div style={{ position: 'absolute', top: '50%', left: '50%', width: 17, height: 17, marginLeft: -8, marginTop: -8, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%,#a78bfa,#6d28d9)', boxShadow: '0 0 20px rgba(139,92,246,.9)', animation: 'dp-pulse 2.8s ease-in-out infinite' }} />
-                                        {[{ w: 62, c: '#8b5cf6', sp: '3.2s' }, { w: 104, c: '#10b981', sp: '5.5s', rev: true }, { w: 158, c: '#06b6d4', sp: '9s' }, { w: 214, c: '#f59e0b', sp: '13s', rev: true }].map((o, i) => (
-                                            <div key={i} style={{ position: 'absolute', top: '50%', left: '50%', width: o.w, height: o.w, marginLeft: -o.w / 2, marginTop: -o.w / 2, borderRadius: '50%', border: `1px solid ${o.c}${i < 2 ? '38' : '20'}` }}>
-                                                <div style={{ position: 'absolute', top: i % 2 === 0 ? -4 : 'auto', bottom: i % 2 === 1 ? -4 : 'auto', left: '50%', width: 9, height: 9, marginLeft: -4, borderRadius: '50%', background: o.c, boxShadow: `0 0 9px ${o.c}`, animation: `dp-spin ${o.sp} linear infinite ${o.rev ? 'reverse' : ''}`, transformOrigin: `4px ${o.w / 2 + 4}px` }} />
+                {/* orrery top-right */}
+                <div style={{ position: 'absolute', top: -40, right: -40, width: 220, height: 220 }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: 17, height: 17, marginLeft: -8, marginTop: -8, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%,#a78bfa,#6d28d9)', boxShadow: '0 0 20px rgba(139,92,246,.9)', animation: 'dp-pulse 2.8s ease-in-out infinite' }} />
+                    {[{ w: 62, c: '#8b5cf6', sp: '3.2s' }, { w: 104, c: '#10b981', sp: '5.5s', rev: true }, { w: 158, c: '#06b6d4', sp: '9s' }, { w: 214, c: '#f59e0b', sp: '13s', rev: true }].map((o, i) => (
+                        <div key={i} style={{ position: 'absolute', top: '50%', left: '50%', width: o.w, height: o.w, marginLeft: -o.w / 2, marginTop: -o.w / 2, borderRadius: '50%', border: `1px solid ${o.c}${i < 2 ? '38' : '20'}` }}>
+                            <div style={{ position: 'absolute', top: i % 2 === 0 ? -4 : 'auto', bottom: i % 2 === 1 ? -4 : 'auto', left: '50%', width: 9, height: 9, marginLeft: -4, borderRadius: '50%', background: o.c, boxShadow: `0 0 9px ${o.c}`, animation: `dp-spin ${o.sp} linear infinite ${o.rev ? 'reverse' : ''}`, transformOrigin: `4px ${o.w / 2 + 4}px` }} />
+                        </div>
+                    ))}
+                </div>
+
+                {/* morphing blob bottom-left */}
+                <div style={{ position: 'absolute', bottom: 22, left: 12, width: 115, height: 115, background: 'linear-gradient(135deg,rgba(139,92,246,.12),rgba(6,182,212,.07))', animation: 'dp-morph 8s ease-in-out infinite', border: '1px solid rgba(139,92,246,.16)' }} />
+
+                {/* spinning diamond */}
+                <div style={{ position: 'absolute', bottom: '26%', left: '42%', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 52, height: 52 }}>
+                    <div style={{ position: 'absolute', width: 40, height: 40, border: '2px solid rgba(16,185,129,.35)', borderRadius: 4, animation: 'dp-spin 10s linear infinite', transform: 'rotate(45deg)' }} />
+                    <div style={{ position: 'absolute', width: 20, height: 20, background: 'rgba(16,185,129,.06)', borderRadius: 2, animation: 'dp-rspin 6.5s linear infinite', transform: 'rotate(45deg)' }} />
+                </div>
+
+                {/* hexagon */}
+                <div style={{ position: 'absolute', top: '34%', left: '2%', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56 }}>
+                    <div style={{ width: 42, height: 42, border: '2px solid rgba(6,182,212,.28)', borderRadius: 8, animation: 'dp-spin 11s linear infinite', transform: 'rotate(45deg)' }} />
+                    <div style={{ position: 'absolute', width: 22, height: 22, border: '1px solid rgba(6,182,212,.48)', borderRadius: 4, animation: 'dp-rspin 7s linear infinite' }} />
+                </div>
+
+                {/* cross/star */}
+                <div style={{ position: 'absolute', top: '20%', left: '30%', width: 40, height: 40, opacity: .28, animation: 'dp-spin 15s linear infinite' }}>
+                    {[0, 45, 90, 135].map(a => <div key={a} style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1.5, background: `linear-gradient(90deg,transparent,${a < 90 ? '#8b5cf6' : '#06b6d4'},transparent)`, marginTop: -0.75, transform: `rotate(${a}deg)` }} />)}
+                </div>
+
+                {/* SVG triangle */}
+                <div style={{ position: 'absolute', bottom: '22%', right: '22%', opacity: .28, animation: 'dp-float 5.5s ease-in-out 1s infinite' }}>
+                    <svg width="50" height="44"><polygon points="25,2 48,42 2,42" fill="none" stroke="rgba(16,185,129,.65)" strokeWidth="1.5" /><polygon points="25,14 40,40 10,40" fill="rgba(16,185,129,.05)" stroke="rgba(16,185,129,.28)" strokeWidth="1" /></svg>
+                </div>
+
+                {/* particles */}
+                {[{ x: '7%', y: '38%', s: 4, c: '#8b5cf6', d: '0s' }, { x: '32%', y: '85%', s: 3, c: '#10b981', d: '.8s' }, { x: '58%', y: '12%', s: 5, c: '#06b6d4', d: '2.5s' }, { x: '85%', y: '55%', s: 3, c: '#f59e0b', d: '.4s' }, { x: '48%', y: '72%', s: 3, c: '#8b5cf6', d: '1.7s' }, { x: '70%', y: '88%', s: 4, c: '#10b981', d: '3s' }].map((p, i) => (
+                    <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, width: p.s, height: p.s, borderRadius: '50%', background: p.c, boxShadow: `0 0 ${p.s * 2.5}px ${p.c}`, opacity: .42, animation: `dp-float ${3.5 + i * .6}s ease-in-out ${p.d} infinite` }} />
+                ))}
+
+                {/* flow lines */}
+                {[{ t: '32%', c: '#8b5cf6' }, { t: '64%', c: '#10b981' }, { t: '85%', c: '#06b6d4' }].map((l, i) => (
+                    <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: l.t, height: 1, background: `linear-gradient(90deg,transparent,${l.c}14,transparent)`, backgroundSize: '40% 100%', animation: `dp-flow 7s linear ${i * 2}s infinite` }} />
+                ))}
+            </div>
+
+            {/* ── KPI strip ── */}
+            <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
+                {[
+                    { label: 'Total AUM', val: fmt(VC_PROFILE.aum), sub: 'Fund size', color: '#8b5cf6', Icon: Building2 },
+                    { label: 'Deployed', val: fmt(totalD), sub: `${((totalD / fundTotal) * 100).toFixed(0)}% of fund`, color: '#10b981', Icon: TrendingUp },
+                    { label: 'Dry Powder', val: fmt(dryPowder), sub: `${(((dryPowder) / fundTotal) * 100).toFixed(0)}% available`, color: '#06b6d4', Icon: Wallet },
+                    { label: 'Avg Portfolio ROI', val: '+40%', sub: 'Across positions', color: '#f59e0b', Icon: BarChart3 },
+                ].map(k => (
+                    <div key={k.label} className="dp-card" style={{ borderRadius: 16, border: `1px solid ${k.color}25`, background: `linear-gradient(135deg,${k.color}10 0%,rgba(5,5,9,.92) 70%)`, padding: '14px 16px', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${k.color}80,transparent)` }} />
+                        <div style={{ position: 'absolute', top: -22, right: -22, width: 90, height: 90, borderRadius: '50%', background: `radial-gradient(circle,${k.color}18,transparent 70%)`, pointerEvents: 'none' }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                            <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.28)', textTransform: 'uppercase', letterSpacing: '.09em', margin: 0 }}>{k.label}</p>
+                            <div style={{ width: 29, height: 29, borderRadius: 9, background: `${k.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 12px ${k.color}40`, flexShrink: 0 }}>
+                                <k.Icon style={{ width: 13, height: 13, color: k.color, filter: `drop-shadow(0 0 3px ${k.color})` }} />
+                            </div>
+                        </div>
+                        <p style={{ fontSize: 27, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1, letterSpacing: '-1px', textShadow: `0 0 18px ${k.color}50` }}>{k.val}</p>
+                        <p style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', margin: '5px 0 0' }}>{k.sub}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* ── Main 2-col layout ── */}
+            <div className="sc-tab-main-grid" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 296px', gap: 14, position: 'relative', zIndex: 1 }}>
+
+                {/* ── LEFT: Deployment cards ── */}
+                <div className="sc-tab-panel-left" style={{ minHeight: 0, borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.025)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,.7),transparent)' }} />
+
+                    {/* header */}
+                    <div style={{ padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(16,185,129,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 14px rgba(16,185,129,.45)' }}>
+                            <Wallet style={{ width: 14, height: 14, color: '#10b981', filter: 'drop-shadow(0 0 4px #10b981)' }} />
+                        </div>
+                        <div>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0 }}>Active Deployments</p>
+                            <p style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', margin: 0 }}>{DEPLOYMENTS.length} positions · {fmt(totalD)} deployed</p>
+                        </div>
+                        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', borderRadius: 999, background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.28)' }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981', animation: 'sc-pulse2 2.2s ease-in-out infinite' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#10b981', letterSpacing: '.08em' }}>{DEPLOYMENTS.length} POSITIONS</span>
+                        </div>
+                    </div>
+
+                    {/* portfolio fund bar */}
+                    <div style={{ padding: '12px 18px 0', flexShrink: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,.3)' }}>Capital Deployed</span>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: 'white' }}>{((totalD / fundTotal) * 100).toFixed(0)}% of {fmt(fundTotal)} fund</span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 4, background: 'rgba(255,255,255,.06)', overflow: 'hidden', position: 'relative' }}>
+                            {DEPLOYMENTS.map((d, i) => {
+                                const pct = (d.amount / fundTotal) * 100;
+                                const left = (DEPLOYMENTS.slice(0, i).reduce((a, c) => a + c.amount, 0) / fundTotal) * 100;
+                                return (
+                                    <div key={d.startup} style={{ position: 'absolute', top: 0, left: `${left}%`, width: `${pct}%`, height: '100%', background: d.color, boxShadow: `0 0 8px ${d.color}70`, transition: 'width .8s ease' }} />
+                                );
+                            })}
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
+                            {DEPLOYMENTS.map(d => (
+                                <div key={d.startup} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: d.color, boxShadow: `0 0 5px ${d.color}` }} />
+                                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,.35)' }}>{d.startup}</span>
+                                </div>
+                            ))}
+                            <span style={{ marginLeft: 'auto', fontSize: 9, color: 'rgba(255,255,255,.25)' }}>Remaining: {fmt(dryPowder)}</span>
+                        </div>
+                    </div>
+
+                    {/* deployment cards */}
+                    <div className="sc-scroll dp-sidebar-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {DEPLOYMENTS.map((d, idx) => {
+                            const pct = (d.amount / totalD) * 100;
+                            const r = 20, circ = 2 * Math.PI * r;
+                            const dash = (pct / 100) * circ;
+                            return (
+                                <div key={idx} className="dp-card" style={{ flexShrink: 0, borderRadius: 16, border: `1px solid ${d.color}28`, background: `linear-gradient(145deg,${d.color}0c 0%,rgba(5,5,9,.88) 100%)`, padding: '18px 20px', cursor: 'pointer', position: 'relative', overflow: 'hidden', animationDelay: `${idx * 0.08}s` }}>
+                                    {/* top accent */}
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, background: `linear-gradient(90deg,transparent,${d.color}80,transparent)` }} />
+                                    {/* corner radial */}
+                                    <div style={{ position: 'absolute', top: -35, right: -35, width: 140, height: 140, borderRadius: '50%', background: `radial-gradient(circle,${d.color}18,transparent 70%)`, pointerEvents: 'none' }} />
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                        {/* 3D planet */}
+                                        <div style={{ flexShrink: 0, animation: 'dp-float 5s ease-in-out infinite', animationDelay: `${idx * 0.8}s` }}>
+                                            <SectorPlanet color={d.color} size={58} />
+                                        </div>
+
+                                        {/* main info */}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                <div>
+                                                    <p style={{ fontSize: 16, fontWeight: 800, color: 'white', margin: 0, letterSpacing: '-.01em' }}>{d.startup}</p>
+                                                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', margin: '2px 0 0' }}>{d.sector} · {d.stage} · {d.date}</p>
+                                                </div>
+                                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                                    <p style={{ fontSize: 22, fontWeight: 900, color: d.color, margin: 0, lineHeight: 1, textShadow: `0 0 16px ${d.color}60` }}>{fmt(d.amount)}</p>
+                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 4, padding: '4px 10px', borderRadius: 999, background: 'rgba(16,185,129,.14)', border: '1px solid rgba(16,185,129,.35)' }}>
+                                                        <TrendingUp style={{ width: 10, height: 10, color: '#10b981' }} />
+                                                        <span style={{ fontSize: 11, fontWeight: 800, color: '#10b981' }}>ROI {d.roi}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* progress + pct */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+                                                <div style={{ flex: 1, height: 6, borderRadius: 4, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+                                                    <div style={{ height: '100%', borderRadius: 4, width: `${pct}%`, background: `linear-gradient(90deg,${d.color},${d.color}70)`, boxShadow: `0 0 10px ${d.color}70`, transition: 'width 1s cubic-bezier(.34,1.56,.64,1)', animation: 'dp-bar .9s ease forwards', ['--w' as string]: `${pct}%` }} />
+                                                </div>
+                                                <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.4)', flexShrink: 0 }}>{pct.toFixed(1)}% of deployed</span>
+                                            </div>
+                                        </div>
+
+                                        {/* SVG ring gauge */}
+                                        <div style={{ flexShrink: 0, position: 'relative', width: 52, height: 52 }}>
+                                            <svg width={52} height={52} viewBox="0 0 52 52">
+                                                <circle cx="26" cy="26" r={r} fill="none" stroke={`${d.color}20`} strokeWidth="4" />
+                                                <circle cx="26" cy="26" r={r} fill="none" stroke={d.color} strokeWidth="4"
+                                                    strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+                                                    transform="rotate(-90 26 26)"
+                                                    style={{ filter: `drop-shadow(0 0 5px ${d.color}80)` }}
+                                                />
+                                                <circle
+                                                    cx={26 + r * Math.cos((-Math.PI / 2) + (pct / 100) * 2 * Math.PI)}
+                                                    cy={26 + r * Math.sin((-Math.PI / 2) + (pct / 100) * 2 * Math.PI)}
+                                                    r="3" fill={d.color}
+                                                    style={{ filter: `drop-shadow(0 0 4px ${d.color})` }}
+                                                />
+                                            </svg>
+                                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                                <span style={{ fontSize: 11, fontWeight: 900, color: d.color, lineHeight: 1, filter: `drop-shadow(0 0 5px ${d.color}80)` }}>{pct.toFixed(0)}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* bottom detail strip */}
+                                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${d.color}18`, display: 'flex', gap: 16, alignItems: 'center' }}>
+                                        {[['Sector', d.sector], ['Stage', d.stage], ['Deployed', d.date], ['Position', `${pct.toFixed(1)}% of capital`]].map(([l, v]) => (
+                                            <div key={l}>
+                                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', margin: 0, textTransform: 'uppercase', letterSpacing: '.06em' }}>{l}</p>
+                                                <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.6)', margin: '2px 0 0' }}>{v}</p>
                                             </div>
                                         ))}
                                     </div>
-
-                                    {/* morphing blob bottom-left */}
-                                    <div style={{ position: 'absolute', bottom: 22, left: 12, width: 115, height: 115, background: 'linear-gradient(135deg,rgba(139,92,246,.12),rgba(6,182,212,.07))', animation: 'dp-morph 8s ease-in-out infinite', border: '1px solid rgba(139,92,246,.16)' }} />
-
-                                    {/* spinning diamond */}
-                                    <div style={{ position: 'absolute', bottom: '26%', left: '42%', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 52, height: 52 }}>
-                                        <div style={{ position: 'absolute', width: 40, height: 40, border: '2px solid rgba(16,185,129,.35)', borderRadius: 4, animation: 'dp-spin 10s linear infinite', transform: 'rotate(45deg)' }} />
-                                        <div style={{ position: 'absolute', width: 20, height: 20, background: 'rgba(16,185,129,.06)', borderRadius: 2, animation: 'dp-rspin 6.5s linear infinite', transform: 'rotate(45deg)' }} />
-                                    </div>
-
-                                    {/* hexagon */}
-                                    <div style={{ position: 'absolute', top: '34%', left: '2%', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56 }}>
-                                        <div style={{ width: 42, height: 42, border: '2px solid rgba(6,182,212,.28)', borderRadius: 8, animation: 'dp-spin 11s linear infinite', transform: 'rotate(45deg)' }} />
-                                        <div style={{ position: 'absolute', width: 22, height: 22, border: '1px solid rgba(6,182,212,.48)', borderRadius: 4, animation: 'dp-rspin 7s linear infinite' }} />
-                                    </div>
-
-                                    {/* cross/star */}
-                                    <div style={{ position: 'absolute', top: '20%', left: '30%', width: 40, height: 40, opacity: .28, animation: 'dp-spin 15s linear infinite' }}>
-                                        {[0, 45, 90, 135].map(a => <div key={a} style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1.5, background: `linear-gradient(90deg,transparent,${a < 90 ? '#8b5cf6' : '#06b6d4'},transparent)`, marginTop: -0.75, transform: `rotate(${a}deg)` }} />)}
-                                    </div>
-
-                                    {/* SVG triangle */}
-                                    <div style={{ position: 'absolute', bottom: '22%', right: '22%', opacity: .28, animation: 'dp-float 5.5s ease-in-out 1s infinite' }}>
-                                        <svg width="50" height="44"><polygon points="25,2 48,42 2,42" fill="none" stroke="rgba(16,185,129,.65)" strokeWidth="1.5" /><polygon points="25,14 40,40 10,40" fill="rgba(16,185,129,.05)" stroke="rgba(16,185,129,.28)" strokeWidth="1" /></svg>
-                                    </div>
-
-                                    {/* particles */}
-                                    {[{ x: '7%', y: '38%', s: 4, c: '#8b5cf6', d: '0s' }, { x: '32%', y: '85%', s: 3, c: '#10b981', d: '.8s' }, { x: '58%', y: '12%', s: 5, c: '#06b6d4', d: '2.5s' }, { x: '85%', y: '55%', s: 3, c: '#f59e0b', d: '.4s' }, { x: '48%', y: '72%', s: 3, c: '#8b5cf6', d: '1.7s' }, { x: '70%', y: '88%', s: 4, c: '#10b981', d: '3s' }].map((p, i) => (
-                                        <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, width: p.s, height: p.s, borderRadius: '50%', background: p.c, boxShadow: `0 0 ${p.s * 2.5}px ${p.c}`, opacity: .42, animation: `dp-float ${3.5 + i * .6}s ease-in-out ${p.d} infinite` }} />
-                                    ))}
-
-                                    {/* flow lines */}
-                                    {[{ t: '32%', c: '#8b5cf6' }, { t: '64%', c: '#10b981' }, { t: '85%', c: '#06b6d4' }].map((l, i) => (
-                                        <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: l.t, height: 1, background: `linear-gradient(90deg,transparent,${l.c}14,transparent)`, backgroundSize: '40% 100%', animation: `dp-flow 7s linear ${i * 2}s infinite` }} />
-                                    ))}
                                 </div>
+                            );
+                        })}
+                    </div>
+                </div>
 
-                                {/* ── KPI strip ── */}
-                                <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
-                                    {[
-                                        { label: 'Total AUM', val: fmt(VC_PROFILE.aum), sub: 'Fund size', color: '#8b5cf6', Icon: Building2 },
-                                        { label: 'Deployed', val: fmt(totalD), sub: `${((totalD / fundTotal) * 100).toFixed(0)}% of fund`, color: '#10b981', Icon: TrendingUp },
-                                        { label: 'Dry Powder', val: fmt(dryPowder), sub: `${(((dryPowder) / fundTotal) * 100).toFixed(0)}% available`, color: '#06b6d4', Icon: Wallet },
-                                        { label: 'Avg Portfolio ROI', val: '+40%', sub: 'Across positions', color: '#f59e0b', Icon: BarChart3 },
-                                    ].map(k => (
-                                        <div key={k.label} className="dp-card" style={{ borderRadius: 16, border: `1px solid ${k.color}25`, background: `linear-gradient(135deg,${k.color}10 0%,rgba(5,5,9,.92) 70%)`, padding: '14px 16px', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
-                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${k.color}80,transparent)` }} />
-                                            <div style={{ position: 'absolute', top: -22, right: -22, width: 90, height: 90, borderRadius: '50%', background: `radial-gradient(circle,${k.color}18,transparent 70%)`, pointerEvents: 'none' }} />
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                                                <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.28)', textTransform: 'uppercase', letterSpacing: '.09em', margin: 0 }}>{k.label}</p>
-                                                <div style={{ width: 29, height: 29, borderRadius: 9, background: `${k.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 12px ${k.color}40`, flexShrink: 0 }}>
-                                                    <k.Icon style={{ width: 13, height: 13, color: k.color, filter: `drop-shadow(0 0 3px ${k.color})` }} />
+                {/* ── RIGHT column (now scrolls so nothing gets crushed) ── */}
+                <div className="sc-tab-sidebar dp-sidebar-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', paddingRight: 4, paddingBottom: 2 }}>
+
+                    {/* ── Portfolio Donut + fund split ── */}
+                    <div style={{ flexShrink: 0, borderRadius: 18, border: '1px solid rgba(139,92,246,.28)', background: 'linear-gradient(160deg,rgba(139,92,246,.12) 0%,rgba(5,5,9,.97) 70%)', padding: '16px', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,.85),transparent)' }} />
+                        <div style={{ position: 'absolute', top: -30, right: -30, width: 130, height: 130, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,.12),transparent 70%)', pointerEvents: 'none' }} />
+                        <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: '0 0 12px' }}>Portfolio Allocation</p>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            {/* SVG donut */}
+                            {(() => {
+                                const r = 40, cx = 48, cy = 48, circ = 2 * Math.PI * r;
+                                let cum = 0;
+                                return (
+                                    <svg width={96} height={96} viewBox="0 0 96 96" style={{ flexShrink: 0 }}>
+                                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth="10" />
+                                        {DEPLOYMENTS.map(d => {
+                                            const pct = d.amount / totalD;
+                                            const dashLen = pct * circ;
+                                            const off = cum; cum += dashLen;
+                                            return (
+                                                <circle key={d.startup} cx={cx} cy={cy} r={r} fill="none"
+                                                    stroke={d.color} strokeWidth="10"
+                                                    strokeDasharray={`${dashLen - 3} ${circ}`}
+                                                    strokeDashoffset={-off}
+                                                    transform={`rotate(-90 ${cx} ${cy})`}
+                                                    style={{ filter: `drop-shadow(0 0 6px ${d.color}80)` }}
+                                                />
+                                            );
+                                        })}
+                                        <text x={cx} y={cy - 5} textAnchor="middle" fontSize="16" fontWeight="900" fill="white">{DEPLOYMENTS.length}</text>
+                                        <text x={cx} y={cy + 9} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,.3)" letterSpacing="1">POS.</text>
+                                    </svg>
+                                );
+                            })()}
+
+                            {/* legend */}
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {DEPLOYMENTS.map(d => {
+                                    const pct = ((d.amount / totalD) * 100).toFixed(0);
+                                    return (
+                                        <div key={d.startup}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: d.color, boxShadow: `0 0 5px ${d.color}`, flexShrink: 0 }} />
+                                                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,.55)' }}>{d.startup}</span>
                                                 </div>
+                                                <span style={{ fontSize: 11, fontWeight: 800, color: d.color }}>{pct}%</span>
                                             </div>
-                                            <p style={{ fontSize: 27, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1, letterSpacing: '-1px', textShadow: `0 0 18px ${k.color}50` }}>{k.val}</p>
-                                            <p style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', margin: '5px 0 0' }}>{k.sub}</p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* ── Main 2-col layout ── */}
-                                <div className="sc-tab-main-grid" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 296px', gap: 14, position: 'relative', zIndex: 1 }}>
-
-                                    {/* ── LEFT: Deployment cards ── */}
-                                    <div className="sc-tab-panel-left" style={{ borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.025)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,.7),transparent)' }} />
-
-                                        {/* header */}
-                                        <div style={{ padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                                            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(16,185,129,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 14px rgba(16,185,129,.45)' }}>
-                                                <Wallet style={{ width: 14, height: 14, color: '#10b981', filter: 'drop-shadow(0 0 4px #10b981)' }} />
-                                            </div>
-                                            <div>
-                                                <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0 }}>Active Deployments</p>
-                                                <p style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', margin: 0 }}>{DEPLOYMENTS.length} positions · {fmt(totalD)} deployed</p>
-                                            </div>
-                                            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', borderRadius: 999, background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.28)' }}>
-                                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981', animation: 'sc-pulse2 2.2s ease-in-out infinite' }} />
-                                                <span style={{ fontSize: 9, fontWeight: 700, color: '#10b981', letterSpacing: '.08em' }}>{DEPLOYMENTS.length} POSITIONS</span>
-                                            </div>
-                                        </div>
-
-                                        {/* portfolio fund bar */}
-                                        <div style={{ padding: '12px 18px 0', flexShrink: 0 }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                                <span style={{ fontSize: 10, color: 'rgba(255,255,255,.3)' }}>Capital Deployed</span>
-                                                <span style={{ fontSize: 10, fontWeight: 700, color: 'white' }}>{((totalD / fundTotal) * 100).toFixed(0)}% of {fmt(fundTotal)} fund</span>
-                                            </div>
-                                            <div style={{ height: 6, borderRadius: 4, background: 'rgba(255,255,255,.06)', overflow: 'hidden', position: 'relative' }}>
-                                                {DEPLOYMENTS.map((d, i) => {
-                                                    const pct = (d.amount / fundTotal) * 100;
-                                                    const left = (DEPLOYMENTS.slice(0, i).reduce((a, c) => a + c.amount, 0) / fundTotal) * 100;
-                                                    return (
-                                                        <div key={d.startup} style={{ position: 'absolute', top: 0, left: `${left}%`, width: `${pct}%`, height: '100%', background: d.color, boxShadow: `0 0 8px ${d.color}70`, transition: 'width .8s ease' }} />
-                                                    );
-                                                })}
-                                            </div>
-                                            <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
-                                                {DEPLOYMENTS.map(d => (
-                                                    <div key={d.startup} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: d.color, boxShadow: `0 0 5px ${d.color}` }} />
-                                                        <span style={{ fontSize: 9, color: 'rgba(255,255,255,.35)' }}>{d.startup}</span>
-                                                    </div>
-                                                ))}
-                                                <span style={{ marginLeft: 'auto', fontSize: 9, color: 'rgba(255,255,255,.25)' }}>Remaining: {fmt(dryPowder)}</span>
+                                            <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,.05)' }}>
+                                                <div style={{ height: '100%', borderRadius: 2, width: `${pct}%`, background: `linear-gradient(90deg,${d.color},${d.color}70)`, boxShadow: `0 0 6px ${d.color}55` }} />
                                             </div>
                                         </div>
-
-                                        {/* deployment cards */}
-                                        <div className="sc-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                            {DEPLOYMENTS.map((d, idx) => {
-                                                const pct = (d.amount / totalD) * 100;
-                                                const r = 20, circ = 2 * Math.PI * r;
-                                                const dash = (pct / 100) * circ;
-                                                return (
-                                                    <div key={idx} className="dp-card" style={{ borderRadius: 16, border: `1px solid ${d.color}28`, background: `linear-gradient(145deg,${d.color}0c 0%,rgba(5,5,9,.88) 100%)`, padding: '18px 20px', cursor: 'pointer', position: 'relative', overflow: 'hidden', animationDelay: `${idx * 0.08}s` }}>
-                                                        {/* top accent */}
-                                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, background: `linear-gradient(90deg,transparent,${d.color}80,transparent)` }} />
-                                                        {/* corner radial */}
-                                                        <div style={{ position: 'absolute', top: -35, right: -35, width: 140, height: 140, borderRadius: '50%', background: `radial-gradient(circle,${d.color}18,transparent 70%)`, pointerEvents: 'none' }} />
-
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                                            {/* 3D planet */}
-                                                            <div style={{ flexShrink: 0, animation: 'dp-float 5s ease-in-out infinite', animationDelay: `${idx * 0.8}s` }}>
-                                                                <SectorPlanet color={d.color} size={58} />
-                                                            </div>
-
-                                                            {/* main info */}
-                                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
-                                                                    <div>
-                                                                        <p style={{ fontSize: 16, fontWeight: 800, color: 'white', margin: 0, letterSpacing: '-.01em' }}>{d.startup}</p>
-                                                                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', margin: '2px 0 0' }}>{d.sector} · {d.stage} · {d.date}</p>
-                                                                    </div>
-                                                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                                                        <p style={{ fontSize: 22, fontWeight: 900, color: d.color, margin: 0, lineHeight: 1, textShadow: `0 0 16px ${d.color}60` }}>{fmt(d.amount)}</p>
-                                                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 4, padding: '4px 10px', borderRadius: 999, background: 'rgba(16,185,129,.14)', border: '1px solid rgba(16,185,129,.35)' }}>
-                                                                            <TrendingUp style={{ width: 10, height: 10, color: '#10b981' }} />
-                                                                            <span style={{ fontSize: 11, fontWeight: 800, color: '#10b981' }}>ROI {d.roi}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* progress + pct */}
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
-                                                                    <div style={{ flex: 1, height: 6, borderRadius: 4, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
-                                                                        <div style={{ height: '100%', borderRadius: 4, width: `${pct}%`, background: `linear-gradient(90deg,${d.color},${d.color}70)`, boxShadow: `0 0 10px ${d.color}70`, transition: 'width 1s cubic-bezier(.34,1.56,.64,1)', animation: 'dp-bar .9s ease forwards', ['--w' as string]: `${pct}%` }} />
-                                                                    </div>
-                                                                    <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.4)', flexShrink: 0 }}>{pct.toFixed(1)}% of deployed</span>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* SVG ring gauge */}
-                                                            <div style={{ flexShrink: 0, position: 'relative', width: 52, height: 52 }}>
-                                                                <svg width={52} height={52} viewBox="0 0 52 52">
-                                                                    <circle cx="26" cy="26" r={r} fill="none" stroke={`${d.color}20`} strokeWidth="4" />
-                                                                    <circle cx="26" cy="26" r={r} fill="none" stroke={d.color} strokeWidth="4"
-                                                                        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-                                                                        transform="rotate(-90 26 26)"
-                                                                        style={{ filter: `drop-shadow(0 0 5px ${d.color}80)` }}
-                                                                    />
-                                                                    <circle
-                                                                        cx={26 + r * Math.cos((-Math.PI / 2) + (pct / 100) * 2 * Math.PI)}
-                                                                        cy={26 + r * Math.sin((-Math.PI / 2) + (pct / 100) * 2 * Math.PI)}
-                                                                        r="3" fill={d.color}
-                                                                        style={{ filter: `drop-shadow(0 0 4px ${d.color})` }}
-                                                                    />
-                                                                </svg>
-                                                                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                                                                    <span style={{ fontSize: 11, fontWeight: 900, color: d.color, lineHeight: 1, filter: `drop-shadow(0 0 5px ${d.color}80)` }}>{pct.toFixed(0)}%</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* bottom detail strip */}
-                                                        <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${d.color}18`, display: 'flex', gap: 16, alignItems: 'center' }}>
-                                                            {[['Sector', d.sector], ['Stage', d.stage], ['Deployed', d.date], ['Position', `${pct.toFixed(1)}% of capital`]].map(([l, v]) => (
-                                                                <div key={l}>
-                                                                    <p style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', margin: 0, textTransform: 'uppercase', letterSpacing: '.06em' }}>{l}</p>
-                                                                    <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.6)', margin: '2px 0 0' }}>{v}</p>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* ── RIGHT column ── */}
-                                    <div className="sc-tab-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, overflow: 'hidden' }}>
-
-                                        {/* ── Portfolio Donut + fund split ── */}
-                                        <div style={{ flexShrink: 0, borderRadius: 18, border: '1px solid rgba(139,92,246,.28)', background: 'linear-gradient(160deg,rgba(139,92,246,.12) 0%,rgba(5,5,9,.97) 70%)', padding: '16px', position: 'relative', overflow: 'hidden' }}>
-                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,.85),transparent)' }} />
-                                            <div style={{ position: 'absolute', top: -30, right: -30, width: 130, height: 130, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,.12),transparent 70%)', pointerEvents: 'none' }} />
-                                            <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: '0 0 12px' }}>Portfolio Allocation</p>
-
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                                {/* SVG donut */}
-                                                {(() => {
-                                                    const r = 40, cx = 48, cy = 48, circ = 2 * Math.PI * r;
-                                                    let cum = 0;
-                                                    return (
-                                                        <svg width={96} height={96} viewBox="0 0 96 96" style={{ flexShrink: 0 }}>
-                                                            <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth="10" />
-                                                            {DEPLOYMENTS.map(d => {
-                                                                const pct = d.amount / totalD;
-                                                                const dashLen = pct * circ;
-                                                                const off = cum; cum += dashLen;
-                                                                return (
-                                                                    <circle key={d.startup} cx={cx} cy={cy} r={r} fill="none"
-                                                                        stroke={d.color} strokeWidth="10"
-                                                                        strokeDasharray={`${dashLen - 3} ${circ}`}
-                                                                        strokeDashoffset={-off}
-                                                                        transform={`rotate(-90 ${cx} ${cy})`}
-                                                                        style={{ filter: `drop-shadow(0 0 6px ${d.color}80)` }}
-                                                                    />
-                                                                );
-                                                            })}
-                                                            <text x={cx} y={cy - 5} textAnchor="middle" fontSize="16" fontWeight="900" fill="white">{DEPLOYMENTS.length}</text>
-                                                            <text x={cx} y={cy + 9} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,.3)" letterSpacing="1">POS.</text>
-                                                        </svg>
-                                                    );
-                                                })()}
-
-                                                {/* legend */}
-                                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                                    {DEPLOYMENTS.map(d => {
-                                                        const pct = ((d.amount / totalD) * 100).toFixed(0);
-                                                        return (
-                                                            <div key={d.startup}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: d.color, boxShadow: `0 0 5px ${d.color}`, flexShrink: 0 }} />
-                                                                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,.55)' }}>{d.startup}</span>
-                                                                    </div>
-                                                                    <span style={{ fontSize: 11, fontWeight: 800, color: d.color }}>{pct}%</span>
-                                                                </div>
-                                                                <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,.05)' }}>
-                                                                    <div style={{ height: '100%', borderRadius: 2, width: `${pct}%`, background: `linear-gradient(90deg,${d.color},${d.color}70)`, boxShadow: `0 0 6px ${d.color}55` }} />
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* deployed vs dry powder bar */}
-                                            <div style={{ marginTop: 12 }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                                                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Fund Utilisation</span>
-                                                    <span style={{ fontSize: 10, fontWeight: 800, background: 'linear-gradient(90deg,#a78bfa,#34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{((totalD / fundTotal) * 100).toFixed(0)}% deployed</span>
-                                                </div>
-                                                <div style={{ height: 7, borderRadius: 4, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
-                                                    <div style={{ height: '100%', width: `${(totalD / fundTotal) * 100}%`, borderRadius: 4, background: 'linear-gradient(90deg,#7c3aed,#06b6d4,#10b981)', boxShadow: '0 0 14px rgba(139,92,246,.65)' }} />
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-                                                    <span style={{ fontSize: 9, color: '#a78bfa' }}>Deployed: {fmt(totalD)}</span>
-                                                    <span style={{ fontSize: 9, color: '#10b981' }}>Available: {fmt(dryPowder)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* ── Dry Powder Scenarios ── */}
-                                        <div style={{ flexShrink: 0, borderRadius: 18, border: '1px solid rgba(245,158,11,.22)', background: 'linear-gradient(160deg,rgba(245,158,11,.08) 0%,rgba(5,5,9,.97) 70%)', padding: '14px 16px', position: 'relative', overflow: 'hidden' }}>
-                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(245,158,11,.8),transparent)' }} />
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                                                <div style={{ width: 26, height: 26, borderRadius: 8, background: 'rgba(245,158,11,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(245,158,11,.4)' }}>
-                                                    <Zap style={{ width: 12, height: 12, color: '#f59e0b', filter: 'drop-shadow(0 0 3px #f59e0b)' }} />
-                                                </div>
-                                                <div>
-                                                    <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Dry Powder Scenarios</p>
-                                                    <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: 0 }}>Available: {fmt(dryPowder)}</p>
-                                                </div>
-                                            </div>
-
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                                {[
-                                                    { label: '5 Seed deals · ₹5M each', cost: 25_000_000, budgets: 17, color: '#8b5cf6' },
-                                                    { label: '3 Series A · ₹15M', cost: 45_000_000, budgets: 9, color: '#06b6d4' },
-                                                    { label: '1 Lead Series B · ₹50M', cost: 50_000_000, budgets: 8, color: '#10b981' },
-                                                ].map((s, i) => {
-                                                    const usePct = Math.min((s.cost / dryPowder) * 100, 100);
-                                                    return (
-                                                        <div key={i} style={{ padding: '10px 12px', borderRadius: 12, background: `${s.color}08`, border: `1px solid ${s.color}22`, position: 'relative', overflow: 'hidden' }}>
-                                                            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${usePct}%`, background: `${s.color}0a`, pointerEvents: 'none', transition: 'width .6s ease' }} />
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 5, position: 'relative' }}>
-                                                                <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.65)' }}>{s.label}</span>
-                                                                <span style={{ fontSize: 11, fontWeight: 800, color: s.color, flexShrink: 0, marginLeft: 8 }}>{s.budgets} left</span>
-                                                            </div>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
-                                                                <span style={{ fontSize: 10, color: 'rgba(255,255,255,.3)' }}>{fmt(s.cost)} used</span>
-                                                                <span style={{ fontSize: 9, color: s.color, fontWeight: 700 }}>{usePct.toFixed(0)}% of powder</span>
-                                                            </div>
-                                                            <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,.05)', marginTop: 6, overflow: 'hidden' }}>
-                                                                <div style={{ height: '100%', borderRadius: 2, width: `${usePct}%`, background: `linear-gradient(90deg,${s.color},${s.color}70)`, boxShadow: `0 0 6px ${s.color}55` }} />
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        {/* ── Return Targets with SVG arc gauges ── */}
-                                        <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(16,185,129,.22)', background: 'linear-gradient(160deg,rgba(16,185,129,.08) 0%,rgba(5,5,9,.97) 70%)', padding: '14px 16px', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,.8),transparent)' }} />
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexShrink: 0 }}>
-                                                <div style={{ width: 26, height: 26, borderRadius: 8, background: 'rgba(16,185,129,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(16,185,129,.4)' }}>
-                                                    <Target style={{ width: 12, height: 12, color: '#10b981', filter: 'drop-shadow(0 0 3px #10b981)' }} />
-                                                </div>
-                                                <div>
-                                                    <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Return Targets</p>
-                                                    <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: 0 }}>Performance vs targets</p>
-                                                </div>
-                                            </div>
-
-                                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0, justifyContent: 'space-around' }}>
-                                                {[
-                                                    { label: 'Target MOIC', val: '3.5×', current: 2.1, target: 3.5, color: '#8b5cf6', unit: '×' },
-                                                    { label: 'Current Avg ROI', val: '+40%', current: 40, target: 60, color: '#10b981', unit: '%' },
-                                                    { label: 'IRR Target', val: '28%', current: 28, target: 35, color: '#06b6d4', unit: '%' },
-                                                    { label: 'Hold Period', val: '5–7 yrs', current: 2, target: 7, color: '#f59e0b', unit: 'yr' },
-                                                ].map(row => {
-                                                    const pct = Math.min((row.current / row.target) * 100, 100);
-                                                    const statusColor = pct >= 75 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
-                                                    return (
-                                                        <div key={row.label} style={{ padding: '9px 12px', borderRadius: 11, background: `${row.color}08`, border: `1px solid ${row.color}20`, display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                            {/* mini arc SVG */}
-                                                            {(() => {
-                                                                const R = 16, C = 2 * Math.PI * R;
-                                                                const half = C / 2;
-                                                                const fill = (pct / 100) * half;
-                                                                return (
-                                                                    <svg width={40} height={24} viewBox="0 0 40 24" style={{ flexShrink: 0 }}>
-                                                                        <path d="M4 22 A16 16 0 0 1 36 22" fill="none" stroke={`${row.color}20`} strokeWidth="4" strokeLinecap="round" />
-                                                                        <path d="M4 22 A16 16 0 0 1 36 22" fill="none" stroke={row.color} strokeWidth="4" strokeLinecap="round"
-                                                                            strokeDasharray={`${fill} ${half}`}
-                                                                            style={{ filter: `drop-shadow(0 0 4px ${row.color}80)` }}
-                                                                        />
-                                                                        <text x="20" y="22" textAnchor="middle" fontSize="8" fontWeight="800" fill={row.color}>{pct.toFixed(0)}%</text>
-                                                                    </svg>
-                                                                );
-                                                            })()}
-
-                                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                                                                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,.5)', fontWeight: 500 }}>{row.label}</span>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                                        <span style={{ fontSize: 15, fontWeight: 900, color: row.color, textShadow: `0 0 10px ${row.color}60`, lineHeight: 1 }}>{row.val}</span>
-                                                                        <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 999, background: `${statusColor}18`, color: statusColor, border: `1px solid ${statusColor}35` }}>
-                                                                            {pct >= 75 ? 'On Track' : pct >= 50 ? 'Progressing' : 'Early'}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                                <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
-                                                                    <div style={{ height: '100%', borderRadius: 2, width: `${pct}%`, background: `linear-gradient(90deg,${row.color},${row.color}70)`, boxShadow: `0 0 6px ${row.color}55` }} />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                    );
+                                })}
                             </div>
-                        );
-                    })()}
+                        </div>
+
+                        {/* deployed vs dry powder bar */}
+                        <div style={{ marginTop: 12 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                                <span style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Fund Utilisation</span>
+                                <span style={{ fontSize: 10, fontWeight: 800, background: 'linear-gradient(90deg,#a78bfa,#34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{((totalD / fundTotal) * 100).toFixed(0)}% deployed</span>
+                            </div>
+                            <div style={{ height: 7, borderRadius: 4, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${(totalD / fundTotal) * 100}%`, borderRadius: 4, background: 'linear-gradient(90deg,#7c3aed,#06b6d4,#10b981)', boxShadow: '0 0 14px rgba(139,92,246,.65)' }} />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
+                                <span style={{ fontSize: 9, color: '#a78bfa' }}>Deployed: {fmt(totalD)}</span>
+                                <span style={{ fontSize: 9, color: '#10b981' }}>Available: {fmt(dryPowder)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── Dry Powder Scenarios ── */}
+                    <div style={{ flexShrink: 0, minWidth: 0, width: '100%', boxSizing: 'border-box', borderRadius: 18, border: '1px solid rgba(245,158,11,.22)', background: 'linear-gradient(160deg,rgba(245,158,11,.08) 0%,rgba(5,5,9,.97) 70%)', padding: '14px 16px', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(245,158,11,.8),transparent)' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                            <div style={{ width: 26, height: 26, borderRadius: 8, background: 'rgba(245,158,11,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(245,158,11,.4)', flexShrink: 0 }}>
+                                <Zap style={{ width: 12, height: 12, color: '#f59e0b', filter: 'drop-shadow(0 0 3px #f59e0b)' }} />
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                                <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Dry Powder Scenarios</p>
+                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: 0 }}>Available: {fmt(dryPowder)}</p>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {[
+                                { label: '5 Seed deals · ₹5M each', cost: 25_000_000, budgets: 17, color: '#8b5cf6' },
+                                { label: '3 Series A · ₹15M', cost: 45_000_000, budgets: 9, color: '#06b6d4' },
+                                { label: '1 Lead Series B · ₹50M', cost: 50_000_000, budgets: 8, color: '#10b981' },
+                            ].map((s, i) => {
+                                const usePct = Math.min((s.cost / dryPowder) * 100, 100);
+                                return (
+                                    <div key={i} style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 12, background: `${s.color}08`, border: `1px solid ${s.color}22`, position: 'relative', overflow: 'hidden' }}>
+                                        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${usePct}%`, background: `${s.color}0a`, pointerEvents: 'none', transition: 'width .6s ease' }} />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 5, position: 'relative', gap: 8 }}>
+                                            <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.65)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</span>
+                                            <span style={{ fontSize: 11, fontWeight: 800, color: s.color, flexShrink: 0 }}>{s.budgets} left</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+                                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,.3)' }}>{fmt(s.cost)} used</span>
+                                            <span style={{ fontSize: 9, color: s.color, fontWeight: 700 }}>{usePct.toFixed(0)}% of powder</span>
+                                        </div>
+                                        <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,.05)', marginTop: 6, overflow: 'hidden' }}>
+                                            <div style={{ height: '100%', borderRadius: 2, width: `${usePct}%`, background: `linear-gradient(90deg,${s.color},${s.color}70)`, boxShadow: `0 0 6px ${s.color}55` }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* ── Return Targets with SVG arc gauges (sizes to content now) ── */}
+                    <div style={{ flexShrink: 0, borderRadius: 18, border: '1px solid rgba(16,185,129,.22)', background: 'linear-gradient(160deg,rgba(16,185,129,.08) 0%,rgba(5,5,9,.97) 70%)', padding: '14px 16px', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,.8),transparent)' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexShrink: 0 }}>
+                            <div style={{ width: 26, height: 26, borderRadius: 8, background: 'rgba(16,185,129,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(16,185,129,.4)' }}>
+                                <Target style={{ width: 12, height: 12, color: '#10b981', filter: 'drop-shadow(0 0 3px #10b981)' }} />
+                            </div>
+                            <div>
+                                <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Return Targets</p>
+                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: 0 }}>Performance vs targets</p>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {[
+                                { label: 'Target MOIC', val: '3.5×', current: 2.1, target: 3.5, color: '#8b5cf6', unit: '×' },
+                                { label: 'Current Avg ROI', val: '+40%', current: 40, target: 60, color: '#10b981', unit: '%' },
+                                { label: 'IRR Target', val: '28%', current: 28, target: 35, color: '#06b6d4', unit: '%' },
+                                { label: 'Hold Period', val: '5–7 yrs', current: 2, target: 7, color: '#f59e0b', unit: 'yr' },
+                            ].map(row => {
+                                const pct = Math.min((row.current / row.target) * 100, 100);
+                                const statusColor = pct >= 75 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
+                                return (
+                                    <div key={row.label} style={{ padding: '9px 12px', borderRadius: 11, background: `${row.color}08`, border: `1px solid ${row.color}20`, display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        {/* mini arc SVG */}
+                                        {(() => {
+                                            const R = 16, C = 2 * Math.PI * R;
+                                            const half = C / 2;
+                                            const fill = (pct / 100) * half;
+                                            return (
+                                                <svg width={40} height={24} viewBox="0 0 40 24" style={{ flexShrink: 0 }}>
+                                                    <path d="M4 22 A16 16 0 0 1 36 22" fill="none" stroke={`${row.color}20`} strokeWidth="4" strokeLinecap="round" />
+                                                    <path d="M4 22 A16 16 0 0 1 36 22" fill="none" stroke={row.color} strokeWidth="4" strokeLinecap="round"
+                                                        strokeDasharray={`${fill} ${half}`}
+                                                        style={{ filter: `drop-shadow(0 0 4px ${row.color}80)` }}
+                                                    />
+                                                    <text x="20" y="22" textAnchor="middle" fontSize="8" fontWeight="800" fill={row.color}>{pct.toFixed(0)}%</text>
+                                                </svg>
+                                            );
+                                        })()}
+
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                                                <span style={{ fontSize: 11, color: 'rgba(255,255,255,.5)', fontWeight: 500 }}>{row.label}</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <span style={{ fontSize: 15, fontWeight: 900, color: row.color, textShadow: `0 0 10px ${row.color}60`, lineHeight: 1 }}>{row.val}</span>
+                                                    <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 999, background: `${statusColor}18`, color: statusColor, border: `1px solid ${statusColor}35` }}>
+                                                        {pct >= 75 ? 'On Track' : pct >= 50 ? 'Progressing' : 'Early'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', borderRadius: 2, width: `${pct}%`, background: `linear-gradient(90deg,${row.color},${row.color}70)`, boxShadow: `0 0 6px ${row.color}55` }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+})()}
                 </main>
             </div >
 
