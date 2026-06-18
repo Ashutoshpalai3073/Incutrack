@@ -11,7 +11,7 @@ import {
   Plus, X, Edit3, Save, Search, ArrowRight, Bell, TrendingUp, DollarSign,
   Award, Clock, Filter, Star, Building2, Activity, Rocket,
   Shield, Lightbulb, Wallet, Upload, CheckCircle, Briefcase,
-  ChevronRight, MoreHorizontal, Globe, Zap, Target
+  ChevronRight, MoreHorizontal, Globe, Zap, Target, Lock, Eye, EyeOff, Key, UserCheck, AlertTriangle
 } from 'lucide-react';
 
 export const Route = createFileRoute('/hub')({
@@ -704,6 +704,7 @@ function HubPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [rsvpEvent, setRsvpEvent] = useState(null);
   const [rsvpedIds, setRsvpedIds] = useState([]);
+  const [rsvpName, setRsvpName] = useState('');
   const [vcSearch, setVcSearch] = useState('');
   const [startups, setStartups] = useState(EXTENDED_STARTUPS);
   const [tab, setTab] = useState('overview');
@@ -737,6 +738,63 @@ function HubPage() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [newS, setNewS] = useState({ name: '', tagline: '', description: '', founder: '', industry: 'SaaS', fundingGoal: '' });
+  const [newSCustomIndustry, setNewSCustomIndustry] = useState('');
+  const [editCustomIndustry, setEditCustomIndustry] = useState('');
+  const [viewingDoc, setViewingDoc] = useState<VaultDoc | null>(null);
+  const [uploadChoiceOpen, setUploadChoiceOpen] = useState(false);
+  const [uploadMode, setUploadMode] = useState<'brand' | 'investor'>('brand');
+  const [signInPromptOpen, setSignInPromptOpen] = useState(false);
+  const [signInPromptMsg, setSignInPromptMsg] = useState('');
+  // ── Startup credential states ─────────────────────────────────────────────
+  const [registerStep, setRegisterStep] = useState<1 | 2>(1);
+  const [ownerEmailMode, setOwnerEmailMode] = useState<'same' | 'different'>('same');
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [ownerPassword, setOwnerPassword] = useState('');
+  const [ownerPasswordConfirm, setOwnerPasswordConfirm] = useState('');
+  const [ownerPasswordError, setOwnerPasswordError] = useState('');
+  const [showOwnerPwd, setShowOwnerPwd] = useState(false);
+  // ── Ownership confirmation modal ──────────────────────────────────────────
+  const [ownershipConfirmOpen, setOwnershipConfirmOpen] = useState(false);
+  const [ownershipConfirmPwd, setOwnershipConfirmPwd] = useState('');
+  const [ownershipConfirmError, setOwnershipConfirmError] = useState('');
+  const [ownershipConfirmLoading, setOwnershipConfirmLoading] = useState(false);
+  const [ownershipConfirmCallback, setOwnershipConfirmCallback] = useState<(() => void) | null>(null);
+  const [ownershipConfirmStartupId, setOwnershipConfirmStartupId] = useState('');
+  // Per-startup session map: { [startupId]: expiryEpochMs }
+  // A confirmed session is ONLY valid for the specific startup it was confirmed for.
+  const [ownershipSessions, setOwnershipSessions] = useState<Record<string, number>>({});
+  // ── Add Event modal ───────────────────────────────────────────────────────
+  const [addEventOpen, setAddEventOpen] = useState(false);
+  const [addEventStep, setAddEventStep] = useState<1 | 2>(1);
+  const [addEventSubmitting, setAddEventSubmitting] = useState(false);
+  const [addEventDone, setAddEventDone] = useState(false);
+  const [addEventForm, setAddEventForm] = useState({
+    title: '', type: 'Workshop', date: '', time: '', location: '',
+    locationMode: 'physical' as 'physical' | 'online' | 'virtual',
+    description: '', organiserName: '', organiserEmail: '',
+    organiserOrg: '', maxCapacity: '', prize: '',
+    applicationRequired: false, registrationDeadline: '',
+  });
+  const [addEventErrors, setAddEventErrors] = useState<Record<string, string>>({});
+  // ── Admin panel ───────────────────────────────────────────────────────────
+  const [pendingEvents, setPendingEvents] = useState<any[]>([]);
+  const [adminEventsLoading, setAdminEventsLoading] = useState(false);
+  const [adminEventAction, setAdminEventAction] = useState<Record<string, 'approving' | 'rejecting'>>({});
+  const [pendingAdvances, setPendingAdvances] = useState<any[]>([]);
+  const [adminAdvancesLoading, setAdminAdvancesLoading] = useState(false);
+  const [adminAdvanceAction, setAdminAdvanceAction] = useState<Record<string, 'approving' | 'rejecting'>>({});
+  // ── Advance Request modal ─────────────────────────────────────────────────
+  const [advanceRequestOpen, setAdvanceRequestOpen] = useState(false);
+  const [advanceRequestStartup, setAdvanceRequestStartup] = useState<any>(null);
+  const [advanceRequestForm, setAdvanceRequestForm] = useState({ targetStage: '', justification: '', proofFile: null as File | null });
+  const [advanceRequestError, setAdvanceRequestError] = useState('');
+  const [advanceRequestSubmitting, setAdvanceRequestSubmitting] = useState(false);
+  const [advanceRequestDone, setAdvanceRequestDone] = useState(false);
+  const openAddEvent = () => requireAuth('Sign in to submit an event to Incutrack.', () => { setAddEventStep(1); setAddEventDone(false); setAddEventForm({ title: '', type: 'Workshop', date: '', time: '', location: '', locationMode: 'physical', description: '', organiserName: user?.name ?? '', organiserEmail: user?.email ?? '', organiserOrg: userStartups[0]?.name ?? '', maxCapacity: '', prize: '', applicationRequired: false, registrationDeadline: '' }); setAddEventErrors({}); setAddEventOpen(true); });
+  // ── Booking mentor ────────────────────────────────────────────────────────
+  const [bookingMentor, setBookingMentor] = useState<typeof MENTORS[0] | null>(null);
+  const [bookingForm, setBookingForm] = useState({ date: '', time: '', topic: '', message: '' });
+  const [bookingDone, setBookingDone] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState('');
@@ -862,7 +920,7 @@ function HubPage() {
       const data = await response.json();
       const latestUserStartup = startups.find(s => !EXTENDED_STARTUPS.find(es => es.id === s.id));
       // Attach startup_name to local doc object so link survives refresh
-      const docWithLink = { ...data, startup_name: latestUserStartup?.name || '' };
+      const docWithLink = { ...data, startup_name: latestUserStartup?.name || '', deck_type: uploadMode };
       setVaultDocs(prev =>
         editingDoc
           ? prev.map(doc => doc.name === editingDoc.name ? docWithLink : doc)
@@ -872,7 +930,7 @@ function HubPage() {
       setUploadOpen(false);
       setEditingDoc(null);
       setSelectedFile(null);
-      if (btnEl) { btnEl.textContent = 'Add to Vault →'; btnEl.disabled = false; }
+      if (btnEl) { btnEl.textContent = 'Add to Brand Vault →'; btnEl.disabled = false; }
 
       // Store link by startup NAME (not id) so it matches after refresh
       if (latestUserStartup) {
@@ -956,6 +1014,48 @@ function HubPage() {
     startups.filter(s => !EXTENDED_STARTUPS.find(es => es.id === s.id)),
     [startups]);
   const hasUserStartup = userStartups.length > 0;
+  const userRole = user?.role ?? 'visitor';
+  const isVC = userRole === 'vc' || userRole === 'admin';
+  const isFounder = userRole === 'founder' || userRole === 'admin';
+  const isAdmin = userRole === 'admin';
+
+  // Fetch pending events + advance requests whenever admin tab opens
+  useEffect(() => {
+    if (tab !== 'admin' || !isAdmin) return;
+    const load = async () => {
+      setAdminEventsLoading(true);
+      setAdminAdvancesLoading(true);
+      try {
+        const [evRes, advRes] = await Promise.all([
+          fetch('/api/events/pending', { credentials: 'include' }),
+          fetch('/api/startup-advance/pending', { credentials: 'include' }),
+        ]);
+        if (evRes.ok) { const d = await evRes.json(); setPendingEvents(Array.isArray(d) ? d : []); }
+        if (advRes.ok) { const d = await advRes.json(); setPendingAdvances(Array.isArray(d) ? d : []); }
+      } catch { /* ignore */ }
+      setAdminEventsLoading(false);
+      setAdminAdvancesLoading(false);
+    };
+    load();
+  }, [tab, isAdmin]);
+
+  // requireAuth: call this before any protected action
+  const requireAuth = (msg: string, then: () => void) => {
+    if (!user) { setSignInPromptMsg(msg); setSignInPromptOpen(true); return; }
+    then();
+  };
+  // requireOwnership: call before founder-only actions on a specific startup.
+  // Session is STARTUP-SCOPED — confirming password for Startup A never unlocks Startup B.
+  const requireOwnership = (startupId: string, then: () => void) => {
+    if (isAdmin) { then(); return; } // admin always passes
+    const expiry = ownershipSessions[startupId] ?? 0;
+    if (Date.now() < expiry) { then(); return; } // valid 30-min session for THIS startup
+    setOwnershipConfirmStartupId(startupId);
+    setOwnershipConfirmCallback(() => then);
+    setOwnershipConfirmPwd('');
+    setOwnershipConfirmError('');
+    setOwnershipConfirmOpen(true);
+  };
 
   const totalCommitted = INVESTORS.filter(i => i.status === 'Committed').reduce((a, c) => a + c.amount, 0);
   const totalTarget = 60000000;
@@ -985,23 +1085,30 @@ function HubPage() {
     ALL_EVENTS.filter(ev => eventType === 'All' || ev.type === eventType),
     [eventType]);
 
-  const advance = (id, e) => {
+  // advance() — opens the stage-advance REQUEST modal. Admins advance directly; owners submit for review.
+  const advance = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setStartups(prev => prev.map(s => {
-      if (s.id !== id) return s;
-      const idx = STAGE_ORDER.indexOf(s.stage);
-      if (idx < STAGE_ORDER.length - 1) {
-        const newStage = STAGE_ORDER[idx + 1];
-        const newRaised = idx === STAGE_ORDER.length - 2 ? s.fundingGoal : s.raised;
-        fetch('/api/startups/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, stage: newStage, raised: newRaised }),
-        }).catch(console.error);
-        return { ...s, stage: newStage, raised: newRaised };
-      }
-      return s;
-    }));
+    const startup = startups.find(s => s.id === id);
+    if (!startup) return;
+    const isOwner = userStartups.some(us => us.id === id);
+    if (!isAdmin && !isOwner) return; // non-owners can't even trigger this
+    const idx = STAGE_ORDER.indexOf(startup.stage);
+    if (idx >= STAGE_ORDER.length - 1) return;
+    if (isAdmin) {
+      // Admin advances directly
+      const newStage = STAGE_ORDER[idx + 1];
+      const newRaised = idx === STAGE_ORDER.length - 2 ? startup.fundingGoal : startup.raised;
+      setStartups(prev => prev.map(s => s.id === id ? { ...s, stage: newStage, raised: newRaised } : s));
+      fetch('/api/startups/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, stage: newStage, raised: newRaised }) }).catch(console.error);
+    } else {
+      // Owner submits a request for admin to approve
+      const nextStages = STAGE_ORDER.slice(idx + 1);
+      setAdvanceRequestStartup(startup);
+      setAdvanceRequestForm({ targetStage: nextStages[0], justification: '', proofFile: null });
+      setAdvanceRequestError('');
+      setAdvanceRequestDone(false);
+      setAdvanceRequestOpen(true);
+    }
   };
 
   const removeStartup = (id: string, e: React.MouseEvent) => {
@@ -1045,6 +1152,32 @@ function HubPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ── Step 1: check password uniqueness BEFORE closing modal ──────────────
+    if (ownerPassword) {
+      try {
+        const checkRes = await fetch('/api/startups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: `st-check-${Date.now()}`,
+            name: '__pwd_check__', tagline: '', description: '',
+            founder: '', industry: '', stage: 'Ideation',
+            fundingGoal: 0, raised: 0, pitchScore: 0, members: 1,
+            created_by_email: null,
+            owner_email: null,
+            owner_password: ownerPassword,
+            __dryRun: true,
+          }),
+        });
+        const checkData = await checkRes.json() as { error?: string };
+        if (checkData.error === 'PASSWORD_TAKEN') {
+          setOwnerPasswordError('This password is already in use by another startup. Please choose a stronger, unique password.');
+          return; // stay on step 2
+        }
+      } catch { /* network error — proceed anyway, server will catch it */ }
+    }
+
     setRegisterOpen(false);
 
     setIncuScoreState({
@@ -1061,7 +1194,7 @@ function HubPage() {
         body: JSON.stringify({
           name: newS.name,
           founder: newS.founder,
-          industry: newS.industry,
+          industry: newS.industry === 'Others' ? newSCustomIndustry : newS.industry,
           tagline: newS.tagline,
           fundingGoal: Number(newS.fundingGoal) || 0,
           description: newS.description,
@@ -1069,8 +1202,10 @@ function HubPage() {
       });
       const result = await res.json();
 
+      const resolvedIndustry = newS.industry === 'Others' ? newSCustomIndustry : newS.industry;
       const newStartup = {
         ...newS,
+        industry: resolvedIndustry,
         id: `st-${Date.now()}`,
         stage: 'Ideation',
         raised: 0,
@@ -1084,9 +1219,12 @@ function HubPage() {
         body: JSON.stringify({
           id: newStartup.id, name: newStartup.name, tagline: newStartup.tagline,
           description: newStartup.description, founder: newStartup.founder,
-          industry: newStartup.industry, stage: newStartup.stage,
+          industry: resolvedIndustry, stage: newStartup.stage,
           fundingGoal: newStartup.fundingGoal, raised: newStartup.raised,
           pitchScore: result.total ?? 68, members: 1,
+          created_by_email: user?.email ?? null,
+          owner_email: ownerEmail || user?.email || null,
+          owner_password: ownerPassword,
         }),
       }).catch(console.error);
 
@@ -1117,10 +1255,14 @@ function HubPage() {
     }
 
     setNewS({ name: '', tagline: '', description: '', founder: '', industry: 'SaaS', fundingGoal: '' });
+    setNewSCustomIndustry('');
+    setRegisterStep(1);
+    setOwnerPassword(''); setOwnerPasswordConfirm(''); setOwnerEmail('');
   };
   const handleSave = e => {
     e.preventDefault();
-    const updated = { ...editTarget, fundingGoal: Number(editTarget.fundingGoal) || 0, raised: editTarget.stage === 'Funding Secured' ? Number(editTarget.fundingGoal) || 0 : Number(editTarget.raised) || 0 };
+    const resolvedEditIndustry = editTarget.industry === 'Others' ? editCustomIndustry : editTarget.industry;
+    const updated = { ...editTarget, industry: resolvedEditIndustry, fundingGoal: Number(editTarget.fundingGoal) || 0, raised: editTarget.stage === 'Funding Secured' ? Number(editTarget.fundingGoal) || 0 : Number(editTarget.raised) || 0 };
     setStartups(prev => prev.map(s => s.id === editTarget.id ? updated : s));
     setEditTarget(null);
     fetch('/api/startups/update', {
@@ -1138,11 +1280,12 @@ function HubPage() {
   const navItems = [
     { id: 'overview', label: 'Command Center', icon: LayoutDashboard },
     { id: 'pipeline', label: 'Pipeline', icon: GitBranch },
-    { id: 'vault', label: 'Pitch Vault', icon: FolderKey },
+    { id: 'vault', label: 'Brand Vault', icon: FolderKey },
     { id: 'network', label: 'Mentor Network', icon: Users },
     { id: 'events', label: 'Event Arena', icon: CalendarDays },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'funding', label: 'Funding Tracker', icon: DollarSign },
+    ...(isAdmin ? [{ id: 'admin', label: 'Admin Panel', icon: Shield }] : []),
   ];
 
   const STATUS_COLOR = { Committed: '#10b981', 'In Diligence': '#f59e0b', 'In Discussion': '#06b6d4' };
@@ -1156,7 +1299,13 @@ function HubPage() {
     return { month: parts[0].substring(0, 3).toUpperCase(), day: (parts[1] || '').replace(',', ''), year: parts[2] || '' };
   };
 
-  if (!authLoading && !user) return <AuthGate />;
+  // ── Auth gate: placed here AFTER all hooks so React rules are satisfied ──
+  if (authLoading) return (
+    <div style={{ minHeight: '100vh', background: '#06060f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid rgba(139,92,246,0.2)', borderTop: '3px solid #8b5cf6', animation: 'spin 0.8s linear infinite' }} />
+    </div>
+  );
+  if (!user) return <AuthGate />;
 
   return (
     <div className="flex h-dvh bg-black text-white overflow-hidden" style={{ fontFamily: 'inherit' }}>
@@ -1225,13 +1374,25 @@ function HubPage() {
         </div>
 
         <div className="p-4 border-t border-white/[0.06]">
-          <div className="flex items-center gap-3 px-3 py-2.5 bg-white/[0.04] border border-white/[0.07] rounded-xl">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-xs font-bold shrink-0">AP</div>
-            <div className="overflow-hidden">
-              <p className="text-xs font-semibold text-white truncate">Ashutosh Palai</p>
-              <p className="text-[10px] text-emerald-400">Hub Admin</p>
+          {user ? (
+            <div className="flex items-center gap-3 px-3 py-2.5 bg-white/[0.04] border border-white/[0.07] rounded-xl">
+              {user.avatar_url
+                ? <img src={user.avatar_url} className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                : <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-violet-500 to-sky-400 flex items-center justify-center text-xs font-bold shrink-0 text-white">{user.name?.slice(0,2).toUpperCase()}</div>
+              }
+              <div className="overflow-hidden flex-1">
+                <p className="text-xs font-semibold text-white truncate">{user.name}</p>
+                <p className={`text-[10px] font-semibold capitalize ${userRole === 'admin' ? 'text-emerald-400' : userRole === 'vc' ? 'text-sky-400' : userRole === 'founder' ? 'text-violet-400' : 'text-white/30'}`}>
+                  {userRole === 'admin' ? 'Hub Admin' : userRole === 'vc' ? 'Verified VC' : userRole === 'founder' ? 'Startup Founder' : 'Visitor'}
+                </p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <button onClick={() => { setSignInPromptMsg('Sign in to access all features — register startups, upload decks, book mentors and more.'); setSignInPromptOpen(true); }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-violet-600/80 to-sky-500/80 text-white border border-violet-500/30 hover:opacity-90 transition">
+              <Rocket className="h-3.5 w-3.5" /> Sign In / Sign Up
+            </button>
+          )}
         </div>
       </aside>
 
@@ -1297,7 +1458,7 @@ function HubPage() {
                 </div>
               </div>
             )}
-            <button onClick={() => setRegisterOpen(true)}
+            <button onClick={() => requireAuth('Sign in to register your startup on Incutrack.', () => setRegisterOpen(true))}
               className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-gradient-to-r from-violet-600 to-sky-500 text-white hover:opacity-90 transition shadow-lg shadow-violet-500/20">
               <Plus className="h-3.5 w-3.5" /> Register Startup
             </button>
@@ -1357,7 +1518,7 @@ function HubPage() {
                       return (
                         <div
                           key={s.id}
-                          onClick={() => setEditTarget({ ...s })}
+                          onClick={() => { requireOwnership(s.id, () => { const knownIndustries = ['SaaS','FinTech','DeepTech','HealthTech','EdTech','AgriTech','ClimaTech','D2C / Consumer','E-commerce','Logistics & Supply Chain','HRTech','LegalTech','PropTech','SpaceTech','Gaming','Media & Content','Others']; const isKnown = knownIndustries.includes(s.industry); setEditTarget({ ...s, industry: isKnown ? s.industry : 'Others' }); setEditCustomIndustry(isKnown ? '' : s.industry); }); }}
                           style={{
                             margin: '6px 12px',
                             borderRadius: 12,
@@ -1760,7 +1921,7 @@ function HubPage() {
                             return (
                               /* FIXED height = perfectly uniform cards, no layout shifts */
                               <div key={s.id} className="pl-card" style={{ ['--bc' as string]: `${sc}50`, height: 192, flexShrink: 0, borderRadius: 13, border: `1px solid ${sc}20`, background: `linear-gradient(145deg,${sc}0c 0%,rgba(0,0,0,0.6) 100%)`, padding: '11px 12px', cursor: 'pointer', position: 'relative', overflow: 'hidden', animationDelay: `${ci * 0.06}s`, display: 'flex', flexDirection: 'column' }}
-                                onClick={() => setEditTarget({ ...s })}>
+                                onClick={() => { requireOwnership(s.id, () => { const knownIndustries = ['SaaS','FinTech','DeepTech','HealthTech','EdTech','AgriTech','ClimaTech','D2C / Consumer','E-commerce','Logistics & Supply Chain','HRTech','LegalTech','PropTech','SpaceTech','Gaming','Media & Content','Others']; const isKnown = knownIndustries.includes(s.industry); setEditTarget({ ...s, industry: isKnown ? s.industry : 'Others' }); setEditCustomIndustry(isKnown ? '' : s.industry); }); }}>
                                 {/* Top shimmer */}
                                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${sc}65,transparent)` }} />
 
@@ -1790,7 +1951,8 @@ function HubPage() {
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 7, borderTop: `1px solid ${sc}16`, flexShrink: 0 }}>
                                   <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '40%' }}>👤 {s.founder}</span>
 
-                                  {/* Three-dot menu */}
+                                  {/* Three-dot menu — only for owner or admin */}
+                                  {(isAdmin || userStartups.some(us => us.id === s.id)) && (
                                   <div className="vault-menu-trigger" style={{ position: 'relative' }}>
                                     <MoreHorizontal
                                       style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.25)', cursor: 'pointer', transition: 'color 0.2s' }}
@@ -1805,7 +1967,7 @@ function HubPage() {
                                     />
                                     <div className="vault-menu" style={{ display: 'none', position: 'absolute', right: 0, bottom: 20, background: '#0d0d18', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, overflow: 'hidden', zIndex: 50, minWidth: 130, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
                                       <button
-                                        onClick={e => { e.stopPropagation(); setEditTarget({ ...s }); }}
+                                        onClick={e => { e.stopPropagation(); const knownIndustries = ['SaaS','FinTech','DeepTech','HealthTech','EdTech','AgriTech','ClimaTech','D2C / Consumer','E-commerce','Logistics & Supply Chain','HRTech','LegalTech','PropTech','SpaceTech','Gaming','Media & Content','Others']; const isKnown = knownIndustries.includes(s.industry); setEditTarget({ ...s, industry: isKnown ? s.industry : 'Others' }); setEditCustomIndustry(isKnown ? '' : s.industry); }}
                                         style={{ width: '100%', padding: '9px 14px', background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#a78bfa', textAlign: 'left' }}
                                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(167,139,250,0.1)')}
                                         onMouseLeave={e => (e.currentTarget.style.background = 'none')}
@@ -1822,11 +1984,14 @@ function HubPage() {
                                       </button>
                                     </div>
                                   </div>
+                                  )}
 
                                   {!isLast ? (
-                                    <button className="pl-adv" onClick={e => advance(s.id, e)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 999, fontSize: 9, fontWeight: 700, background: `linear-gradient(90deg,${sc}35,${sc}15)`, color: sc, border: `1px solid ${sc}48`, boxShadow: `0 0 10px ${sc}28`, cursor: 'pointer', flexShrink: 0 }}>
-                                      Advance <ArrowRight style={{ width: 9, height: 9 }} />
-                                    </button>
+                                    (isAdmin || userStartups.some(us => us.id === s.id)) ? (
+                                      <button className="pl-adv" onClick={e => advance(s.id, e)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 999, fontSize: 9, fontWeight: 700, background: `linear-gradient(90deg,${sc}35,${sc}15)`, color: sc, border: `1px solid ${sc}48`, boxShadow: `0 0 10px ${sc}28`, cursor: 'pointer', flexShrink: 0 }}>
+                                        {isAdmin ? 'Advance' : 'Request Advance'} <ArrowRight style={{ width: 9, height: 9 }} />
+                                      </button>
+                                    ) : null
                                   ) : (
                                     <span style={{ fontSize: 8, fontWeight: 700, padding: '3px 8px', borderRadius: 999, color: '#34d399', background: 'rgba(52,211,153,0.14)', border: '1px solid rgba(52,211,153,0.32)', flexShrink: 0 }}>✓ Secured</span>
                                   )}
@@ -1852,7 +2017,7 @@ function HubPage() {
             );
           })()}
 
-          {/* ── PITCH VAULT ──────────────────────────────────────────────── */}
+          {/* ── BRAND VAULT ──────────────────────────────────────────────── */}
           {tab === 'vault' && (
             <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 28px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
 
@@ -1870,7 +2035,7 @@ function HubPage() {
                   </span>
                   <FilterPills options={['All', 'Deck', 'Doc', 'Sheet', 'Video', 'Bundle']} value={vaultType} onChange={setVaultType} />
                 </div>
-                <button onClick={() => hasUserStartup ? setUploadOpen(true) : setUploadGuardOpen(true)}
+                <button onClick={() => requireAuth('Sign in to upload your deck to the Brand Vault.', () => hasUserStartup ? setUploadChoiceOpen(true) : setUploadGuardOpen(true))}
                   style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 18px', borderRadius: 999, fontSize: 12, fontWeight: 600, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', transition: 'all 0.2s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(139,92,246,0.5)'; (e.currentTarget as HTMLButtonElement).style.color = '#c4b5fd'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.6)'; }}>
@@ -1881,7 +2046,7 @@ function HubPage() {
               {/* ── Stats strip ── */}
               <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                 {[
-                  { label: 'Total Documents', val: filteredDocs.length, color: '#8b5cf6', Icon: FolderKey },
+                  { label: 'Brand Decks', val: filteredDocs.length, color: '#8b5cf6', Icon: FolderKey },
                   { label: 'Avg AI Score', val: Math.round(filteredDocs.reduce((a, d) => a + d.score, 0) / (filteredDocs.length || 1)), color: '#06b6d4', Icon: Target },
                   { label: 'Total Views', val: filteredDocs.reduce((a, d) => a + d.views, 0) + '×', color: '#10b981', Icon: Activity },
                   { label: 'Final Docs', val: filteredDocs.filter(d => d.status === 'Final').length, color: '#f59e0b', Icon: CheckCircle },
@@ -1919,13 +2084,20 @@ function HubPage() {
 
                     return (
                       <div key={d.name}
+                        onClick={() => {
+                          if ((d as any).deck_type === 'investor') {
+                            if (!user) { setSignInPromptMsg('Sign in as a verified investor to access this deck.'); setSignInPromptOpen(true); return; }
+                            if (!isVC) { setSignInPromptMsg('This deck is restricted to verified investors only. Contact the platform admin to get VC access.'); setSignInPromptOpen(true); return; }
+                          }
+                          if (d.file_url) setViewingDoc(d);
+                        }}
                         style={{
                           background: `linear-gradient(135deg,${tc}14 0%,rgba(0,0,0,0.7) 55%,${scoreCol}07 100%)`,
                           border: `1px solid ${tc}35`,
                           borderTop: `2.5px solid ${tc}95`,
                           borderRadius: 14,
                           padding: '16px 16px 14px',
-                          cursor: 'pointer',
+                          cursor: d.file_url ? 'pointer' : 'default',
                           position: 'relative',
                           overflow: 'hidden',
                           backdropFilter: 'blur(14px)',
@@ -1982,7 +2154,15 @@ function HubPage() {
                         </div>
 
                         {/* Doc name */}
-                        <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0, lineHeight: 1.35, paddingRight: 4 }}>{d.name}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0, lineHeight: 1.35, flex: 1 }}>{d.name}</p>
+                          {(d as any).deck_type === 'investor' && (
+                            <div title="Investor-only deck" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 999, background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)', flexShrink: 0 }}>
+                              <Lock style={{ width: 8, height: 8, color: '#06b6d4' }} />
+                              <span style={{ fontSize: 8, fontWeight: 700, color: '#06b6d4', letterSpacing: '0.05em' }}>VC ONLY</span>
+                            </div>
+                          )}
+                        </div>
 
                         {/* Gradient divider */}
                         <div style={{ height: 1, background: `linear-gradient(90deg,${tc}50,rgba(255,255,255,0.04),transparent)`, margin: '11px 0' }} />
@@ -1997,6 +2177,7 @@ function HubPage() {
                             <Activity style={{ width: 11, height: 11, color: 'rgba(255,255,255,0.28)' }} />
                             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{d.views}× views</span>
                           </div>
+                          {(isAdmin || userStartups.some(us => us.name === (d as any).startup_name)) && (
                           <div className="vault-menu-trigger" style={{ position: 'relative' }}>
                             <MoreHorizontal
                               style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.18)', cursor: 'pointer', transition: 'color 0.2s' }}
@@ -2066,6 +2247,7 @@ function HubPage() {
                               </button>
                             </div>
                           </div>
+                          )}
                         </div>
 
                         {/* Views bar */}
@@ -2085,6 +2267,195 @@ function HubPage() {
               </div>
             </div>
           )}
+
+          {/* ── DILIGENCE ROOM (removed) ─── */}
+          {tab === 'diligence_disabled' && (() => {
+            const pendingCount = vcRequests.filter(r => r.status === 'pending').length;
+            const approvedCount = vcRequests.filter(r => r.status === 'approved').length;
+            return (
+              <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px 28px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 18 }}>
+
+                {/* Background */}
+                <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+                  <VaultNebulaField />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,rgba(16,1,40,0.82) 0%,rgba(0,6,24,0.88) 100%)' }} />
+                  {/* Faint grid */}
+                  <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(99,102,241,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.04) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
+                </div>
+
+                {/* ── Header row ── */}
+                <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#6366f130,#06b6d420)', border: '1px solid rgba(99,102,241,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(99,102,241,0.25)' }}>
+                      <Shield style={{ width: 17, height: 17, color: '#818cf8' }} />
+                    </div>
+                    <div>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff', letterSpacing: '0.01em' }}>Diligence Room</p>
+                      <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.28)', marginTop: 1 }}>End-to-end encrypted · Investor-only access · Founder-approved</p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)' }}>
+                      <Lock style={{ width: 9, height: 9, color: '#818cf8' }} />
+                      <span style={{ fontSize: 9, fontWeight: 800, color: '#818cf8', letterSpacing: '0.08em' }}>E2E ENCRYPTED</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDiligenceUploadOpen(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 20px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'linear-gradient(90deg,#6366f1,#4f46e5)', color: '#fff', border: 'none', cursor: 'pointer', boxShadow: '0 0 20px rgba(99,102,241,0.4)', letterSpacing: '0.02em' }}>
+                    <Upload style={{ width: 13, height: 13 }} /> {diligenceDoc ? 'Replace Investor Deck' : 'Upload Investor Deck'}
+                  </button>
+                </div>
+
+                {/* ── Stats row ── */}
+                <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
+                  {[
+                    { label: 'Deck Status', val: diligenceDoc ? 'Uploaded' : 'Not Uploaded', color: diligenceDoc ? '#10b981' : '#64748b', Icon: diligenceDoc ? CheckCircle : AlertTriangle },
+                    { label: 'Access Requests', val: pendingCount, color: '#f59e0b', Icon: Key },
+                    { label: 'Approved VCs', val: approvedCount, color: '#6366f1', Icon: UserCheck },
+                    { label: 'Security Level', val: 'AES-256', color: '#06b6d4', Icon: Shield },
+                  ].map(s => {
+                    const { Icon } = s;
+                    return (
+                      <div key={s.label} style={{ background: `linear-gradient(135deg,${s.color}15,rgba(0,0,0,0.6))`, border: `1px solid ${s.color}28`, borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, position: 'relative', overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+                        <div style={{ position: 'absolute', top: -16, right: -16, width: 72, height: 72, borderRadius: '50%', background: `radial-gradient(circle,${s.color}30,transparent 70%)`, pointerEvents: 'none' }} />
+                        <div style={{ width: 34, height: 34, borderRadius: 9, background: `${s.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 0 16px ${s.color}50` }}>
+                          <Icon style={{ width: 16, height: 16, color: s.color, filter: `drop-shadow(0 0 5px ${s.color})` }} />
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>{s.label}</p>
+                          <p style={{ fontSize: 18, fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.1 }}>{s.val}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ── Main content: two columns ── */}
+                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, minHeight: 0, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+
+                  {/* LEFT: Deck status card */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 16, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14, backdropFilter: 'blur(12px)', overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle,rgba(99,102,241,0.15),transparent 70%)', pointerEvents: 'none' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                      <Lock style={{ width: 13, height: 13, color: '#818cf8' }} />
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#c7d2fe' }}>Investor Deck (Confidential)</p>
+                    </div>
+                    <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.32)', lineHeight: 1.75, background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: 10, padding: '12px 14px' }}>
+                      <p style={{ margin: '0 0 6px', fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>What belongs here:</p>
+                      {['Granular financial models & projections', 'Precise product roadmap & tech architecture', 'Full cap table & equity structure', 'Unit economics & cohort data', 'Competitive moat & IP details'].map(item => (
+                        <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+                          <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#6366f1', flexShrink: 0 }} />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {diligenceDoc ? (
+                      <div style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 12, padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <CheckCircle style={{ width: 14, height: 14, color: '#10b981' }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>Deck Uploaded</span>
+                          </div>
+                          <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)' }}>{diligenceDoc.uploadedAt}</span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{diligenceDoc.name}</p>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                          <button
+                            onClick={() => { if (diligenceDoc.file_url) setViewingDoc({ ...diligenceDoc, type: 'Deck', date: diligenceDoc.uploadedAt, views: 0, status: 'Final', score: 0 } as any); }}
+                            style={{ flex: 1, padding: '7px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.35)', color: '#818cf8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <Eye style={{ width: 12, height: 12 }} /> Preview
+                          </button>
+                          <button
+                            onClick={() => setDiligenceUploadOpen(true)}
+                            style={{ flex: 1, padding: '7px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                            Replace
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => setDiligenceUploadOpen(true)}
+                        style={{ border: '2px dashed rgba(99,102,241,0.3)', borderRadius: 12, padding: '28px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'all 0.2s' }}
+                        onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(99,102,241,0.6)')}
+                        onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)')}>
+                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Upload style={{ width: 18, height: 18, color: '#818cf8' }} />
+                        </div>
+                        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#818cf8' }}>Upload Investor Deck</p>
+                        <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>PDF, PPTX — encrypted at rest & in transit</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* RIGHT: VC Access Requests */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14, backdropFilter: 'blur(12px)', overflow: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Key style={{ width: 13, height: 13, color: '#f59e0b' }} />
+                        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fde68a' }}>VC Access Requests</p>
+                      </div>
+                      {pendingCount > 0 && (
+                        <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#000', boxShadow: '0 0 10px rgba(245,158,11,0.6)' }}>
+                          {pendingCount}
+                        </div>
+                      )}
+                    </div>
+                    <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.28)', lineHeight: 1.6, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: 8, padding: '8px 12px', flexShrink: 0 }}>
+                      VCs must explicitly request access. You approve or deny each one individually. Approved VCs can view this deck; denied VCs see nothing.
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, overflow: 'auto' }}>
+                      {vcRequests.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>No access requests yet. Share your Brand Vault deck to generate interest.</div>
+                      ) : vcRequests.map(req => (
+                        <div key={req.id} style={{ background: req.status === 'approved' ? 'rgba(16,185,129,0.07)' : req.status === 'denied' ? 'rgba(248,113,113,0.05)' : 'rgba(255,255,255,0.04)', border: `1px solid ${req.status === 'approved' ? 'rgba(16,185,129,0.25)' : req.status === 'denied' ? 'rgba(248,113,113,0.15)' : 'rgba(255,255,255,0.09)'}`, borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#6366f130,#4f46e520)', border: '1px solid rgba(99,102,241,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#818cf8', flexShrink: 0 }}>
+                              {req.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div>
+                              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>{req.name}</p>
+                              <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{req.firm} · {req.requestedAt}</p>
+                            </div>
+                          </div>
+                          <div style={{ flexShrink: 0 }}>
+                            {req.status === 'pending' ? (
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button
+                                  onClick={() => setVcRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r))}
+                                  style={{ padding: '5px 12px', borderRadius: 999, fontSize: 10, fontWeight: 700, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', cursor: 'pointer' }}>
+                                  ✓ Approve
+                                </button>
+                                <button
+                                  onClick={() => setVcRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'denied' } : r))}
+                                  style={{ padding: '5px 12px', borderRadius: 999, fontSize: 10, fontWeight: 700, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171', cursor: 'pointer' }}>
+                                  ✕ Deny
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: req.status === 'approved' ? '#10b981' : '#f87171', boxShadow: `0 0 6px ${req.status === 'approved' ? '#10b981' : '#f87171'}` }} />
+                                <span style={{ fontSize: 10, fontWeight: 700, color: req.status === 'approved' ? '#10b981' : '#f87171', textTransform: 'capitalize' }}>{req.status}</span>
+                                <button
+                                  onClick={() => setVcRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'pending' } : r))}
+                                  style={{ marginLeft: 4, padding: '3px 8px', borderRadius: 999, fontSize: 9, fontWeight: 600, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer' }}>
+                                  revoke
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Info footer */}
+                    <div style={{ flexShrink: 0, marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: 10 }}>
+                      <EyeOff style={{ width: 12, height: 12, color: '#818cf8', flexShrink: 0 }} />
+                      <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)', lineHeight: 1.6 }}>Denied VCs cannot see this deck or know it exists. Only approved VCs get a time-limited, watermarked view link.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── MENTOR NETWORK ───────────────────────────────────────────── */}
           {tab === 'network' && (
@@ -2194,7 +2565,9 @@ function HubPage() {
                             <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)' }}>{m.sessions} sessions</span>
                           </div>
 
-                          <button style={{
+                          <button
+                            onClick={() => { if (m.avail) requireAuth('Sign in to book a mentor session.', () => { setBookingMentor(m); setBookingForm({ date: '', time: '', topic: '', message: '' }); setBookingDone(false); }); }}
+                            style={{
                             fontSize: 10, fontWeight: 700, padding: '7px 14px', borderRadius: 999,
                             cursor: m.avail ? 'pointer' : 'not-allowed',
                             background: m.avail ? `linear-gradient(90deg,${mc}35,${mc}18)` : 'rgba(255,255,255,0.04)',
@@ -2322,7 +2695,7 @@ function HubPage() {
                         <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '.06em' }}>{lbl}</p>
                       </div>
                     ))}
-                    <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.4)', letterSpacing: '.03em' }}>
+                    <button onClick={openAddEvent} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.4)', letterSpacing: '.03em' }}>
                       <Plus style={{ width: 13, height: 13 }} /> Add Event
                     </button>
                   </div>
@@ -2378,7 +2751,7 @@ function HubPage() {
                               {/* Right column — type badge + RSVP stacked, fixed width */}
                               <div style={{ width: 96, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, flexShrink: 0 }}>
                                 <span style={{ fontSize: 9, fontWeight: 800, padding: '4px 10px', borderRadius: 999, color: ec, background: `${ec}18`, border: `1px solid ${ec}40`, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>{ev.type}</span>
-                                <button className="ea-rsvp" onClick={e => { e.stopPropagation(); if (!isRsvpd) setRsvpEvent(ev); }} style={{ width: '100%', padding: '7px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: isRsvpd ? 'default' : 'pointer', background: isRsvpd ? 'rgba(16,185,129,0.15)' : `linear-gradient(90deg,${ec}40,${ec}20)`, color: isRsvpd ? '#10b981' : ec, border: `1px solid ${isRsvpd ? 'rgba(16,185,129,0.4)' : ec + '50'}`, boxShadow: isRsvpd ? 'none' : `0 0 14px ${ec}28`, textAlign: 'center' }}>
+                                <button className="ea-rsvp" onClick={e => { e.stopPropagation(); if (!isRsvpd) { setRsvpName(userStartups[0]?.founder ?? user?.name ?? ''); setRsvpEvent(ev); } }} style={{ width: '100%', padding: '7px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: isRsvpd ? 'default' : 'pointer', background: isRsvpd ? 'rgba(16,185,129,0.15)' : `linear-gradient(90deg,${ec}40,${ec}20)`, color: isRsvpd ? '#10b981' : ec, border: `1px solid ${isRsvpd ? 'rgba(16,185,129,0.4)' : ec + '50'}`, boxShadow: isRsvpd ? 'none' : `0 0 14px ${ec}28`, textAlign: 'center' }}>
                                   {isRsvpd ? '✓ Going' : 'RSVP →'}
                                 </button>
                               </div>
@@ -2417,7 +2790,7 @@ function HubPage() {
                               <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{next.location}</p>
                             </div>
                           </div>
-                          <button onClick={() => setRsvpEvent(next)} style={{ width: '100%', padding: '8px', borderRadius: 11, fontSize: 11, fontWeight: 700, background: `linear-gradient(90deg,${ec},${ec}80)`, color: 'white', border: 'none', cursor: 'pointer', boxShadow: `0 4px 18px ${ec}45`, letterSpacing: '.04em' }}>
+                          <button onClick={() => { setRsvpName(userStartups[0]?.founder ?? user?.name ?? ''); setRsvpEvent(next); }} style={{ width: '100%', padding: '8px', borderRadius: 11, fontSize: 11, fontWeight: 700, background: `linear-gradient(90deg,${ec},${ec}80)`, color: 'white', border: 'none', cursor: 'pointer', boxShadow: `0 4px 18px ${ec}45`, letterSpacing: '.04em' }}>
                             Reserve My Spot →
                           </button>
                         </div>
@@ -3053,41 +3426,565 @@ function HubPage() {
             );
           })()}
 
+          {/* ── ADMIN PANEL ───────────────────────────────────────────────── */}
+          {tab === 'admin' && isAdmin && (
+            <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 24px', boxSizing: 'border-box', overflow: 'hidden', gap: 16 }}>
+              {/* Ambient */}
+              <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(139,92,246,0.07) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+
+              {/* Header */}
+              <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 11, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Shield style={{ width: 16, height: 16, color: '#a78bfa' }} />
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#fff' }}>Admin Panel</p>
+                    <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>Incutrack Hub — {user?.email}</p>
+                  </div>
+                </div>
+                <button onClick={() => { setAdminEventsLoading(true); fetch('/api/events/pending', { credentials: 'include' }).then(r => r.json()).then(d => { setPendingEvents(Array.isArray(d) ? d : []); setAdminEventsLoading(false); }).catch(() => setAdminEventsLoading(false)); }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#a78bfa', cursor: 'pointer' }}>
+                  ↻ Refresh
+                </button>
+              </div>
+
+              {/* Section: Event Submissions */}
+              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <CalendarDays style={{ width: 14, height: 14, color: '#a78bfa' }} />
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Event Submissions</p>
+                  {!adminEventsLoading && (
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: pendingEvents.length > 0 ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.06)', color: pendingEvents.length > 0 ? '#fbbf24' : 'rgba(255,255,255,0.3)', border: `1px solid ${pendingEvents.length > 0 ? 'rgba(245,158,11,0.35)' : 'rgba(255,255,255,0.1)'}` }}>
+                      {pendingEvents.length} pending
+                    </span>
+                  )}
+                </div>
+
+                {adminEventsLoading ? (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2.5px solid rgba(139,92,246,0.2)', borderTop: '2.5px solid #8b5cf6', animation: 'spin 0.8s linear infinite' }} />
+                  </div>
+                ) : pendingEvents.length === 0 ? (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: 0.5 }}>
+                    <CalendarDays style={{ width: 36, height: 36, color: 'rgba(255,255,255,0.15)' }} />
+                    <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>No pending event submissions</p>
+                    <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>New submissions from users will appear here</p>
+                  </div>
+                ) : (
+                  pendingEvents.map((ev: any) => (
+                    <div key={ev.id} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
+                      {/* Top row */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                            <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>{ev.title}</p>
+                            <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, color: '#a78bfa', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', letterSpacing: '.05em' }}>{ev.type}</span>
+                            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 999, color: '#fbbf24', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }}>PENDING</span>
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 2 }}>
+                            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <CalendarDays style={{ width: 11, height: 11 }} /> {ev.event_date} · {ev.event_time} IST
+                            </span>
+                            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Building2 style={{ width: 11, height: 11 }} /> {ev.location_mode === 'physical' ? 'In-Person' : ev.location_mode === 'online' ? 'Online · Zoom' : 'Virtual'}
+                            </span>
+                            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{ev.location}</span>
+                            {ev.max_capacity && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>👥 {ev.max_capacity} capacity</span>}
+                            {ev.prize && <span style={{ fontSize: 11, color: '#fbbf24' }}>🏆 {ev.prize}</span>}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                          {new Date(ev.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+
+                      {/* Description */}
+                      <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.65, borderLeft: '2px solid rgba(139,92,246,0.3)', paddingLeft: 12 }}>{ev.description}</p>
+
+                      {/* Organiser row */}
+                      <div style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 10, padding: '10px 14px', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                        <div>
+                          <p style={{ margin: 0, fontSize: 9, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>Organiser</p>
+                          <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>{ev.organiser_name}</p>
+                        </div>
+                        <div>
+                          <p style={{ margin: 0, fontSize: 9, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>Email</p>
+                          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{ev.organiser_email}</p>
+                        </div>
+                        <div>
+                          <p style={{ margin: 0, fontSize: 9, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>Organisation</p>
+                          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{ev.organiser_org}</p>
+                        </div>
+                        {ev.submitted_by && (
+                          <div>
+                            <p style={{ margin: 0, fontSize: 9, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>Submitted by</p>
+                            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{ev.submitted_by}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button
+                          disabled={!!adminEventAction[ev.id]}
+                          onClick={async () => {
+                            setAdminEventAction(a => ({ ...a, [ev.id]: 'rejecting' }));
+                            await fetch('/api/events/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: ev.id, action: 'reject' }) });
+                            setPendingEvents(prev => prev.filter(e => e.id !== ev.id));
+                            setAdminEventAction(a => { const n = { ...a }; delete n[ev.id]; return n; });
+                          }}
+                          style={{ flex: 1, padding: '9px 0', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', cursor: adminEventAction[ev.id] ? 'wait' : 'pointer', opacity: adminEventAction[ev.id] ? 0.5 : 1 }}
+                        >
+                          {adminEventAction[ev.id] === 'rejecting' ? 'Rejecting…' : '✕ Reject'}
+                        </button>
+                        <button
+                          disabled={!!adminEventAction[ev.id]}
+                          onClick={async () => {
+                            setAdminEventAction(a => ({ ...a, [ev.id]: 'approving' }));
+                            await fetch('/api/events/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: ev.id, action: 'approve' }) });
+                            setPendingEvents(prev => prev.filter(e => e.id !== ev.id));
+                            setAdminEventAction(a => { const n = { ...a }; delete n[ev.id]; return n; });
+                          }}
+                          style={{ flex: 2, padding: '9px 0', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'linear-gradient(90deg,rgba(16,185,129,0.2),rgba(16,185,129,0.1))', border: '1px solid rgba(16,185,129,0.4)', color: '#34d399', cursor: adminEventAction[ev.id] ? 'wait' : 'pointer', opacity: adminEventAction[ev.id] ? 0.5 : 1 }}
+                        >
+                          {adminEventAction[ev.id] === 'approving' ? 'Approving…' : '✓ Approve & Publish'}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+
+              {/* Section: Stage Advance Requests */}
+              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <ArrowRight style={{ width: 14, height: 14, color: '#10b981' }} />
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Stage Advance Requests</p>
+                  {!adminAdvancesLoading && (
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: pendingAdvances.length > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.06)', color: pendingAdvances.length > 0 ? '#34d399' : 'rgba(255,255,255,0.3)', border: `1px solid ${pendingAdvances.length > 0 ? 'rgba(16,185,129,0.35)' : 'rgba(255,255,255,0.1)'}` }}>
+                      {pendingAdvances.length} pending
+                    </span>
+                  )}
+                </div>
+
+                {adminAdvancesLoading ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 0' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2.5px solid rgba(16,185,129,0.2)', borderTop: '2.5px solid #10b981', animation: 'spin 0.8s linear infinite' }} />
+                  </div>
+                ) : pendingAdvances.length === 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '24px 0', opacity: 0.5 }}>
+                    <ArrowRight style={{ width: 32, height: 32, color: 'rgba(255,255,255,0.15)' }} />
+                    <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>No pending advance requests</p>
+                  </div>
+                ) : (
+                  pendingAdvances.map((req: any) => (
+                    <div key={req.id} style={{ background: 'rgba(16,185,129,0.03)', border: '1px solid rgba(16,185,129,0.12)', borderRadius: 16, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
+                      {/* Header row */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                            <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>{req.startup_name}</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }}>{req.current_stage}</span>
+                              <ArrowRight style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.3)' }} />
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, color: '#34d399', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}>{req.target_stage}</span>
+                            </div>
+                          </div>
+                          <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>Submitted by {req.submitted_by} · {new Date(req.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                        </div>
+                        <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 9px', borderRadius: 999, color: '#fbbf24', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', flexShrink: 0 }}>PENDING</span>
+                      </div>
+
+                      {/* Justification */}
+                      <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '12px 14px' }}>
+                        <p style={{ margin: '0 0 6px', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Justification</p>
+                        <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7 }}>{req.justification}</p>
+                      </div>
+
+                      {/* Proof doc link */}
+                      {req.proof_url && (
+                        <a href={req.proof_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#a78bfa', textDecoration: 'none', padding: '6px 12px', borderRadius: 8, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', width: 'fit-content' }}>
+                          <FolderKey style={{ width: 12, height: 12 }} /> View Proof Document →
+                        </a>
+                      )}
+
+                      {/* Actions */}
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button
+                          disabled={!!adminAdvanceAction[req.id]}
+                          onClick={async () => {
+                            setAdminAdvanceAction(a => ({ ...a, [req.id]: 'rejecting' }));
+                            await fetch('/api/startup-advance/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: req.id, action: 'reject' }) });
+                            setPendingAdvances(prev => prev.filter(r => r.id !== req.id));
+                            setAdminAdvanceAction(a => { const n = { ...a }; delete n[req.id]; return n; });
+                          }}
+                          style={{ flex: 1, padding: '9px 0', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', cursor: adminAdvanceAction[req.id] ? 'wait' : 'pointer', opacity: adminAdvanceAction[req.id] ? 0.5 : 1 }}
+                        >
+                          {adminAdvanceAction[req.id] === 'rejecting' ? 'Rejecting…' : '✕ Reject'}
+                        </button>
+                        <button
+                          disabled={!!adminAdvanceAction[req.id]}
+                          onClick={async () => {
+                            setAdminAdvanceAction(a => ({ ...a, [req.id]: 'approving' }));
+                            const res = await fetch('/api/startup-advance/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: req.id, action: 'approve', startup_id: req.startup_id, target_stage: req.target_stage }) });
+                            if (res.ok) {
+                              // Also update local pipeline stage
+                              setStartups(prev => prev.map(s => s.id === req.startup_id ? { ...s, stage: req.target_stage } : s));
+                            }
+                            setPendingAdvances(prev => prev.filter(r => r.id !== req.id));
+                            setAdminAdvanceAction(a => { const n = { ...a }; delete n[req.id]; return n; });
+                          }}
+                          style={{ flex: 2, padding: '9px 0', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'linear-gradient(90deg,rgba(16,185,129,0.2),rgba(16,185,129,0.1))', border: '1px solid rgba(16,185,129,0.4)', color: '#34d399', cursor: adminAdvanceAction[req.id] ? 'wait' : 'pointer', opacity: adminAdvanceAction[req.id] ? 0.5 : 1 }}
+                        >
+                          {adminAdvanceAction[req.id] === 'approving' ? 'Approving…' : '✓ Approve & Advance Stage'}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
         </main>
       </div>
 
-      {/* ── MODAL: REGISTER ─────────────────────────────────────────────── */}
+      {/* ── MODAL: DOC VIEWER ────────────────────────────────────────────── */}
+      {viewingDoc && (() => {
+        const vd = viewingDoc;
+        const TYPE_COLOR: Record<string, string> = { Deck: '#8b5cf6', Doc: '#06b6d4', Sheet: '#10b981', Video: '#f59e0b', Bundle: '#ec4899' };
+        const STATUS_COLOR: Record<string, string> = { Final: '#10b981', Review: '#f59e0b', Draft: '#94a3b8' };
+        const tc = TYPE_COLOR[vd.type] ?? '#8b5cf6';
+        const sc = STATUS_COLOR[vd.status] ?? '#94a3b8';
+        const url = vd.file_url ?? '';
+        const ext = url.split('?')[0].split('.').pop()?.toLowerCase() ?? '';
+        const isImage = ['png','jpg','jpeg','gif','webp','svg'].includes(ext);
+        const isVideo = ['mp4','webm','mov','avi'].includes(ext) || vd.type === 'Video';
+        const isPdf = ext === 'pdf' || ['Deck','Doc','Bundle','Sheet'].includes(vd.type);
+
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-2" style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(16px)' }} onClick={() => setViewingDoc(null)}>
+            <div onClick={e => e.stopPropagation()} style={{ width: '96vw', maxWidth: 1300, height: '94vh', display: 'flex', flexDirection: 'column', background: '#08080f', border: `1px solid ${tc}35`, borderRadius: 20, overflow: 'hidden', boxShadow: `0 0 80px ${tc}25, 0 32px 80px rgba(0,0,0,0.8)` }}>
+
+              {/* Header bar */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid rgba(255,255,255,0.07)`, flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, color: tc, padding: '3px 10px', borderRadius: 999, background: `${tc}20`, border: `1px solid ${tc}40`, letterSpacing: '0.07em' }}>{vd.type.toUpperCase()}</span>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#fff' }}>{vd.name}</p>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc, display: 'inline-block', boxShadow: `0 0 6px ${sc}` }} />
+                    <span style={{ fontSize: 10, color: sc, fontWeight: 600 }}>{vd.status}</span>
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {/* AI Score badge */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.06em' }}>AI</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: vd.score >= 85 ? '#10b981' : vd.score >= 70 ? '#f59e0b' : '#f87171' }}>{vd.score}</span>
+                  </div>
+                  {/* Open in new tab */}
+                  <a href={url} target="_blank" rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, background: `${tc}18`, border: `1px solid ${tc}40`, color: tc, fontSize: 11, fontWeight: 700, textDecoration: 'none', cursor: 'pointer' }}>
+                    <Globe style={{ width: 12, height: 12 }} /> Open
+                  </a>
+                  <button onClick={() => setViewingDoc(null)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '5px 7px', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center' }}>
+                    <X style={{ width: 15, height: 15 }} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Viewer body */}
+              <div style={{ flex: 1, overflow: 'hidden', position: 'relative', minHeight: 0, background: '#05050d' }}>
+                {!url ? (
+                  /* No file — mock doc info */
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, padding: 40 }}>
+                    <div style={{ width: 72, height: 72, borderRadius: '50%', background: `${tc}15`, border: `2px solid ${tc}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, boxShadow: `0 0 30px ${tc}30` }}>
+                      {vd.type === 'Deck' ? '📊' : vd.type === 'Video' ? '🎬' : vd.type === 'Sheet' ? '📋' : vd.type === 'Bundle' ? '📦' : '📄'}
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <p style={{ fontSize: 15, fontWeight: 700, color: '#fff', margin: '0 0 8px' }}>{vd.name}</p>
+                      <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: '0 0 20px', maxWidth: 360 }}>This is a demo document. Upload a real file to preview it here.</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, maxWidth: 380 }}>
+                        {[['📅 Date', vd.date], ['👁 Views', `${vd.views}×`], ['🤖 AI Score', `${vd.score}/100`]].map(([label, val]) => (
+                          <div key={label as string} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
+                            <p style={{ margin: 0, fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</p>
+                            <p style={{ margin: '4px 0 0', fontSize: 14, fontWeight: 800, color: tc }}>{val}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : isVideo ? (
+                  <video controls src={url} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
+                ) : isImage ? (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto', padding: 20, boxSizing: 'border-box' }}>
+                    <img src={url} alt={vd.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+                  </div>
+                ) : isPdf ? (
+                  <iframe
+                    src={`${url}#toolbar=1&navpanes=0&scrollbar=1`}
+                    style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                    title={vd.name}
+                  />
+                ) : (
+                  /* Generic fallback — open in tab */
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
+                    <div style={{ fontSize: 48 }}>📁</div>
+                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0 }}>Preview not available for this file type.</p>
+                    <a href={url} target="_blank" rel="noopener noreferrer"
+                      style={{ padding: '10px 24px', borderRadius: 999, background: `linear-gradient(90deg,${tc},${tc}99)`, color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                      Open File →
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.4)', flexShrink: 0 }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{vd.date} · {vd.views} views</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <a href={url} download style={{ padding: '5px 14px', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 600, textDecoration: 'none', cursor: url ? 'pointer' : 'not-allowed' }}>
+                    ⬇ Download
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── MODAL: BOOK SESSION ──────────────────────────────────────────── */}
+      {bookingMentor && (() => {
+        const mc = MENTOR_COLORS[bookingMentor.id] ?? '#8b5cf6';
+        return (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setBookingMentor(null)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: '#09090f', border: `1px solid ${mc}30`, borderRadius: 20, width: '100%', maxWidth: 460, boxShadow: `0 0 60px ${mc}22, 0 24px 64px rgba(0,0,0,0.7)`, overflow: 'hidden' }}>
+
+              {/* Header */}
+              <div style={{ padding: '20px 24px 16px', borderBottom: `1px solid rgba(255,255,255,0.07)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: `linear-gradient(135deg,${mc}55,${mc}22)`, border: `2px solid ${mc}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: mc, boxShadow: `0 0 14px ${mc}40` }}>
+                    {bookingMentor.avatar}
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#fff' }}>{bookingMentor.name}</p>
+                    <p style={{ margin: 0, fontSize: 10, color: mc, fontWeight: 600 }}>{bookingMentor.role} · {bookingMentor.company}</p>
+                  </div>
+                </div>
+                <button onClick={() => setBookingMentor(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 4 }}><X style={{ width: 16, height: 16 }} /></button>
+              </div>
+
+              {!bookingDone ? (
+                <form onSubmit={e => { e.preventDefault(); setBookingDone(true); }} style={{ padding: '20px 24px 24px' }}>
+                  {/* Bio strip */}
+                  <div style={{ background: `${mc}0e`, border: `1px solid ${mc}22`, borderRadius: 10, padding: '10px 14px', marginBottom: 18 }}>
+                    <p style={{ margin: 0, fontSize: 10.5, color: 'rgba(255,255,255,0.5)', lineHeight: 1.65 }}>{bookingMentor.bio}</p>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                      {bookingMentor.tags.map(t => (
+                        <span key={t} style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 999, color: mc, background: `${mc}18`, border: `1px solid ${mc}35` }}>{t}</span>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
+                      <Star style={{ width: 11, height: 11, color: '#fbbf24', fill: '#fbbf24' }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24' }}>{bookingMentor.rating}</span>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>·</span>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{bookingMentor.sessions} sessions completed</span>
+                    </div>
+                  </div>
+
+                  {/* Date + Time */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Preferred Date</label>
+                      <input type="date" required value={bookingForm.date} onChange={e => setBookingForm(f => ({ ...f, date: e.target.value }))}
+                        style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', color: '#fff', fontSize: 12, outline: 'none', boxSizing: 'border-box', colorScheme: 'dark' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Time Slot</label>
+                      <select required value={bookingForm.time} onChange={e => setBookingForm(f => ({ ...f, time: e.target.value }))}
+                        style={{ width: '100%', background: '#0d0d1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', color: bookingForm.time ? '#fff' : 'rgba(255,255,255,0.25)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}>
+                        <option value="">Select slot</option>
+                        <option>09:00 AM IST</option><option>10:00 AM IST</option><option>11:00 AM IST</option>
+                        <option>12:00 PM IST</option><option>02:00 PM IST</option><option>03:00 PM IST</option>
+                        <option>04:00 PM IST</option><option>05:00 PM IST</option><option>06:00 PM IST</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Topic */}
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Session Topic</label>
+                    <select required value={bookingForm.topic} onChange={e => setBookingForm(f => ({ ...f, topic: e.target.value }))}
+                      style={{ width: '100%', background: '#0d0d1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', color: bookingForm.topic ? '#fff' : 'rgba(255,255,255,0.25)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}>
+                      <option value="">Choose a focus area</option>
+                      <option>Fundraising Strategy</option><option>Product-Market Fit</option><option>Go-To-Market Planning</option>
+                      <option>Pitch Deck Review</option><option>Technical Architecture</option><option>Team Building & Hiring</option>
+                      <option>Financial Modelling</option><option>VC Due Diligence Prep</option><option>Growth & Retention</option><option>Other</option>
+                    </select>
+                  </div>
+
+                  {/* Message */}
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Brief Context <span style={{ color: 'rgba(255,255,255,0.18)', fontWeight: 400 }}>(optional)</span></label>
+                    <textarea rows={3} placeholder="What would you like to discuss? Share any specific questions or challenges…" value={bookingForm.message} onChange={e => setBookingForm(f => ({ ...f, message: e.target.value }))}
+                      style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', color: '#fff', fontSize: 12, outline: 'none', resize: 'none', boxSizing: 'border-box', lineHeight: 1.6, fontFamily: 'inherit' }} />
+                  </div>
+
+                  {/* CTA */}
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button type="button" onClick={() => setBookingMentor(null)} style={{ flex: 1, padding: '10px 0', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>Cancel</button>
+                    <button type="submit" style={{ flex: 2, padding: '10px 0', borderRadius: 999, fontSize: 12, fontWeight: 700, background: `linear-gradient(90deg,${mc},${mc}99)`, border: 'none', color: '#fff', cursor: 'pointer', boxShadow: `0 0 20px ${mc}40`, letterSpacing: '0.02em' }}>
+                      Confirm Booking →
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                /* Success state */
+                <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: `${mc}18`, border: `2px solid ${mc}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: `0 0 24px ${mc}40` }}>
+                    <CheckCircle style={{ width: 26, height: 26, color: mc }} />
+                  </div>
+                  <p style={{ fontSize: 16, fontWeight: 800, color: '#fff', margin: '0 0 6px' }}>Session Requested!</p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '0 0 4px' }}>
+                    <span style={{ color: mc, fontWeight: 600 }}>{bookingMentor.name}</span> will confirm within 24 hours.
+                  </p>
+                  <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', margin: '0 0 20px' }}>
+                    {bookingForm.date} · {bookingForm.time} · {bookingForm.topic}
+                  </p>
+                  <div style={{ background: `${mc}0d`, border: `1px solid ${mc}22`, borderRadius: 10, padding: '10px 16px', marginBottom: 22, textAlign: 'left' }}>
+                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', margin: 0, lineHeight: 1.7 }}>
+                      📧 A calendar invite will be sent to your registered email.<br />
+                      💬 You'll receive a Zoom link 30 min before the session.
+                    </p>
+                  </div>
+                  <button onClick={() => setBookingMentor(null)} style={{ padding: '10px 32px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: `linear-gradient(90deg,${mc},${mc}99)`, border: 'none', color: '#fff', cursor: 'pointer', boxShadow: `0 0 20px ${mc}40` }}>
+                    Done
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── MODAL: REGISTER (2-step) ─────────────────────────────────────── */}
       {registerOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="hub-modal-wrap bg-[#08080f] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl">
+          <div className="hub-modal-wrap bg-[#08080f] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl" style={{ borderTop: '2px solid rgba(139,92,246,0.6)' }}>
+
+            {/* Header */}
             <div className="px-6 py-4 border-b border-white/[0.07] flex justify-between items-center">
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-3">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400 shadow-[0_0_8px_2px_rgba(167,139,250,0.8)]" />
                 <h3 className="text-sm font-semibold text-white">Register Portfolio Company</h3>
+                <div style={{ display: 'flex', gap: 5 }}>
+                  {[1, 2].map(s => (
+                    <div key={s} style={{ width: 20, height: 20, borderRadius: '50%', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', background: registerStep === s ? 'linear-gradient(135deg,#7c3aed,#0ea5e9)' : registerStep > s ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.07)', color: registerStep >= s ? '#fff' : 'rgba(255,255,255,0.25)', border: registerStep === s ? 'none' : '1px solid rgba(255,255,255,0.1)' }}>
+                      {registerStep > s ? '✓' : s}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <button onClick={() => setRegisterOpen(false)} className="text-white/30 hover:text-white transition"><X className="h-4 w-4" /></button>
+              <button onClick={() => { setRegisterOpen(false); setRegisterStep(1); setOwnerPassword(''); setOwnerPasswordConfirm(''); setOwnerPasswordError(''); }} className="text-white/30 hover:text-white transition"><X className="h-4 w-4" /></button>
             </div>
-            <form onSubmit={handleCreate} className="p-6 space-y-4">
-              <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Company Name</label>
-                <input type="text" required placeholder="e.g. NeuralKit" value={newS.name} onChange={e => setNewS({ ...newS, name: e.target.value })} className={input} /></div>
-              <div className="hub-modal-grid grid grid-cols-2 gap-3">
-                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Founder</label>
-                  <input type="text" required placeholder="Primary contact" value={newS.founder} onChange={e => setNewS({ ...newS, founder: e.target.value })} className={input} /></div>
-                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Industry</label>
-                  <select value={newS.industry} onChange={e => setNewS({ ...newS, industry: e.target.value })} className={input + " bg-black/40"}>
-                    <option>SaaS</option><option>FinTech</option><option>DeepTech</option>
-                  </select></div>
-              </div>
-              <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Tagline</label>
-                <input type="text" required placeholder="One-line value prop…" value={newS.tagline} onChange={e => setNewS({ ...newS, tagline: e.target.value })} className={input} /></div>
-              <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Funding Goal (INR)</label>
-                <input type="number" required placeholder="e.g. 20000000" value={newS.fundingGoal} onChange={e => setNewS({ ...newS, fundingGoal: e.target.value })} className={input} /></div>
-              <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Description</label>
-                <textarea rows={3} required placeholder="Company overview…" value={newS.description} onChange={e => setNewS({ ...newS, description: e.target.value })} className={input + " resize-none"} /></div>
-              <button type="submit" className="w-full py-2.5 rounded-full text-sm font-semibold bg-gradient-to-r from-violet-600 to-sky-500 text-white hover:opacity-90 transition">
-                Inject Into Pipeline →
-              </button>
-            </form>
+
+            {/* ── STEP 1: Startup Details ── */}
+            {registerStep === 1 && (
+              <form onSubmit={e => { e.preventDefault(); setRegisterStep(2); setOwnerEmail(user?.email ?? ''); setOwnerEmailMode('same'); setOwnerPassword(''); setOwnerPasswordConfirm(''); setOwnerPasswordError(''); }} className="p-6 space-y-4">
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Company Name</label>
+                  <input type="text" required placeholder="e.g. NeuralKit" value={newS.name} onChange={e => setNewS({ ...newS, name: e.target.value })} className={input} /></div>
+                <div className="hub-modal-grid grid grid-cols-2 gap-3">
+                  <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Founder</label>
+                    <input type="text" required placeholder="Primary contact" value={newS.founder} onChange={e => setNewS({ ...newS, founder: e.target.value })} className={input} /></div>
+                  <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Industry</label>
+                    <select value={newS.industry} onChange={e => { setNewS({ ...newS, industry: e.target.value }); setNewSCustomIndustry(''); }} className={input + " bg-black/40"}>
+                      <option>SaaS</option><option>FinTech</option><option>DeepTech</option>
+                      <option>HealthTech</option><option>EdTech</option><option>AgriTech</option>
+                      <option>ClimaTech</option><option>D2C / Consumer</option><option>E-commerce</option>
+                      <option>Logistics & Supply Chain</option><option>HRTech</option><option>LegalTech</option>
+                      <option>PropTech</option><option>SpaceTech</option><option>Gaming</option>
+                      <option>Media & Content</option><option>Others</option>
+                    </select>
+                    {newS.industry === 'Others' && (
+                      <input type="text" required placeholder="Enter your industry…" value={newSCustomIndustry} onChange={e => setNewSCustomIndustry(e.target.value)} className={input} style={{ marginTop: 6 }} />
+                    )}
+                  </div>
+                </div>
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Tagline</label>
+                  <input type="text" required placeholder="One-line value prop…" value={newS.tagline} onChange={e => setNewS({ ...newS, tagline: e.target.value })} className={input} /></div>
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Funding Goal (INR)</label>
+                  <input type="number" required placeholder="e.g. 20000000" value={newS.fundingGoal} onChange={e => setNewS({ ...newS, fundingGoal: e.target.value })} className={input} /></div>
+                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Description</label>
+                  <textarea rows={3} required placeholder="Company overview…" value={newS.description} onChange={e => setNewS({ ...newS, description: e.target.value })} className={input + " resize-none"} /></div>
+                <button type="submit" className="w-full py-2.5 rounded-full text-sm font-semibold bg-gradient-to-r from-violet-600 to-sky-500 text-white hover:opacity-90 transition">
+                  Continue — Set Ownership Credentials →
+                </button>
+              </form>
+            )}
+
+            {/* ── STEP 2: Ownership Credentials ── */}
+            {registerStep === 2 && (
+              <form onSubmit={e => {
+                e.preventDefault();
+                if (ownerPassword.length < 6) { setOwnerPasswordError('Password must be at least 6 characters.'); return; }
+                if (ownerPassword !== ownerPasswordConfirm) { setOwnerPasswordError('Passwords do not match.'); return; }
+                setOwnerPasswordError('');
+                handleCreate(e);
+              }} className="p-6 space-y-4">
+                <div style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 12, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <Shield style={{ width: 15, height: 15, color: '#a78bfa', flexShrink: 0, marginTop: 1 }} />
+                  <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 1.65 }}>
+                    Set a <strong style={{ color: '#c4b5fd' }}>startup password</strong> to protect ownership of <strong style={{ color: '#fff' }}>{newS.name}</strong>. You'll use this to confirm edits, uploads &amp; VC approvals.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-white/35 mb-2 uppercase tracking-wider">Startup Owner Email</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 10, border: `1px solid ${ownerEmailMode === 'same' ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.08)'}`, background: ownerEmailMode === 'same' ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.02)', cursor: 'pointer' }}>
+                      <input type="radio" name="emailMode" checked={ownerEmailMode === 'same'} onChange={() => { setOwnerEmailMode('same'); setOwnerEmail(user?.email ?? ''); }} style={{ accentColor: '#8b5cf6' }} />
+                      <div>
+                        <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: ownerEmailMode === 'same' ? '#c4b5fd' : 'rgba(255,255,255,0.5)' }}>Use my account email</p>
+                        <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{user?.email}</p>
+                      </div>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 10, border: `1px solid ${ownerEmailMode === 'different' ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.08)'}`, background: ownerEmailMode === 'different' ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.02)', cursor: 'pointer' }}>
+                      <input type="radio" name="emailMode" checked={ownerEmailMode === 'different'} onChange={() => { setOwnerEmailMode('different'); setOwnerEmail(''); }} style={{ accentColor: '#8b5cf6' }} />
+                      <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: ownerEmailMode === 'different' ? '#c4b5fd' : 'rgba(255,255,255,0.5)' }}>Use a different startup email</p>
+                    </label>
+                    {ownerEmailMode === 'different' && (
+                      <input type="email" required placeholder="startup@company.com" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} className={input} />
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Set Startup Password</label>
+                  <input type={showOwnerPwd ? 'text' : 'password'} required minLength={6} placeholder="Min. 6 characters" value={ownerPassword} onChange={e => { setOwnerPassword(e.target.value); setOwnerPasswordError(''); }} className={input} style={{ paddingRight: 40 }} />
+                  <button type="button" onClick={() => setShowOwnerPwd(p => !p)} style={{ position: 'absolute', right: 12, bottom: 9, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 0 }}>
+                    {showOwnerPwd ? <EyeOff style={{ width: 14, height: 14 }} /> : <Eye style={{ width: 14, height: 14 }} />}
+                  </button>
+                </div>
+                <div>
+                  <label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Confirm Password</label>
+                  <input type="password" required placeholder="Re-enter password" value={ownerPasswordConfirm} onChange={e => { setOwnerPasswordConfirm(e.target.value); setOwnerPasswordError(''); }} className={input} />
+                </div>
+                {ownerPasswordError && <p style={{ fontSize: 11, color: '#f87171', margin: 0 }}>{ownerPasswordError}</p>}
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button type="button" onClick={() => setRegisterStep(1)} style={{ flex: 1, padding: '10px 0', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                    ← Back
+                  </button>
+                  <button type="submit" style={{ flex: 2, padding: '10px 0', borderRadius: 999, fontSize: 13, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: '#fff', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.4)' }}>
+                    Register Startup →
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
@@ -3110,9 +4007,21 @@ function HubPage() {
               </div>
               <div className="hub-modal-grid grid grid-cols-2 gap-3">
                 <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Industry</label>
-                  <select value={editTarget.industry} onChange={e => setEditTarget({ ...editTarget, industry: e.target.value })} className={input + " bg-black/40"}>
+                  <select value={editTarget.industry} onChange={e => { setEditTarget({ ...editTarget, industry: e.target.value }); setEditCustomIndustry(''); }} className={input + " bg-black/40"}>
                     <option>SaaS</option><option>FinTech</option><option>DeepTech</option>
-                  </select></div>
+                    <option>HealthTech</option><option>EdTech</option><option>AgriTech</option>
+                    <option>ClimaTech</option><option>D2C / Consumer</option><option>E-commerce</option>
+                    <option>Logistics & Supply Chain</option><option>HRTech</option><option>LegalTech</option>
+                    <option>PropTech</option><option>SpaceTech</option><option>Gaming</option>
+                    <option>Media & Content</option><option>Others</option>
+                  </select>
+                  {editTarget.industry === 'Others' && (
+                    <input type="text" required placeholder="Enter your industry…"
+                      value={editCustomIndustry}
+                      onChange={e => setEditCustomIndustry(e.target.value)}
+                      className={input} style={{ marginTop: 6 }}
+                    />
+                  )}</div>
                 <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider text-violet-300/70">Pipeline Stage</label>
                   <select value={editTarget.stage} onChange={e => setEditTarget({ ...editTarget, stage: e.target.value })} className={input + " bg-black/40 text-violet-300 border-violet-500/30"}>
                     {STAGE_ORDER.map(s => <option key={s}>{s}</option>)}
@@ -3151,25 +4060,48 @@ function HubPage() {
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4 space-y-2">
+              {/* Event details */}
+              <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4 space-y-1.5">
                 <p className="text-sm font-semibold text-white">{rsvpEvent.title}</p>
                 <p className="text-[11px] text-white/40">{rsvpEvent.date} · {rsvpEvent.time}</p>
                 <p className="text-[11px] text-white/30">{rsvpEvent.location}</p>
               </div>
-              <div className="bg-violet-500/[0.07] border border-violet-500/20 rounded-xl p-4">
-                <p className="text-[10px] text-violet-400 uppercase tracking-wider mb-2">Registering as</p>
-                <p className="text-sm font-semibold text-white">Ashutosh Palai</p>
-                <p className="text-[11px] text-white/40">EduSphere · Hub Admin</p>
+
+              {/* Register as field */}
+              <div className="bg-violet-500/[0.07] border border-violet-500/20 rounded-xl p-4 space-y-3">
+                <div>
+                  <p className="text-[10px] text-violet-400 uppercase tracking-wider font-bold mb-1">Registering as</p>
+                  {userStartups[0] && (
+                    <p className="text-[10px] text-white/30 mb-2">
+                      Default: <span className="text-violet-300 font-semibold">{userStartups[0].founder}</span> — point of contact for your startup
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    value={rsvpName}
+                    onChange={e => setRsvpName(e.target.value)}
+                    placeholder={userStartups[0]?.founder ?? user?.name ?? 'Your name'}
+                    className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/50 focus:bg-white/[0.07] transition"
+                  />
+                  <p className="text-[10px] text-white/20">
+                    Edit if someone else is attending on behalf of the startup
+                  </p>
+                </div>
               </div>
+
               <p className="text-[10px] text-white/20 text-center">
                 A confirmation will be sent to the organiser team
               </p>
               <button
                 onClick={() => {
+                  if (!rsvpName.trim()) return;
                   setRsvpedIds(prev => [...prev, rsvpEvent.id]);
                   setRsvpEvent(null);
                 }}
-                className="w-full py-2.5 rounded-full text-sm font-semibold bg-gradient-to-r from-violet-600 to-sky-500 text-white hover:opacity-90 transition"
+                disabled={!rsvpName.trim()}
+                className="w-full py-2.5 rounded-full text-sm font-semibold bg-gradient-to-r from-violet-600 to-sky-500 text-white hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirm Registration →
               </button>
@@ -3177,6 +4109,510 @@ function HubPage() {
           </div>
         </div>
       )}
+      {/* ── MODAL: ADD EVENT ─────────────────────────────────────────────── */}
+      {addEventOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)' }} onClick={() => setAddEventOpen(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#09090f', border: '1px solid rgba(139,92,246,0.3)', borderTop: '2px solid #8b5cf6', borderRadius: 22, width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 0 80px rgba(139,92,246,0.18), 0 40px 80px rgba(0,0,0,0.8)' }}>
+            {/* Header */}
+            <div style={{ padding: '22px 26px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#09090f', zIndex: 2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 11, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CalendarDays style={{ width: 16, height: 16, color: '#a78bfa' }} />
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>Submit an Event</p>
+                  <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>
+                    {addEventDone ? 'Submitted for review' : `Step ${addEventStep} of 2 — ${addEventStep === 1 ? 'Event Details' : 'Organiser Details'}`}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setAddEventOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 4 }}>
+                <X style={{ width: 16, height: 16 }} />
+              </button>
+            </div>
+
+            {addEventDone ? (
+              /* ── Success state ── */
+              <div style={{ padding: '48px 26px', textAlign: 'center' }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+                  <UserCheck style={{ width: 28, height: 28, color: '#34d399' }} />
+                </div>
+                <p style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 800, color: '#fff' }}>Event Submitted!</p>
+                <p style={{ margin: '0 0 28px', fontSize: 12, color: 'rgba(255,255,255,0.35)', lineHeight: 1.6 }}>
+                  <strong style={{ color: addEventForm.title ? '#a78bfa' : 'inherit' }}>{addEventForm.title}</strong> has been sent to the Incutrack admin team for review. Once approved, it will appear in the Event Arena.
+                </p>
+                <button onClick={() => setAddEventOpen(false)} style={{ padding: '10px 32px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer' }}>
+                  Done
+                </button>
+              </div>
+            ) : addEventStep === 1 ? (
+              /* ── Step 1: Event details ── */
+              <div style={{ padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Title */}
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Event Title *</label>
+                  <input value={addEventForm.title} onChange={e => setAddEventForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. AI Founders Roundtable 2026" style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1px solid ${addEventErrors.title ? '#f87171' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                  {addEventErrors.title && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.title}</p>}
+                </div>
+
+                {/* Type + Date row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Event Type *</label>
+                    <select value={addEventForm.type} onChange={e => setAddEventForm(f => ({ ...f, type: e.target.value }))} style={{ width: '100%', background: '#12121f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', cursor: 'pointer' }}>
+                      {['Pitching', 'Workshop', 'Mentorship', 'Hackathon', 'Networking', 'Demo Day', 'Panel Discussion', 'Other'].map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Event Date *</label>
+                    <input type="date" value={addEventForm.date} onChange={e => setAddEventForm(f => ({ ...f, date: e.target.value }))} style={{ width: '100%', background: '#12121f', border: `1px solid ${addEventErrors.date ? '#f87171' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', colorScheme: 'dark', boxSizing: 'border-box' }} />
+                    {addEventErrors.date && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.date}</p>}
+                  </div>
+                </div>
+
+                {/* Time + Location mode row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Time (IST) *</label>
+                    <input type="time" value={addEventForm.time} onChange={e => setAddEventForm(f => ({ ...f, time: e.target.value }))} style={{ width: '100%', background: '#12121f', border: `1px solid ${addEventErrors.time ? '#f87171' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', colorScheme: 'dark', boxSizing: 'border-box' }} />
+                    {addEventErrors.time && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.time}</p>}
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Format</label>
+                    <select value={addEventForm.locationMode} onChange={e => setAddEventForm(f => ({ ...f, locationMode: e.target.value as any, location: '' }))} style={{ width: '100%', background: '#12121f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', cursor: 'pointer' }}>
+                      <option value="physical">In-Person</option>
+                      <option value="online">Online · Zoom</option>
+                      <option value="virtual">Virtual</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Location field */}
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
+                    {addEventForm.locationMode === 'physical' ? 'Venue / Address *' : addEventForm.locationMode === 'online' ? 'Meeting Link' : 'Platform / Link'}
+                  </label>
+                  <input value={addEventForm.location} onChange={e => setAddEventForm(f => ({ ...f, location: e.target.value }))} placeholder={addEventForm.locationMode === 'physical' ? 'e.g. Main Seminar Hall, IIT KGP' : addEventForm.locationMode === 'online' ? 'https://zoom.us/j/...' : 'e.g. Hopin / Discord / Gather'} style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1px solid ${addEventErrors.location ? '#f87171' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                  {addEventErrors.location && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.location}</p>}
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Event Description *</label>
+                  <textarea value={addEventForm.description} onChange={e => setAddEventForm(f => ({ ...f, description: e.target.value }))} rows={4} placeholder="What is this event about? Who should attend? What will they learn or gain?" style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1px solid ${addEventErrors.description ? '#f87171' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.6 }} />
+                  {addEventErrors.description && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.description}</p>}
+                </div>
+
+                {/* Capacity + Prize row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Max Capacity</label>
+                    <input type="number" value={addEventForm.maxCapacity} onChange={e => setAddEventForm(f => ({ ...f, maxCapacity: e.target.value }))} placeholder="e.g. 100" style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Prize / Reward</label>
+                    <input value={addEventForm.prize} onChange={e => setAddEventForm(f => ({ ...f, prize: e.target.value }))} placeholder="e.g. ₹5L cash prize" style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                </div>
+
+                {/* Registration deadline + Application required */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Registration Deadline</label>
+                    <input type="date" value={addEventForm.registrationDeadline} onChange={e => setAddEventForm(f => ({ ...f, registrationDeadline: e.target.value }))} style={{ width: '100%', background: '#12121f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', colorScheme: 'dark', boxSizing: 'border-box' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10 }}>
+                      <input type="checkbox" checked={addEventForm.applicationRequired} onChange={e => setAddEventForm(f => ({ ...f, applicationRequired: e.target.checked }))} style={{ width: 14, height: 14, accentColor: '#8b5cf6', cursor: 'pointer' }} />
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>Application required</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Step 1 → Next */}
+                <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+                  <button onClick={() => setAddEventOpen(false)} style={{ flex: 1, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={() => {
+                    const errs: Record<string, string> = {};
+                    if (!addEventForm.title.trim()) errs.title = 'Title is required';
+                    if (!addEventForm.date) errs.date = 'Date is required';
+                    if (!addEventForm.time) errs.time = 'Time is required';
+                    if (!addEventForm.location.trim()) errs.location = 'Location / link is required';
+                    if (!addEventForm.description.trim()) errs.description = 'Description is required';
+                    setAddEventErrors(errs);
+                    if (Object.keys(errs).length === 0) setAddEventStep(2);
+                  }} style={{ flex: 2, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    Next — Organiser Details <ArrowRight style={{ width: 13, height: 13 }} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* ── Step 2: Organiser details ── */
+              <div style={{ padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <p style={{ margin: '0 0 4px', fontSize: 11, color: 'rgba(255,255,255,0.3)', lineHeight: 1.6 }}>
+                  Tell us who is organising this event. This info is used for coordination and won't be shown publicly.
+                </p>
+
+                {/* Organiser name */}
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Organiser / Point of Contact *</label>
+                  <input value={addEventForm.organiserName} onChange={e => setAddEventForm(f => ({ ...f, organiserName: e.target.value }))} placeholder="Full name" style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1px solid ${addEventErrors.organiserName ? '#f87171' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                  {addEventErrors.organiserName && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.organiserName}</p>}
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Contact Email *</label>
+                  <input type="email" value={addEventForm.organiserEmail} onChange={e => setAddEventForm(f => ({ ...f, organiserEmail: e.target.value }))} placeholder="organiser@example.com" style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1px solid ${addEventErrors.organiserEmail ? '#f87171' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                  {addEventErrors.organiserEmail && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.organiserEmail}</p>}
+                </div>
+
+                {/* Organisation */}
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Organisation / Startup / Institution *</label>
+                  <input value={addEventForm.organiserOrg} onChange={e => setAddEventForm(f => ({ ...f, organiserOrg: e.target.value }))} placeholder="e.g. IIT KGP Entrepreneurship Cell, NeuralKit Inc." style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1px solid ${addEventErrors.organiserOrg ? '#f87171' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                  {addEventErrors.organiserOrg && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.organiserOrg}</p>}
+                </div>
+
+                {/* Review summary */}
+                <div style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.18)', borderRadius: 12, padding: '14px 16px' }}>
+                  <p style={{ margin: '0 0 10px', fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.07em' }}>Event Summary</p>
+                  {[
+                    ['Title', addEventForm.title],
+                    ['Type', addEventForm.type],
+                    ['Date & Time', `${addEventForm.date} · ${addEventForm.time} IST`],
+                    ['Format', addEventForm.locationMode === 'physical' ? 'In-Person' : addEventForm.locationMode === 'online' ? 'Online · Zoom' : 'Virtual'],
+                    ['Venue / Link', addEventForm.location],
+                    ...(addEventForm.maxCapacity ? [['Capacity', `${addEventForm.maxCapacity} attendees`]] : []),
+                    ...(addEventForm.prize ? [['Prize', addEventForm.prize]] : []),
+                  ].map(([k, v]) => (
+                    <div key={k} style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', minWidth: 90, flexShrink: 0 }}>{k}</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Step 2 actions */}
+                <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+                  <button onClick={() => { setAddEventStep(1); setAddEventErrors({}); }} style={{ flex: 1, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>← Back</button>
+                  <button
+                    disabled={addEventSubmitting}
+                    onClick={async () => {
+                      const errs: Record<string, string> = {};
+                      if (!addEventForm.organiserName.trim()) errs.organiserName = 'Name is required';
+                      if (!addEventForm.organiserEmail.trim()) errs.organiserEmail = 'Email is required';
+                      if (!addEventForm.organiserOrg.trim()) errs.organiserOrg = 'Organisation is required';
+                      setAddEventErrors(errs);
+                      if (Object.keys(errs).length > 0) return;
+                      setAddEventSubmitting(true);
+                      try {
+                        await fetch('/api/events/create', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          credentials: 'include',
+                          body: JSON.stringify({ ...addEventForm, submittedBy: user?.email }),
+                        });
+                      } catch { /* best-effort */ }
+                      setAddEventSubmitting(false);
+                      setAddEventDone(true);
+                    }}
+                    style={{ flex: 2, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: addEventSubmitting ? 'rgba(139,92,246,0.4)' : 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: addEventSubmitting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  >
+                    {addEventSubmitting ? 'Submitting…' : <><UserCheck style={{ width: 13, height: 13 }} /> Submit Event for Review</>}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: ADVANCE REQUEST ───────────────────────────────────────── */}
+      {advanceRequestOpen && advanceRequestStartup && (() => {
+        const s = advanceRequestStartup;
+        const idx = STAGE_ORDER.indexOf(s.stage);
+        const availableStages = STAGE_ORDER.slice(idx + 1);
+        const sc = STAGE_COLORS[s.stage] ?? '#8b5cf6';
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.87)', backdropFilter: 'blur(16px)' }} onClick={() => !advanceRequestSubmitting && setAdvanceRequestOpen(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: '#09090f', border: '1px solid rgba(139,92,246,0.3)', borderTop: '2px solid #8b5cf6', borderRadius: 22, width: '100%', maxWidth: 520, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 0 80px rgba(139,92,246,0.18), 0 40px 80px rgba(0,0,0,0.8)' }}>
+              {/* Header */}
+              <div style={{ padding: '22px 26px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#09090f', zIndex: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 11, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ArrowRight style={{ width: 16, height: 16, color: '#a78bfa' }} />
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>Request Stage Advance</p>
+                    <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{s.name} · currently at <span style={{ color: sc, fontWeight: 700 }}>{s.stage}</span></p>
+                  </div>
+                </div>
+                {!advanceRequestSubmitting && <button onClick={() => setAdvanceRequestOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 4 }}><X style={{ width: 16, height: 16 }} /></button>}
+              </div>
+
+              {advanceRequestDone ? (
+                <div style={{ padding: '48px 26px', textAlign: 'center' }}>
+                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+                    <UserCheck style={{ width: 28, height: 28, color: '#34d399' }} />
+                  </div>
+                  <p style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 800, color: '#fff' }}>Request Submitted!</p>
+                  <p style={{ margin: '0 0 6px', fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
+                    Your advance request for <strong style={{ color: '#a78bfa' }}>{s.name}</strong> → <strong style={{ color: '#34d399' }}>{advanceRequestForm.targetStage}</strong> has been sent to the admin for review.
+                  </p>
+                  <p style={{ margin: '0 0 28px', fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>You'll be notified once a decision is made.</p>
+                  <button onClick={() => setAdvanceRequestOpen(false)} style={{ padding: '10px 32px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer' }}>Done</button>
+                </div>
+              ) : (
+                <div style={{ padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+                  {/* Info banner */}
+                  <div style={{ background: 'rgba(139,92,246,0.07)', border: '1px solid rgba(139,92,246,0.22)', borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    <AlertTriangle style={{ width: 14, height: 14, color: '#a78bfa', flexShrink: 0, marginTop: 1 }} />
+                    <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 1.65 }}>
+                      Stage advances are <strong style={{ color: '#c4b5fd' }}>reviewed by the admin</strong>. Submit your target stage, a written justification, and any supporting proof. The admin will approve or reject based on the evidence provided.
+                    </p>
+                  </div>
+
+                  {/* Target stage */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 8 }}>Target Stage *</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {availableStages.map(stage => {
+                        const stageDesc: Record<string, string> = {
+                          'Validation': 'You\'ve tested the idea — customer discovery done, early demand proven',
+                          'MVP Built': 'Product is live with active real users using it regularly',
+                          'Growth': 'Consistent MRR growth, clear acquisition channel, 500+ users',
+                          'Funding Secured': 'Term sheet signed or capital committed from investors',
+                        };
+                        const stageCol = STAGE_COLORS[stage] ?? '#8b5cf6';
+                        const selected = advanceRequestForm.targetStage === stage;
+                        return (
+                          <label key={stage} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', borderRadius: 12, border: `1px solid ${selected ? stageCol + '60' : 'rgba(255,255,255,0.08)'}`, background: selected ? `${stageCol}0e` : 'rgba(255,255,255,0.02)', cursor: 'pointer', transition: 'all 0.15s' }}>
+                            <input type="radio" name="targetStage" checked={selected} onChange={() => setAdvanceRequestForm(f => ({ ...f, targetStage: stage }))} style={{ accentColor: stageCol, marginTop: 2, flexShrink: 0 }} />
+                            <div>
+                              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: selected ? stageCol : 'rgba(255,255,255,0.5)' }}>{stage}</p>
+                              <p style={{ margin: '2px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.28)', lineHeight: 1.5 }}>{stageDesc[stage] ?? ''}</p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Justification */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Justification / Write-up *</label>
+                    <textarea
+                      rows={6}
+                      value={advanceRequestForm.justification}
+                      onChange={e => { setAdvanceRequestForm(f => ({ ...f, justification: e.target.value })); setAdvanceRequestError(''); }}
+                      placeholder={`Explain why ${s.name} is ready for the next stage.\n\nInclude:\n• Key milestones achieved\n• Metrics (users, MRR, contracts, etc.)\n• What changed since the last stage\n• Why now is the right time`}
+                      style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#fff', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.7, minHeight: 130 }}
+                    />
+                    <p style={{ margin: '4px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>{advanceRequestForm.justification.length} chars — aim for 150+ for a strong case</p>
+                  </div>
+
+                  {/* Proof document */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Supporting Proof <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400, textTransform: 'none' }}>(optional but recommended)</span></label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.02)', cursor: 'pointer' }}>
+                      <input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xlsx,.csv" style={{ display: 'none' }} onChange={e => setAdvanceRequestForm(f => ({ ...f, proofFile: e.target.files?.[0] ?? null }))} />
+                      <FolderKey style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                      <span style={{ fontSize: 11, color: advanceRequestForm.proofFile ? '#a78bfa' : 'rgba(255,255,255,0.3)' }}>
+                        {advanceRequestForm.proofFile ? advanceRequestForm.proofFile.name : 'Upload a deck, revenue screenshot, contract, MoU, or any proof doc'}
+                      </span>
+                    </label>
+                    <p style={{ margin: '4px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.18)' }}>PDF, image, Word, Excel — max 10 MB</p>
+                  </div>
+
+                  {advanceRequestError && (
+                    <p style={{ margin: 0, fontSize: 11, color: '#f87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 8, padding: '8px 12px' }}>{advanceRequestError}</p>
+                  )}
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+                    <button onClick={() => setAdvanceRequestOpen(false)} style={{ flex: 1, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>Cancel</button>
+                    <button
+                      disabled={advanceRequestSubmitting}
+                      onClick={async () => {
+                        if (!advanceRequestForm.targetStage) { setAdvanceRequestError('Please select a target stage.'); return; }
+                        if (advanceRequestForm.justification.trim().length < 50) { setAdvanceRequestError('Please write a justification of at least 50 characters.'); return; }
+                        setAdvanceRequestSubmitting(true);
+                        try {
+                          const fd = new FormData();
+                          fd.append('startup_id', s.id);
+                          fd.append('startup_name', s.name);
+                          fd.append('current_stage', s.stage);
+                          fd.append('target_stage', advanceRequestForm.targetStage);
+                          fd.append('justification', advanceRequestForm.justification);
+                          fd.append('submitted_by', user?.email ?? '');
+                          if (advanceRequestForm.proofFile) fd.append('proof', advanceRequestForm.proofFile);
+                          await fetch('/api/startup-advance/request', { method: 'POST', credentials: 'include', body: fd });
+                          setAdvanceRequestDone(true);
+                        } catch { setAdvanceRequestError('Network error. Please try again.'); }
+                        setAdvanceRequestSubmitting(false);
+                      }}
+                      style={{ flex: 2, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: advanceRequestSubmitting ? 'rgba(139,92,246,0.4)' : 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: advanceRequestSubmitting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                    >
+                      {advanceRequestSubmitting ? 'Submitting…' : <><UserCheck style={{ width: 13, height: 13 }} /> Submit Advance Request</>}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── MODAL: OWNERSHIP CONFIRM ─────────────────────────────────────── */}
+      {ownershipConfirmOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(14px)' }} onClick={() => setOwnershipConfirmOpen(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#09090f', border: '1px solid rgba(139,92,246,0.3)', borderTop: '2px solid #8b5cf6', borderRadius: 20, width: '100%', maxWidth: 380, padding: '28px 24px', boxShadow: '0 0 60px rgba(139,92,246,0.2), 0 32px 64px rgba(0,0,0,0.8)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Key style={{ width: 16, height: 16, color: '#a78bfa' }} />
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#fff' }}>Confirm Ownership</p>
+                <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>Enter your startup password to proceed</p>
+              </div>
+            </div>
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '16px 0' }} />
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Startup Password</label>
+              <input
+                type="password" placeholder="Enter your startup password" autoFocus
+                value={ownershipConfirmPwd}
+                onChange={e => { setOwnershipConfirmPwd(e.target.value); setOwnershipConfirmError(''); }}
+                onKeyDown={async e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!ownershipConfirmPwd) return;
+                    setOwnershipConfirmLoading(true);
+                    try {
+                      const res = await fetch('/api/startup-auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ startup_id: ownershipConfirmStartupId, password: ownershipConfirmPwd }) });
+                      const data = await res.json() as { ok?: boolean; error?: string };
+                      if (data.ok) { setOwnershipSessions(prev => ({ ...prev, [ownershipConfirmStartupId]: Date.now() + 30 * 60 * 1000 })); setOwnershipConfirmOpen(false); ownershipConfirmCallback?.(); }
+                      else setOwnershipConfirmError(data.error ?? 'Incorrect password.');
+                    } catch { setOwnershipConfirmError('Network error. Try again.'); }
+                    setOwnershipConfirmLoading(false);
+                  }
+                }}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1px solid ${ownershipConfirmError ? 'rgba(248,113,113,0.5)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, padding: '9px 12px', color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+              />
+              {ownershipConfirmError && <p style={{ margin: '6px 0 0', fontSize: 11, color: '#f87171' }}>{ownershipConfirmError}</p>}
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setOwnershipConfirmOpen(false)} style={{ flex: 1, padding: '10px 0', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!ownershipConfirmPwd) return;
+                  setOwnershipConfirmLoading(true);
+                  try {
+                    const res = await fetch('/api/startup-auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ startup_id: ownershipConfirmStartupId, password: ownershipConfirmPwd }) });
+                    const data = await res.json() as { ok?: boolean; error?: string };
+                    if (data.ok) { setOwnershipSessions(prev => ({ ...prev, [ownershipConfirmStartupId]: Date.now() + 30 * 60 * 1000 })); setOwnershipConfirmOpen(false); ownershipConfirmCallback?.(); }
+                    else setOwnershipConfirmError(data.error ?? 'Incorrect password.');
+                  } catch { setOwnershipConfirmError('Network error. Try again.'); }
+                  setOwnershipConfirmLoading(false);
+                }}
+                disabled={ownershipConfirmLoading || !ownershipConfirmPwd}
+                style={{ flex: 2, padding: '10px 0', borderRadius: 999, fontSize: 12, fontWeight: 700, background: ownershipConfirmLoading ? 'rgba(139,92,246,0.4)' : 'linear-gradient(90deg,#7c3aed,#6366f1)', color: '#fff', border: 'none', cursor: ownershipConfirmLoading ? 'wait' : 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.35)', opacity: ownershipConfirmPwd ? 1 : 0.5 }}>
+                {ownershipConfirmLoading ? 'Verifying…' : 'Confirm →'}
+              </button>
+            </div>
+            <p style={{ margin: '14px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.2)', textAlign: 'center' }}>Session unlocked for this startup only · expires in 30 minutes</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: SIGN-IN PROMPT ────────────────────────────────────────── */}
+      {signInPromptOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(14px)' }} onClick={() => setSignInPromptOpen(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#09090f', border: '1px solid rgba(139,92,246,0.3)', borderTop: '2.5px solid #8b5cf6', borderRadius: 20, width: '100%', maxWidth: 400, padding: '32px 28px', textAlign: 'center', boxShadow: '0 0 60px rgba(139,92,246,0.2), 0 32px 64px rgba(0,0,0,0.8)' }}>
+            <div style={{ width: 54, height: 54, borderRadius: '50%', background: 'rgba(139,92,246,0.15)', border: '1.5px solid rgba(139,92,246,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', boxShadow: '0 0 24px rgba(139,92,246,0.3)' }}>
+              <Lock style={{ width: 22, height: 22, color: '#a78bfa' }} />
+            </div>
+            <p style={{ fontSize: 16, fontWeight: 800, color: '#fff', margin: '0 0 8px' }}>Sign In Required</p>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, margin: '0 0 26px', maxWidth: 300, marginLeft: 'auto', marginRight: 'auto' }}>{signInPromptMsg}</p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setSignInPromptOpen(false)} style={{ flex: 1, padding: '10px 0', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={() => { setSignInPromptOpen(false); window.location.href = '/'; }} style={{ flex: 2, padding: '10px 0', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: '#fff', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.4)' }}>
+                Sign In / Sign Up →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: UPLOAD CHOICE ─────────────────────────────────────────── */}
+      {uploadChoiceOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(14px)' }} onClick={() => setUploadChoiceOpen(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#09090f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 520, overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.8)' }}>
+            {/* Header */}
+            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>What would you like to upload?</p>
+                <p style={{ margin: '3px 0 0', fontSize: 10.5, color: 'rgba(255,255,255,0.3)' }}>Choose the type of document to add to your Brand Vault</p>
+              </div>
+              <button onClick={() => setUploadChoiceOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)' }}><X style={{ width: 16, height: 16 }} /></button>
+            </div>
+
+            {/* Two option cards */}
+            <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+              {/* Option 1: Brand Deck */}
+              <div
+                onClick={() => { setUploadChoiceOpen(false); setUploadMode('brand'); setUploadOpen(true); }}
+                style={{ border: '1px solid rgba(139,92,246,0.35)', borderRadius: 14, padding: '18px 20px', cursor: 'pointer', background: 'rgba(139,92,246,0.06)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.7)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(139,92,246,0.11)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.35)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(139,92,246,0.06)'; }}>
+                <div style={{ position: 'absolute', top: -20, right: -20, width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,0.2),transparent 70%)', pointerEvents: 'none' }} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 11, background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><BarChart3 style={{ width: 20, height: 20, color: '#c4b5fd' }} /></div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#c4b5fd' }}>Brand Deck</p>
+                      <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', letterSpacing: '0.05em' }}>PUBLIC</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.65 }}>
+                      Your public-facing brand story — value proposition, problem-solution fit, market sizing, and team overview. Visible to all VCs and visitors. <strong style={{ color: 'rgba(255,255,255,0.6)' }}>IncuScore is calculated from this.</strong>
+                    </p>
+                  </div>
+                  <ChevronRight style={{ width: 16, height: 16, color: 'rgba(139,92,246,0.6)', flexShrink: 0, marginTop: 12 }} />
+                </div>
+              </div>
+
+              {/* Option 2: Investor Pitch Deck */}
+              <div
+                onClick={() => { setUploadChoiceOpen(false); setUploadMode('investor'); setUploadOpen(true); }}
+                style={{ border: '1px solid rgba(6,182,212,0.3)', borderRadius: 14, padding: '18px 20px', cursor: 'pointer', background: 'rgba(6,182,212,0.05)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(6,182,212,0.65)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(6,182,212,0.1)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(6,182,212,0.3)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(6,182,212,0.05)'; }}>
+                <div style={{ position: 'absolute', top: -20, right: -20, width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle,rgba(6,182,212,0.18),transparent 70%)', pointerEvents: 'none' }} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 11, background: 'rgba(6,182,212,0.15)', border: '1px solid rgba(6,182,212,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Shield style={{ width: 20, height: 20, color: '#67e8f9' }} /></div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#67e8f9' }}>Investor Pitch Deck</p>
+                      <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: 'rgba(6,182,212,0.15)', border: '1px solid rgba(6,182,212,0.35)', color: '#06b6d4', letterSpacing: '0.05em' }}>INVESTORS ONLY</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.65 }}>
+                      Your confidential deep-dive deck — financial models, product roadmap, tech architecture, cap table. <strong style={{ color: 'rgba(255,255,255,0.6)' }}>Restricted to VCs you explicitly approve.</strong>
+                    </p>
+                  </div>
+                  <ChevronRight style={{ width: 16, height: 16, color: 'rgba(6,182,212,0.5)', flexShrink: 0, marginTop: 12 }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {uploadOpen && (() => {
         const EXT_TO_TYPE: Record<string, string> = {
           pdf: 'Doc', pptx: 'Deck', ppt: 'Deck', xlsx: 'Sheet', xls: 'Sheet',
@@ -3194,7 +4630,7 @@ function HubPage() {
                     <Upload style={{ width: 13, height: 13, color: '#a78bfa' }} />
                   </div>
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>
-                    {editingDoc ? `Edit — ${editingDoc.name}` : 'Upload to Pitch Vault'}
+                    {editingDoc ? `Edit — ${editingDoc.name}` : uploadMode === 'investor' ? 'Upload Investor Pitch Deck' : 'Upload Brand Deck'}
                   </span>
                 </div>
                 <button onClick={() => { setUploadOpen(false); setEditingDoc(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 4 }}>
@@ -3203,6 +4639,23 @@ function HubPage() {
               </div>
 
               <div style={{ padding: '22px' }}>
+
+                {/* Mode context banner */}
+                {!editingDoc && (
+                  <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: uploadMode === 'investor' ? 'rgba(6,182,212,0.08)' : 'rgba(139,92,246,0.08)', border: `1px solid ${uploadMode === 'investor' ? 'rgba(6,182,212,0.25)' : 'rgba(139,92,246,0.25)'}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {uploadMode === 'investor' ? <Shield style={{ width: 15, height: 15, color: '#67e8f9', flexShrink: 0 }} /> : <BarChart3 style={{ width: 15, height: 15, color: '#c4b5fd', flexShrink: 0 }} />}
+                    <div>
+                      <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: uploadMode === 'investor' ? '#67e8f9' : '#c4b5fd' }}>
+                        {uploadMode === 'investor' ? 'Investor Pitch Deck — Restricted Access' : 'Brand Deck — Public'}
+                      </p>
+                      <p style={{ margin: '2px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
+                        {uploadMode === 'investor'
+                          ? 'This deck will only be visible to VCs you explicitly approve. Contains financials, roadmap & cap table.'
+                          : 'This deck is publicly visible. It\'s used to calculate your IncuScore and generate investor interest.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Drop zone */}
                 <div

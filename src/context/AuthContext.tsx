@@ -6,6 +6,7 @@ export interface AuthUser {
   google_id: string | null;
   auth_method: 'otp' | 'google';
   avatar_url: string | null;
+  role: 'visitor' | 'founder' | 'vc' | 'admin';
 }
 
 interface AuthContextValue {
@@ -62,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             google_id: (payload.google_id as string | null) ?? null,
             auth_method: payload.auth_method as 'otp' | 'google',
             avatar_url: (payload.avatar_url as string | null) ?? null,
+            role: (payload.role as 'visitor' | 'founder' | 'vc' | 'admin') ?? 'visitor',
           });
         }
       } catch { /* invalid token — refetch will resolve auth */ }

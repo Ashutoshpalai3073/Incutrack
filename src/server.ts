@@ -83,54 +83,98 @@ async function handleIncuScorePhase1(request: Request): Promise<Response> {
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' });
 
-    const prompt = `
-You are a senior venture capital analyst at a top-tier firm evaluating early-stage Indian startups.
-Your job is to score this startup and provide actionable intelligence.
+    const fundingCrore = (fundingGoal / 1e7).toFixed(1);
 
-STARTUP DETAILS:
+    const prompt = `
+You are a partner-level analyst at a top Indian VC firm (think Sequoia Capital India, Peak XV, Lightspeed India, Matrix Partners India). You have evaluated 500+ early-stage startups. You are brutally honest — most startups score between 35–65. Only truly exceptional ones score above 80. Be skeptical, rigorous, and grounded in real-world Indian startup ecosystem data.
+
+STARTUP SUBMISSION:
 - Company: ${name}
 - Founder: ${founder}
 - Industry: ${industry}
 - Tagline: "${tagline}"
-- Funding Goal: ₹${(fundingGoal / 1e6).toFixed(1)}M
+- Funding Ask: ₹${fundingCrore} Cr
 - Description: "${description}"
 
-SCORING RUBRIC (score each category 0–20, total max 100):
-1. Problem Clarity: Is the problem real, urgent, and clearly articulated?
-2. Market Opportunity: Does this address a large/growing market in India or globally?
-3. Solution Uniqueness: Is there genuine differentiation or defensible moat?
-4. Business Model: Is there a clear path to revenue and sustainability?
-5. Team Signal: Does the founder profile suggest execution capability?
+SCORING FRAMEWORK — 5 dimensions, 0–20 each (max 100):
 
-INDUSTRY CONTEXT:
-- SaaS/B2B: Weight business model and scalability heavily
-- FinTech: Weight regulation awareness and unit economics
-- DeepTech/AI: Weight innovation and team technical depth
-- HealthTech: Weight regulatory pathway and clinical validation
-- ClimaTech: Weight impact metrics and policy alignment
+1. PROBLEM-MARKET FIT (0–20)
+   - Is the problem experienced by a large enough segment in India (or globally)?
+   - Is it a hair-on-fire problem (urgent) or a vitamin (nice-to-have)?
+   - Is there evidence the problem is real and unsolved? (0–5: vague, 6–10: plausible, 11–15: clear with context, 16–20: sharply defined with real pain evidence)
 
-Respond ONLY with a valid JSON object, no markdown, no explanation:
+2. MARKET SIZE & TIMING (0–20)
+   - India context: Is the market large enough? (₹1000 Cr+ SAM for seed, ₹10,000 Cr+ for Series A)
+   - Is timing right? (regulatory tailwinds, India Stack, UPI ecosystem, smartphone penetration, ONDC, etc.)
+   - Are there comparable global companies validating this market? (0–5: unproven, 6–10: nascent, 11–15: growing with comps, 16–20: clear large market with perfect timing)
+
+3. SOLUTION & MOAT (0–20)
+   - Is the solution 10x better than existing alternatives (not just marginally better)?
+   - Is there a defensible moat: network effects, proprietary data, switching costs, regulatory license, deep tech IP?
+   - How easily can a well-funded competitor replicate this? (0–5: easily copied, 6–10: some differentiation, 11–15: clear advantage, 16–20: strong defensible moat)
+
+4. BUSINESS MODEL VIABILITY (0–20)
+   - Is the revenue model clearly articulated and realistic?
+   - Are unit economics plausible? (CAC vs LTV, gross margins appropriate for industry)
+   - SaaS: 70%+ gross margins expected. Marketplace: 15–30%. B2B: recurring revenue preferred.
+   - Is the funding ask proportional to the stage and use of funds? (0–5: unclear, 6–10: basic model, 11–15: solid model with realistic economics, 16–20: compelling model with strong unit economics)
+
+5. FOUNDER-MARKET FIT & EXECUTION SIGNAL (0–20)
+   - Does the founder's background (as described) suggest deep domain expertise?
+   - Is there a signal of prior execution: past startup, domain experience, relevant education (IIT/IIM/top global), industry tenure?
+   - First-time founders with no domain signal score low. Serial founders or deep domain experts score high. (0–5: no signal, 6–10: some relevance, 11–15: strong background, 16–20: exceptional domain + execution pedigree)
+
+INDUSTRY-SPECIFIC ADJUSTMENTS (apply these to be realistic):
+- FinTech: Deduct up to 3 points if RBI/SEBI regulatory pathway is not mentioned. Add up to 3 if mentions specific license or partnership.
+- HealthTech: Deduct up to 4 points if no mention of clinical validation or CDSCO compliance pathway.
+- EdTech: Be conservative — Indian EdTech is overcrowded post-BYJU's collapse. Differentiation must be exceptional.
+- AgriTech: Add up to 3 points if rural distribution model is clearly articulated.
+- DeepTech/AI: Add up to 3 points if there is mention of proprietary model, dataset, or patent. Deduct if it's just "ChatGPT wrapper."
+- SaaS/B2B: Add up to 3 points if target customer and ACV (Annual Contract Value) is mentioned.
+- D2C/Consumer: Be conservative — high CAC environment in India. Deduct if no clear retention/repeat purchase signal.
+
+REALISTIC SCORE CALIBRATION (follow this strictly):
+- 0–30: Idea is too vague, no clear problem-solution, not fundable
+- 31–45: Concept exists but lacks validation, market clarity, or founder fit
+- 46–60: Promising idea but significant gaps — needs more work before raising
+- 61–72: Solid foundation, ready for angel/pre-seed conversations with caveats
+- 73–82: Strong startup, seed-ready, competitive but fundable by serious angels/seed funds
+- 83–90: Exceptional — Series A candidate, clear market leader potential
+- 91–100: Extremely rare — reserve for truly transformative, defensible, perfectly timed startups with exceptional teams
+
+BAND LABELS (assign based on total):
+- 83–100: "Series A Contender"
+- 73–82: "Seed Ready"
+- 61–72: "Angel Stage"
+- 46–60: "Pre-seed Potential"
+- 31–45: "Needs Validation"
+- 0–30: "Concept Phase"
+
+Respond ONLY with a valid JSON object, no markdown, no explanation, no commentary:
 {
   "scores": {
-    "problemClarity": <0-20>,
-    "marketOpportunity": <0-20>,
-    "solutionUniqueness": <0-20>,
-    "businessModel": <0-20>,
-    "teamSignal": <0-20>
+    "problemMarketFit": <0-20>,
+    "marketSizeTiming": <0-20>,
+    "solutionMoat": <0-20>,
+    "businessModelViability": <0-20>,
+    "founderMarketFit": <0-20>
   },
-  "total": <sum of above 0-100>,
-  "band": "<Investor-Grade | Strong | Promising | Early Stage | Pre-Idea>",
-  "remark": "<2 sentence honest assessment>",
-  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "improvements": ["<improvement 1>", "<improvement 2>"],
+  "total": <integer sum of all 5 scores, 0-100>,
+  "band": "<Series A Contender | Seed Ready | Angel Stage | Pre-seed Potential | Needs Validation | Concept Phase>",
+  "remark": "<2–3 sentence honest VC-style assessment. Be direct, specific to this startup, mention the biggest strength and biggest gap>",
+  "strengths": ["<specific strength 1>", "<specific strength 2>", "<specific strength 3>"],
+  "redFlags": ["<critical gap or risk 1>", "<critical gap or risk 2>"],
+  "improvements": ["<specific actionable improvement 1>", "<specific actionable improvement 2>", "<specific actionable improvement 3>"],
+  "vcQuestions": ["<question a VC would ask in a meeting 1>", "<question a VC would ask 2>", "<question a VC would ask 3>"],
+  "comparables": ["<real comparable company or startup in this space>", "<another comparable>"],
   "keywords": ["<kw1>", "<kw2>", "<kw3>", "<kw4>", "<kw5>"],
-  "investorMessage": "<1 sentence message about investment readiness>"
+  "investorMessage": "<1 honest sentence about what needs to happen before this is truly fundable, or if already fundable, what makes it compelling>"
 }`;
 
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
-      max_tokens: 800,
-      temperature: 0.3,
+      max_tokens: 1200,
+      temperature: 0.2,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -139,21 +183,32 @@ Respond ONLY with a valid JSON object, no markdown, no explanation:
     const result = JSON.parse(cleaned);
     const total = Math.min(100, Math.max(0, result.total ?? 0));
 
+    // Derive band from total server-side to ensure consistency
+    const band =
+      total >= 83 ? 'Series A Contender' :
+      total >= 73 ? 'Seed Ready' :
+      total >= 61 ? 'Angel Stage' :
+      total >= 46 ? 'Pre-seed Potential' :
+      total >= 31 ? 'Needs Validation' : 'Concept Phase';
+
     return new Response(
-      JSON.stringify({ ...result, total, phase: 1 }),
+      JSON.stringify({ ...result, total, band, phase: 1 }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err) {
     console.error('[incuscore-p1]', err);
     return new Response(
       JSON.stringify({
-        total: 68, phase: 1, band: 'Promising',
-        remark: 'Initial analysis based on submitted details. Upload your pitch deck for a deeper evaluation.',
-        strengths: ['Registered on Incutrack', 'Idea submitted for review', 'Journey started'],
-        improvements: ['Add more detail to your description', 'Upload a pitch deck'],
+        total: 52, phase: 1, band: 'Pre-seed Potential',
+        remark: 'Initial analysis could not be completed. Provide a detailed description covering your problem, target market, and business model for an accurate IncuScore.',
+        strengths: ['Startup registered on Incutrack', 'Funding goal articulated', 'Ready to be evaluated'],
+        redFlags: ['Description too brief for meaningful analysis', 'Market size not validated yet'],
+        improvements: ['Write a detailed description (200+ words) covering the problem, solution, and target customer', 'Mention your revenue model explicitly', 'Add founder background and relevant experience'],
+        vcQuestions: ['Who exactly is your target customer and what do they pay today?', 'Why are you the right team to solve this?', 'What is your go-to-market strategy for the first 100 customers?'],
+        comparables: ['Unable to determine without more details'],
         keywords: ['startup', 'early-stage', 'india', 'building', 'founder'],
-        investorMessage: 'Complete your pitch vault to unlock your full IncuScore.',
-        scores: { problemClarity: 14, marketOpportunity: 13, solutionUniqueness: 13, businessModel: 14, teamSignal: 14 },
+        investorMessage: 'Enrich your startup profile with a detailed description and upload a pitch deck to unlock your full IncuScore.',
+        scores: { problemMarketFit: 11, marketSizeTiming: 10, solutionMoat: 10, businessModelViability: 11, founderMarketFit: 10 },
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
@@ -176,81 +231,172 @@ async function handleIncuScorePhase2(request: Request): Promise<Response> {
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' });
 
+    // Map document type to what it actually signals
+    const docTypeLabel: Record<string, string> = {
+      Deck: 'Pitch Deck (slides for investors — highest signal)',
+      Doc: 'Executive Summary / Business Plan (written narrative)',
+      Sheet: 'Financial Model / Projections (numbers-driven)',
+      Bundle: 'Full Pitch Bundle (deck + financials + executive summary — strongest signal)',
+    };
+    const docStatusLabel: Record<string, string> = {
+      Final: 'Final / Investor-ready (polished, reviewed)',
+      Review: 'Under Review (near-final, shows seriousness)',
+      Draft: 'Draft (work-in-progress, incomplete)',
+    };
+
     const prompt = `
-You are a senior VC analyst reviewing a pitch document submission for an Indian startup.
-This is Phase 2 — the document carries MORE weight than the initial registration details.
+You are a partner-level VC analyst at a top Indian VC firm. A startup has submitted a pitch document to their vault. You are evaluating how much this document improves their investment readiness.
 
 STARTUP CONTEXT:
 - Company: ${startupName}
 - Industry: ${industry}
 - Description: "${description}"
-- Phase 1 IncuScore: ${previousScore}/100
+- Phase 1 IncuScore (registration-based): ${previousScore}/100
 
 DOCUMENT SUBMITTED:
-- Name: "${documentName}"
-- Type: ${documentType} (Deck=pitch deck, Doc=executive summary, Sheet=financials, Bundle=full pack)
-- Status: ${documentStatus} (Final > Review > Draft in quality signal)
+- Document Name: "${documentName}"
+- Document Type: ${docTypeLabel[documentType] ?? documentType}
+- Document Status: ${docStatusLabel[documentStatus] ?? documentStatus}
 
-DOCUMENT SCORING RUBRIC (score each 0–25, total max 100):
-1. Pitch Structure Signal: Does the name/type suggest a complete narrative arc?
-2. Financial Signal: Does the type suggest financial depth and projections?
-3. Market Research Signal: Does the submission suggest data-backed claims?
-4. Execution Clarity: Does status and naming suggest polish and readiness?
+YOUR TASK:
+Evaluate the SIGNAL VALUE this document adds to the startup's investment readiness. You cannot read the document content — you are evaluating based on what type of document it is, its completion status, and what its submission signals about founder seriousness and preparation.
 
-FINAL SCORE FORMULA:
-- Previous score weight: 40%
-- Document quality weight: 60%
-- The document MUST meaningfully shift the total (min +5, max +25 from previous)
-- Be rigorous — VCs see through inflated scores
+DOCUMENT SIGNAL SCORING (4 dimensions, 0–25 each, max 100):
 
-Respond ONLY with valid JSON, no markdown:
+1. PITCH NARRATIVE COMPLETENESS (0–25)
+   - Deck/Bundle: Higher base signal (investors expect structured narrative)
+   - Doc (exec summary): Good signal if status is Final or Review
+   - Draft status: Cap at 14 regardless of type
+   - Final Pitch Deck: 20–25 | Review Pitch Deck: 15–19 | Draft Deck: 10–14
+   - Final Doc: 17–22 | Final Sheet: 14–18 | Bundle Final: 22–25
+
+2. FINANCIAL CREDIBILITY SIGNAL (0–25)
+   - Sheet (financial model): Highest signal — shows founder understands unit economics
+   - Bundle: High signal — includes financials
+   - Deck: Medium — decks may include financial slide
+   - Doc only: Lower — narrative without numbers
+   - Final Sheet: 21–25 | Review Sheet: 16–20 | Draft Sheet: 10–15
+   - Final Bundle: 20–24 | Final Deck: 14–18 | Doc: 10–16
+
+3. MARKET VALIDATION READINESS (0–25)
+   - Does the document type signal that market research has been done?
+   - Bundle signals most complete market research
+   - Deck signals curated market data for investors
+   - Doc signals written market analysis
+   - Sheet alone signals financial focus, less market narrative
+   - Score based on type + status combination
+
+4. FOUNDER EXECUTION SIGNAL (0–25)
+   - Submitting a Final document = founder is serious and prepared
+   - Submitting a Review document = founder is iterating — shows process
+   - Submitting a Draft = early stage but shows initiative
+   - Bundle submission = exceptional — founder has done full prep work
+   - Factor in: is the document name professional? Does it suggest effort?
+
+FINAL SCORE CALCULATION:
+- Formula: (previousScore × 0.35) + (documentSignalTotal × 0.65)
+- The document carries MORE weight than registration details
+- Realistic delta expectations:
+  - Final Bundle: +12 to +20 points
+  - Final Deck: +8 to +15 points
+  - Final Sheet: +6 to +12 points
+  - Final Doc: +5 to +10 points
+  - Review documents: 60–70% of Final equivalent
+  - Draft documents: 30–45% of Final equivalent
+- NEVER increase score by more than 22 points in one submission
+- NEVER decrease score (document submission is always positive)
+- If previousScore is already high (75+), improvements will be smaller (diminishing returns)
+
+BAND THRESHOLDS:
+- 83–100: "Series A Contender"
+- 73–82: "Seed Ready"
+- 61–72: "Angel Stage"
+- 46–60: "Pre-seed Potential"
+- 31–45: "Needs Validation"
+- 0–30: "Concept Phase"
+
+Respond ONLY with valid JSON, no markdown, no extra text:
 {
   "documentScores": {
-    "pitchStructure": <0-25>,
-    "financialSignal": <0-25>,
-    "marketResearch": <0-25>,
-    "executionClarity": <0-25>
+    "pitchNarrative": <0-25>,
+    "financialCredibility": <0-25>,
+    "marketValidation": <0-25>,
+    "founderExecution": <0-25>
   },
-  "documentTotal": <sum 0-100>,
-  "finalScore": <weighted final 0-100>,
-  "delta": <finalScore minus previousScore>,
-  "band": "<Investor-Grade | Strong | Promising | Early Stage | Pre-Idea>",
-  "remark": "<2 sentence honest assessment focused on the document>",
-  "documentInsights": ["<insight 1>", "<insight 2>", "<insight 3>"],
+  "documentTotal": <sum of 4 scores, 0-100>,
+  "finalScore": <integer, calculated using formula above, 0-100>,
+  "delta": <finalScore minus previousScore, should be positive>,
+  "band": "<Series A Contender | Seed Ready | Angel Stage | Pre-seed Potential | Needs Validation | Concept Phase>",
+  "remark": "<2 sentence honest assessment of what this document submission signals to investors>",
+  "documentInsights": [
+    "<specific insight about what this document type signals>",
+    "<what is still missing or what would further improve the score>",
+    "<honest assessment of readiness based on document status>"
+  ],
+  "nextSteps": ["<most impactful next action to raise score>", "<second action>"],
   "keywords": ["<kw1>", "<kw2>", "<kw3>", "<kw4>", "<kw5>"],
-  "finalMessage": "<Honest final message to the founder about investor readiness>",
-  "readyForVCs": <true if finalScore >= 76, false otherwise>
+  "finalMessage": "<1–2 sentence honest VC-voice message to the founder about where they stand and what to do next>",
+  "readyForVCs": <true only if finalScore >= 73, false otherwise>
 }`;
 
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
-      max_tokens: 800,
-      temperature: 0.25,
+      max_tokens: 1200,
+      temperature: 0.15,
       messages: [{ role: 'user', content: prompt }],
     });
 
     const raw = response.choices[0].message.content ?? '{}';
     const cleaned = raw.replace(/```json|```/g, '').trim();
     const result = JSON.parse(cleaned);
-    const finalScore = Math.min(100, Math.max(0, result.finalScore ?? previousScore + 5));
+
+    // Server-side score enforcement
+    const rawFinal = result.finalScore ?? (previousScore + 5);
+    const finalScore = Math.min(100, Math.max(previousScore, Math.round(rawFinal)));
+    const delta = finalScore - previousScore;
+
+    const band =
+      finalScore >= 83 ? 'Series A Contender' :
+      finalScore >= 73 ? 'Seed Ready' :
+      finalScore >= 61 ? 'Angel Stage' :
+      finalScore >= 46 ? 'Pre-seed Potential' :
+      finalScore >= 31 ? 'Needs Validation' : 'Concept Phase';
 
     return new Response(
-      JSON.stringify({ ...result, finalScore, phase: 2 }),
+      JSON.stringify({ ...result, finalScore, delta, band, readyForVCs: finalScore >= 73, phase: 2 }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err) {
     console.error('[incuscore-p2]', err);
-    const prev = bodyParsed?.previousScore ?? 70;
-    const fallbackFinal = Math.min(100, Math.round(prev * 0.4 + 78 * 0.6));
+    const prev = bodyParsed?.previousScore ?? 55;
+    const docType = bodyParsed?.documentType ?? 'Doc';
+    const docStatus = bodyParsed?.documentStatus ?? 'Draft';
+    // Realistic fallback delta based on document type and status
+    const baseDeltas: Record<string, number> = { Bundle: 14, Deck: 10, Sheet: 8, Doc: 6 };
+    const statusMultiplier: Record<string, number> = { Final: 1, Review: 0.65, Draft: 0.4 };
+    const delta = Math.round((baseDeltas[docType] ?? 6) * (statusMultiplier[docStatus] ?? 0.5));
+    const finalScore = Math.min(100, prev + delta);
+    const band =
+      finalScore >= 83 ? 'Series A Contender' :
+      finalScore >= 73 ? 'Seed Ready' :
+      finalScore >= 61 ? 'Angel Stage' :
+      finalScore >= 46 ? 'Pre-seed Potential' :
+      finalScore >= 31 ? 'Needs Validation' : 'Concept Phase';
     return new Response(
       JSON.stringify({
-        finalScore: fallbackFinal, delta: fallbackFinal - prev, phase: 2,
-        band: fallbackFinal >= 76 ? 'Strong' : 'Promising',
-        remark: 'Document received and factored into your IncuScore.',
-        documentInsights: ['Document submitted successfully', 'Score updated based on submission quality', 'Upload a Final-status deck for maximum impact'],
-        keywords: ['pitch', 'document', 'investor-ready', 'vault', 'submitted'],
-        finalMessage: 'Your pitch vault is taking shape. Keep refining for the best investor impression.',
-        readyForVCs: fallbackFinal >= 76,
+        finalScore, delta, phase: 2, band,
+        remark: 'Document received and factored into your IncuScore. A detailed pitch deck or financial model will yield the highest score improvement.',
+        documentInsights: [
+          `${docType} submission (${docStatus}) adds meaningful signal to your investor profile`,
+          'Upload a Final-status Pitch Deck or full Bundle for maximum score impact',
+          'Investors expect to see financial projections alongside any narrative document',
+        ],
+        nextSteps: ['Upload a Final pitch deck with financial slide for the biggest score jump', 'Add a financial model (Sheet) to signal unit economics awareness'],
+        keywords: ['pitch', 'investor-ready', 'vault', 'document', 'startup'],
+        finalMessage: 'Keep building your pitch vault — a complete Final bundle is the strongest signal you can send to investors at this stage.',
+        readyForVCs: finalScore >= 73,
+        documentScores: { pitchNarrative: 14, financialCredibility: 12, marketValidation: 13, founderExecution: 13 },
+        documentTotal: 52,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
@@ -304,7 +450,35 @@ async function handleStartupInsert(request: Request): Promise<Response> {
       id: string; name: string; tagline: string; description: string;
       founder: string; industry: string; stage: string;
       fundingGoal: number; raised: number; pitchScore: number; members: number;
+      created_by_email?: string; owner_email?: string; owner_password?: string;
+      __dryRun?: boolean;
     };
+    // ── Duplicate password guard ──────────────────────────────────────────
+    // Each startup must have a unique password. If the submitted password
+    // matches ANY existing startup's hash, reject it immediately.
+    if (body.owner_password) {
+      const { data: existingHashes } = await admin
+        .from('startups')
+        .select('id, owner_password_hash')
+        .not('owner_password_hash', 'is', null);
+      if (existingHashes) {
+        for (const row of existingHashes) {
+          // Skip the current startup if it's an update (same id)
+          if (row.id === body.id) continue;
+          if (row.owner_password_hash && await verifyPassword(body.owner_password, row.owner_password_hash)) {
+            return new Response(
+              JSON.stringify({ error: 'PASSWORD_TAKEN', message: 'This password is already in use by another startup. Please choose a stronger, unique password.' }),
+              { status: 409, headers: { 'Content-Type': 'application/json' } },
+            );
+          }
+        }
+      }
+    }
+
+    // If this was just a dry-run password uniqueness check, stop here.
+    if (body.__dryRun) return jsonRes({ ok: true });
+
+    const passwordHash = body.owner_password ? await hashPassword(body.owner_password) : null;
     const { data, error } = await admin
       .from('startups')
       .upsert({
@@ -313,9 +487,22 @@ async function handleStartupInsert(request: Request): Promise<Response> {
         industry: body.industry, stage: body.stage,
         funding_goal: body.fundingGoal, raised: body.raised,
         pitch_score: body.pitchScore, members: body.members,
+        created_by_email: body.created_by_email ?? null,
+        owner_email: body.owner_email ?? body.created_by_email ?? null,
+        owner_password_hash: passwordHash,
       }, { onConflict: 'id' })
       .select().single();
     if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    // Promote user to 'founder' role when they register their first startup
+    if (body.created_by_email) {
+      // Never touch the permanent admin's role
+      if (body.created_by_email.toLowerCase() !== PERMANENT_ADMIN_EMAIL) {
+        const { data: currentUser } = await admin.from('users').select('role').eq('email', body.created_by_email).maybeSingle();
+        if (currentUser && currentUser.role === 'visitor') {
+          await admin.from('users').update({ role: 'founder' }).eq('email', body.created_by_email);
+        }
+      }
+    }
     return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     return new Response(JSON.stringify({ error: 'Failed to save startup.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
@@ -557,6 +744,229 @@ function jsonRes(body: unknown, status = 200, extra: Record<string, string> = {}
   });
 }
 
+// ─── Password hashing via WebCrypto (PBKDF2-SHA256) ──────────────────────────
+async function hashPassword(password: string): Promise<string> {
+  const enc = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, key, 256);
+  const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+  const hashHex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return `pbkdf2:${saltHex}:${hashHex}`;
+}
+async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  try {
+    const [, saltHex, hashHex] = stored.split(':');
+    const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map(b => parseInt(b, 16)));
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, key, 256);
+    const newHex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+    return newHex === hashHex;
+  } catch { return false; }
+}
+
+// ─── Startup Auth: set ownership password ────────────────────────────────────
+async function handleStartupAuthSet(request: Request): Promise<Response> {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  try {
+    const body = await request.json() as { startup_id: string; owner_email: string; password: string };
+    if (!body.startup_id || !body.owner_email || !body.password) return jsonRes({ error: 'Missing fields.' }, 400);
+    if (body.password.length < 6) return jsonRes({ error: 'Password too short.' }, 400);
+    const hash = await hashPassword(body.password);
+    const { error } = await admin.from('startups').update({ owner_email: body.owner_email, owner_password_hash: hash }).eq('id', body.startup_id);
+    if (error) return jsonRes({ error: error.message }, 500);
+    return jsonRes({ ok: true });
+  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
+// ─── Events: create / submit ─────────────────────────────────────────────────
+async function handleEventCreate(request: Request): Promise<Response> {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+  const { createClient } = await import('@supabase/supabase-js');
+  const db = createClient(supabaseUrl, supabaseKey);
+  try {
+    const body = await request.json() as Record<string, unknown>;
+    const {
+      title, type, date, time, location, locationMode,
+      description, maxCapacity, prize, applicationRequired, registrationDeadline,
+      organiserName, organiserEmail, organiserOrg, submittedBy,
+    } = body as {
+      title: string; type: string; date: string; time: string;
+      location: string; locationMode: string; description: string;
+      maxCapacity?: string; prize?: string; applicationRequired?: boolean;
+      registrationDeadline?: string; organiserName: string;
+      organiserEmail: string; organiserOrg: string; submittedBy?: string;
+    };
+    if (!title || !type || !date || !time || !location || !description || !organiserName || !organiserEmail || !organiserOrg) {
+      return jsonRes({ error: 'Missing required fields.' }, 400);
+    }
+    const { error } = await db.from('events').insert({
+      title: title.trim(),
+      type,
+      event_date: date,
+      event_time: time,
+      location_mode: locationMode ?? 'physical',
+      location: location.trim(),
+      description: description.trim(),
+      max_capacity: maxCapacity ? parseInt(maxCapacity, 10) : null,
+      prize: prize?.trim() || null,
+      application_required: applicationRequired ?? false,
+      registration_deadline: registrationDeadline || null,
+      organiser_name: organiserName.trim(),
+      organiser_email: organiserEmail.trim().toLowerCase(),
+      organiser_org: organiserOrg.trim(),
+      submitted_by: submittedBy ?? null,
+      status: 'pending',
+    });
+    if (error) return jsonRes({ error: error.message }, 500);
+    return jsonRes({ ok: true });
+  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
+// ─── Events: list pending (admin only) ───────────────────────────────────────
+async function handleEventsPending(request: Request): Promise<Response> {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+  const { createClient } = await import('@supabase/supabase-js');
+  const db = createClient(supabaseUrl, supabaseKey);
+  // Guard: must be admin
+  const cookieHeader = request.headers.get('cookie') ?? '';
+  const tokenMatch = cookieHeader.match(/auth_token=([^;]+)/);
+  if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
+  try {
+    const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
+    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
+  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const { data, error } = await db.from('events').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+  if (error) return jsonRes({ error: error.message }, 500);
+  return jsonRes(data ?? []);
+}
+
+// ─── Events: approve or reject (admin only) ───────────────────────────────────
+async function handleEventsReview(request: Request): Promise<Response> {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+  const { createClient } = await import('@supabase/supabase-js');
+  const db = createClient(supabaseUrl, supabaseKey);
+  // Guard: must be admin
+  const cookieHeader = request.headers.get('cookie') ?? '';
+  const tokenMatch = cookieHeader.match(/auth_token=([^;]+)/);
+  if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
+  try {
+    const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
+    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
+  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const { id, action } = await request.json() as { id: string; action: 'approve' | 'reject' };
+  if (!id || !['approve', 'reject'].includes(action)) return jsonRes({ error: 'Invalid request.' }, 400);
+  const { error } = await db.from('events').update({ status: action === 'approve' ? 'approved' : 'rejected' }).eq('id', id);
+  if (error) return jsonRes({ error: error.message }, 500);
+  return jsonRes({ ok: true });
+}
+
+// ─── Startup Advance: submit request ─────────────────────────────────────────
+async function handleAdvanceRequest(request: Request): Promise<Response> {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+  const { createClient } = await import('@supabase/supabase-js');
+  const db = createClient(supabaseUrl, supabaseKey);
+  try {
+    const formData = await request.formData();
+    const startup_id   = formData.get('startup_id') as string;
+    const startup_name = formData.get('startup_name') as string;
+    const current_stage = formData.get('current_stage') as string;
+    const target_stage  = formData.get('target_stage') as string;
+    const justification = formData.get('justification') as string;
+    const submitted_by  = formData.get('submitted_by') as string;
+    const proofFile = formData.get('proof') as File | null;
+    if (!startup_id || !target_stage || !justification) return jsonRes({ error: 'Missing required fields.' }, 400);
+    let proof_url: string | null = null;
+    if (proofFile && proofFile.size > 0) {
+      const ext = proofFile.name.split('.').pop() ?? 'bin';
+      const path = `advance-proofs/${startup_id}/${Date.now()}.${ext}`;
+      const buf = await proofFile.arrayBuffer();
+      const { data: uploadData } = await db.storage.from('documents').upload(path, buf, { contentType: proofFile.type, upsert: true });
+      if (uploadData) {
+        const { data: urlData } = db.storage.from('documents').getPublicUrl(path);
+        proof_url = urlData?.publicUrl ?? null;
+      }
+    }
+    const { error } = await db.from('startup_advance_requests').insert({
+      startup_id, startup_name, current_stage, target_stage,
+      justification, submitted_by, proof_url, status: 'pending',
+    });
+    if (error) return jsonRes({ error: error.message }, 500);
+    return jsonRes({ ok: true });
+  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
+// ─── Startup Advance: list pending (admin only) ───────────────────────────────
+async function handleAdvancePending(request: Request): Promise<Response> {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+  const { createClient } = await import('@supabase/supabase-js');
+  const db = createClient(supabaseUrl, supabaseKey);
+  const cookieHeader = request.headers.get('cookie') ?? '';
+  const tokenMatch = cookieHeader.match(/auth_token=([^;]+)/);
+  if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
+  try {
+    const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
+    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
+  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const { data, error } = await db.from('startup_advance_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+  if (error) return jsonRes({ error: error.message }, 500);
+  return jsonRes(data ?? []);
+}
+
+// ─── Startup Advance: approve or reject (admin only) ─────────────────────────
+async function handleAdvanceReview(request: Request): Promise<Response> {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+  const { createClient } = await import('@supabase/supabase-js');
+  const db = createClient(supabaseUrl, supabaseKey);
+  const cookieHeader = request.headers.get('cookie') ?? '';
+  const tokenMatch = cookieHeader.match(/auth_token=([^;]+)/);
+  if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
+  try {
+    const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
+    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
+  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const { id, action, startup_id, target_stage } = await request.json() as { id: string; action: 'approve' | 'reject'; startup_id?: string; target_stage?: string };
+  if (!id || !['approve', 'reject'].includes(action)) return jsonRes({ error: 'Invalid request.' }, 400);
+  await db.from('startup_advance_requests').update({ status: action === 'approve' ? 'approved' : 'rejected' }).eq('id', id);
+  if (action === 'approve' && startup_id && target_stage) {
+    const newRaised = target_stage === 'Funding Secured' ? undefined : undefined; // let client handle raised
+    await db.from('startups').update({ stage: target_stage }).eq('id', startup_id);
+  }
+  return jsonRes({ ok: true });
+}
+
+// ─── Startup Auth: verify ownership password ─────────────────────────────────
+async function handleStartupAuthVerify(request: Request): Promise<Response> {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  try {
+    const body = await request.json() as { startup_id: string; password: string };
+    if (!body.startup_id || !body.password) return jsonRes({ error: 'Missing fields.' }, 400);
+    const { data: startup } = await admin.from('startups').select('owner_password_hash').eq('id', body.startup_id).maybeSingle();
+    if (!startup?.owner_password_hash) return jsonRes({ error: 'No ownership credentials set for this startup.' }, 404);
+    const ok = await verifyPassword(body.password, startup.owner_password_hash);
+    if (!ok) return jsonRes({ error: 'Incorrect password.' }, 401);
+    return jsonRes({ ok: true });
+  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
+// ─── Permanent admin email — hardcoded, never overrideable ───────────────────
+const PERMANENT_ADMIN_EMAIL = 'ashutoshforcorporate@gmail.com';
+function resolveRole(email: string, dbRole?: string): string {
+  if (email.toLowerCase() === PERMANENT_ADMIN_EMAIL) return 'admin';
+  return dbRole ?? 'visitor';
+}
+
 function generateOTP(): string {
   const bytes = new Uint8Array(4);
   crypto.getRandomValues(bytes);
@@ -583,10 +993,27 @@ function getAuthAdmin(env: Env) {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-function getAnonClient() {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
-  const key = process.env.VITE_SUPABASE_ANON_KEY || '';
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+async function sendOTPEmail(to: string, otp: string, apiKey: string): Promise<void> {
+  if (!apiKey) {
+    console.log(`[DEV — no RESEND_API_KEY] OTP for ${to}: ${otp}`);
+    return;
+  }
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'Incutrack <otp@drusti.online>',
+      to: [to],
+      subject: 'Incutrack Verification',
+      text: `Your Incutrack verification code is: ${otp}\n\nEnter this code to continue. It expires in 10 minutes.\n\nIf you didn't request this, ignore this email.`,
+      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a14;font-family:Inter,Arial,sans-serif"><div style="max-width:480px;margin:40px auto;background:#0d0d1f;border-radius:16px;padding:40px 32px;text-align:center"><div style="width:48px;height:48px;background:#7c3aed;border-radius:12px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><h2 style="color:#ffffff;font-size:20px;font-weight:700;margin:0 0 8px">Incutrack Verification</h2><p style="color:#9ca3af;font-size:14px;margin:0 0 28px">Enter this code to continue. It expires in <strong style="color:#ffffff">10 minutes</strong>.</p><div style="background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:12px;padding:24px;margin-bottom:24px"><p style="color:#ffffff;font-size:36px;font-weight:800;letter-spacing:14px;margin:0">${otp}</p></div><p style="color:#6b7280;font-size:12px;margin:0">If you didn't request this, ignore this email.</p></div></body></html>`,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    console.error('[resend] OTP email failed:', err);
+    throw new Error('Failed to send OTP email. Please try again.');
+  }
 }
 
 // ─── Auth: Sign Up ────────────────────────────────────────────────────────────
@@ -628,17 +1055,21 @@ async function handleSignUp(request: Request, env: Env): Promise<Response> {
       return jsonRes({ case: 'name_taken', message: 'This name is already taken by another account.' }, 409);
     }
 
-    const anonClient = getAnonClient();
-    const { error: otpErr } = await anonClient.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true },
-    });
-    if (otpErr) {
-      console.error('[signup] Supabase OTP error:', otpErr);
-      return jsonRes({ message: 'Failed to send verification code. Please try again.' }, 500);
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const { error: otpErr } = await admin.from('otps').insert({ email, code: otp, expires_at: expiresAt, used: 0 });
+    console.log('[signup] OTP insert error:', JSON.stringify(otpErr));
+    if (otpErr) { console.error('[signup] OTP insert error (full):', otpErr); return jsonRes({ message: 'Failed to create OTP. Please try again.' }, 500); }
+
+    const resendKey = env.RESEND_API_KEY || process.env.RESEND_API_KEY || '';
+    try {
+      await sendOTPEmail(email, otp, resendKey);
+    } catch (emailErr) {
+      console.error('[signup] Email send failed:', emailErr);
+      return jsonRes({ message: 'Failed to send OTP email. Please verify your email address and try again.' }, 500);
     }
 
-    console.log('[signup] OTP sent via Supabase Auth to:', email);
+    console.log('[signup] OTP sent successfully to:', email);
     return jsonRes({ ok: true, message: 'OTP sent. Check your email.' });
   } catch (err) {
     console.error('[signup] unexpected error:', err);
@@ -662,32 +1093,42 @@ async function handleVerifyOTP(request: Request, env: Env): Promise<Response> {
   const admin  = getAuthAdmin(env);
   const secret = env.JWT_SECRET || process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
-  const anonClient = getAnonClient();
-  const { error: verifyErr } = await anonClient.auth.verifyOtp({
-    email,
-    token: code,
-    type: 'email',
-  });
+  const { data: otpRow } = await admin
+    .from('otps')
+    .select('*')
+    .eq('email', email)
+    .eq('code', code)
+    .eq('used', 0)
+    .gte('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  if (verifyErr) {
-    console.error('[verify-otp] Supabase verify error:', verifyErr);
-    if (verifyErr.message?.toLowerCase().includes('expired')) {
-      return jsonRes({ message: 'OTP has expired. Please request a new one.' }, 400);
-    }
+  if (!otpRow) {
+    const { data: anyOtp } = await admin.from('otps').select('used,expires_at').eq('email', email).eq('code', code).maybeSingle();
+    if (anyOtp?.used) return jsonRes({ message: 'Invalid OTP. Please try again.' }, 400);
+    if (anyOtp && new Date(anyOtp.expires_at) < new Date()) return jsonRes({ message: 'OTP has expired. Please request a new one.' }, 400);
     return jsonRes({ message: 'Invalid OTP. Please try again.' }, 400);
   }
+
+  await admin.from('otps').update({ used: 1 }).eq('id', otpRow.id);
 
   let user: Record<string, unknown>;
 
   if (type === 'signup') {
     if (!name) return jsonRes({ message: 'Name is required for sign up.' }, 400);
-    const { data: newUser, error } = await admin
-      .from('users')
-      .insert({ email, name, auth_method: 'otp' })
-      .select()
-      .single();
-    if (error) return jsonRes({ message: 'Failed to create account. Please try again.' }, 500);
-    user = newUser;
+    // Try with role column; fall back without it if migration 003 not yet run
+    let insertResult = await admin.from('users')
+      .insert({ email, name, auth_method: 'otp', role: resolveRole(email, 'visitor') })
+      .select().single();
+    if (insertResult.error && (insertResult.error.message?.includes('role') || insertResult.error.code === '42703')) {
+      console.warn('[verify-otp] role column missing — retrying without it. Run migration 003 to fix permanently.');
+      insertResult = await admin.from('users')
+        .insert({ email, name, auth_method: 'otp' })
+        .select().single();
+    }
+    if (insertResult.error) return jsonRes({ message: 'Failed to create account. Please try again.' }, 500);
+    user = insertResult.data;
   } else {
     const { data: existing } = await admin.from('users').select('*').eq('email', email).maybeSingle();
     if (!existing) return jsonRes({ message: 'User not found. Please sign up first.' }, 404);
@@ -700,6 +1141,7 @@ async function handleVerifyOTP(request: Request, env: Env): Promise<Response> {
     google_id: user.google_id ?? null,
     auth_method: user.auth_method,
     avatar_url: user.avatar_url ?? null,
+    role: resolveRole(user.email as string, user.role as string | undefined),
   };
 
   const token = await createJWT(jwtPayload, secret);
@@ -729,14 +1171,17 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
       return jsonRes({ case: 'google_conflict', message: 'This email is registered with Google login. Please use the Continue with Google button to log in.' }, 409);
     }
 
-    const anonClient = getAnonClient();
-    const { error: otpErr } = await anonClient.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: false },
-    });
-    if (otpErr) {
-      console.error('[login] Supabase OTP error:', otpErr);
-      return jsonRes({ message: 'Failed to send verification code. Please try again.' }, 500);
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const { error: otpErr } = await admin.from('otps').insert({ email, code: otp, expires_at: expiresAt, used: 0 });
+    if (otpErr) { console.error('[login] OTP insert error:', otpErr); return jsonRes({ message: 'Failed to create OTP. Please try again.' }, 500); }
+
+    const resendKey = env.RESEND_API_KEY || process.env.RESEND_API_KEY || '';
+    try {
+      await sendOTPEmail(email, otp, resendKey);
+    } catch (emailErr) {
+      console.error('[login] Email send failed:', emailErr);
+      return jsonRes({ message: 'Failed to send OTP email. Please try again.' }, 500);
     }
 
     return jsonRes({ ok: true, message: 'OTP sent. Check your email.' });
@@ -762,12 +1207,16 @@ async function handleMe(request: Request, env: Env): Promise<Response> {
   if (!token) return jsonRes({ message: 'Not authenticated.' }, 401);
   const payload = await verifyJWT(token, secret);
   if (!payload) return jsonRes({ message: 'Invalid or expired session.' }, 401);
+  // Always fetch fresh role from DB so admin changes propagate immediately
+  const adminClient = getAuthAdmin(env);
+  const { data: dbUser } = await adminClient.from('users').select('role').eq('email', payload.email as string).maybeSingle();
   return jsonRes({
     email: payload.email,
     name: payload.name,
     google_id: payload.google_id ?? null,
     auth_method: payload.auth_method,
     avatar_url: payload.avatar_url ?? null,
+    role: resolveRole(payload.email as string, dbUser?.role as string | undefined),
   });
 }
 
@@ -920,16 +1369,32 @@ async function handleGoogleCallback(request: Request, env: Env): Promise<Respons
     if (byGoogleId) {
       user = byGoogleId;
     } else {
-      const { data: newUser, error: insertErr } = await admin.from('users')
-        .insert({ email: googleUser.email, name: googleUser.name, google_id: googleUser.sub, avatar_url: googleUser.picture || null, auth_method: 'google' })
+      // Try inserting with role column first; fall back without it if migration 003 not yet run
+      let insertResult = await admin.from('users')
+        .insert({ email: googleUser.email, name: googleUser.name, google_id: googleUser.sub, avatar_url: googleUser.picture || null, auth_method: 'google', role: resolveRole(googleUser.email, 'visitor') })
         .select().single();
-      if (insertErr) {
-        console.error('[google-callback] user insert failed:', JSON.stringify(insertErr));
+      if (insertResult.error && (insertResult.error.message?.includes('role') || insertResult.error.code === '42703')) {
+        console.warn('[google-callback] role column missing — retrying without it. Run migration 003 to fix permanently.');
+        insertResult = await admin.from('users')
+          .insert({ email: googleUser.email, name: googleUser.name, google_id: googleUser.sub, avatar_url: googleUser.picture || null, auth_method: 'google' })
+          .select().single();
+      }
+      if (insertResult.error) {
+        console.error('[google-callback] user insert failed:', JSON.stringify(insertResult.error));
         console.error('[google-callback] → Have you run src/migrations/001_auth_tables.sql in your Supabase dashboard?');
         return redirect('db_error');
       }
-      user = newUser;
+      if (!insertResult.data) {
+        console.error('[google-callback] user insert returned null — likely blocked by RLS policy on users table. Disable RLS or add a service-role policy.');
+        return redirect('db_error');
+      }
+      user = insertResult.data;
     }
+  }
+
+  if (!user!) {
+    console.error('[google-callback] user is null after all branches — unexpected state.');
+    return redirect('db_error');
   }
 
   const jwtPayload = {
@@ -938,6 +1403,7 @@ async function handleGoogleCallback(request: Request, env: Env): Promise<Respons
     google_id: user.google_id ?? null,
     auth_method: user.auth_method,
     avatar_url: user.avatar_url ?? null,
+    role: resolveRole(user.email as string, user.role as string | undefined),
   };
 
   const token = await createJWT(jwtPayload, jwtSecret);
@@ -986,11 +1452,35 @@ export default {
     if (pathname === '/api/startups' && method === 'POST')
       return handleStartupInsert(request);
 
+    if (pathname === '/api/startup-auth/set' && method === 'POST')
+      return handleStartupAuthSet(request);
+
+    if (pathname === '/api/startup-auth/verify' && method === 'POST')
+      return handleStartupAuthVerify(request);
+
     if (pathname === '/api/startups/update' && method === 'POST')
       return handleStartupUpdate(request);
 
     if (pathname === '/api/startups/delete' && method === 'POST')
       return handleStartupDelete(request);
+
+    if (pathname === '/api/events/create' && method === 'POST')
+      return handleEventCreate(request);
+
+    if (pathname === '/api/events/pending' && method === 'GET')
+      return handleEventsPending(request);
+
+    if (pathname === '/api/events/review' && method === 'POST')
+      return handleEventsReview(request);
+
+    if (pathname === '/api/startup-advance/request' && method === 'POST')
+      return handleAdvanceRequest(request);
+
+    if (pathname === '/api/startup-advance/pending' && method === 'GET')
+      return handleAdvancePending(request);
+
+    if (pathname === '/api/startup-advance/review' && method === 'POST')
+      return handleAdvanceReview(request);
 
     if (
       (pathname === '/api/chat' || pathname === '/api/documents') &&

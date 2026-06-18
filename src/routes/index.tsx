@@ -1552,6 +1552,28 @@ function Index() {
             >{label}</button>
           ))}
         </div>
+        {/* Drusti pill — section nav, desktop only */}
+        <a
+          href="https://drusti.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="lp-section-nav-links"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '4px 10px 4px 6px', borderRadius: 999,
+            background: 'rgba(167,139,250,.08)', border: '1px solid rgba(167,139,250,.22)',
+            textDecoration: 'none', fontSize: 12, fontWeight: 600, color: 'rgba(196,181,253,.75)',
+            transition: 'all .18s',
+          }}
+          onMouseEnter={e => { const el = e.currentTarget as HTMLAnchorElement; el.style.background = 'rgba(167,139,250,.16)'; el.style.borderColor = 'rgba(167,139,250,.45)'; el.style.color = '#c4b5fd'; }}
+          onMouseLeave={e => { const el = e.currentTarget as HTMLAnchorElement; el.style.background = 'rgba(167,139,250,.08)'; el.style.borderColor = 'rgba(167,139,250,.22)'; el.style.color = 'rgba(196,181,253,.75)'; }}
+        >
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 15, height: 15, borderRadius: 4, background: 'rgba(167,139,250,.22)', flexShrink: 0 }}>
+            <Sparkles style={{ width: 7, height: 7, color: '#a78bfa' }} />
+          </span>
+          Drusti
+          <svg width="8" height="8" viewBox="0 0 9 9" fill="none" style={{ opacity: 0.4 }}><path d="M1 8L8 1M8 1H3M8 1V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </a>
         {/* Mobile hamburger */}
         <button
           className="lp-mobile-menu-btn"
@@ -1578,6 +1600,24 @@ function Index() {
                 style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 24px', background: 'none', border: 'none', color: activeSectionIdx === idx ? '#a78bfa' : 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: activeSectionIdx === idx ? 700 : 400, fontFamily: 'inherit', cursor: 'pointer' }}
               >{label}</button>
             ))}
+            {/* Drusti link in mobile nav */}
+            <div style={{ margin: '6px 16px 4px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
+              <a
+                href="https://drusti.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileNavOpen(false)}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 8px', borderRadius: 10, background: 'rgba(167,139,250,.08)', border: '1px solid rgba(167,139,250,.2)', textDecoration: 'none' }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: 'rgba(167,139,250,.2)', flexShrink: 0 }}>
+                  <Sparkles style={{ width: 10, height: 10, color: '#a78bfa' }} />
+                </span>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#c4b5fd', margin: 0, lineHeight: 1.2 }}>Drusti ↗</p>
+                  <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,.35)', margin: 0 }}>AI analytics platform by this team</p>
+                </div>
+              </a>
+            </div>
           </div>
         )}
       </div>
@@ -1608,6 +1648,28 @@ function Index() {
               ))}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {/* Drusti ecosystem pill — desktop only */}
+              <a
+                href="https://drusti.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden md:inline-flex"
+                style={{
+                  alignItems: 'center', gap: 5,
+                  padding: '5px 11px 5px 7px', borderRadius: 999,
+                  background: 'rgba(167,139,250,.08)', border: '1px solid rgba(167,139,250,.22)',
+                  textDecoration: 'none', fontSize: 12, fontWeight: 600, color: 'rgba(196,181,253,.8)',
+                  transition: 'all .18s',
+                }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLAnchorElement; el.style.background = 'rgba(167,139,250,.16)'; el.style.borderColor = 'rgba(167,139,250,.45)'; el.style.color = '#c4b5fd'; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLAnchorElement; el.style.background = 'rgba(167,139,250,.08)'; el.style.borderColor = 'rgba(167,139,250,.22)'; el.style.color = 'rgba(196,181,253,.8)'; }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: 5, background: 'rgba(167,139,250,.25)', flexShrink: 0 }}>
+                  <Sparkles style={{ width: 8, height: 8, color: '#a78bfa' }} />
+                </span>
+                Drusti
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none" style={{ opacity: 0.45 }}><path d="M1 8L8 1M8 1H3M8 1V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </a>
               {isLoading ? null : user ? (
                 <div ref={dropdownRef} style={{ position: 'relative' }}>
                   <button
@@ -2163,7 +2225,6 @@ function Index() {
             ))}
           </div>
 
-          
         </div>
       </section>
       </div>
@@ -2299,6 +2360,7 @@ function Index() {
       <footer style={{ borderTop: "1px solid rgba(255,255,255,.05)", padding: "50px 0 36px", background: "rgba(2,2,8,1)" }}>
         <div style={{ ...SS }}>
           <div className="lp-footer-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "2fr 1fr 1fr 1fr", gap: isMobile ? 24 : 48, marginBottom: 48 }}>
+            {/* brand */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#a78bfa", boxShadow: "0 0 10px rgba(167,139,250,.7)", display: "inline-block" }} />
@@ -2313,6 +2375,7 @@ function Index() {
                 ))}
               </div>
             </div>
+            {/* regular columns */}
             {[
               { heading: "Platform", links: ["Explore Hub", "Scout Hub", "Pipeline", "Analytics", "Pitch Vault"] },
               { heading: "Company", links: ["About Us", "Careers", "Blog", "Press Kit", "Changelog"] },
@@ -2328,6 +2391,8 @@ function Index() {
               </div>
             ))}
           </div>
+
+          {/* footer bottom bar */}
           <div style={{ borderTop: "1px solid rgba(255,255,255,.05)", paddingTop: 24, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <p style={{ fontSize: 12.5, color: "rgba(255,255,255,.2)", margin: 0 }}>© 2026 Incutrack. All rights reserved. Built with ♦ at IIT KGP Innovation Cell.</p>
             <div style={{ display: "flex", gap: 5 }}>
