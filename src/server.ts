@@ -867,6 +867,30 @@ async function handleEventsReview(request: Request): Promise<Response> {
   return jsonRes({ ok: true });
 }
 
+// ─── Events: RSVP from Scout Hub ─────────────────────────────────────────────
+async function handleEventRsvp(request: Request): Promise<Response> {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+  const { createClient } = await import('@supabase/supabase-js');
+  const db = createClient(supabaseUrl, supabaseKey);
+  try {
+    const body = await request.json() as Record<string, string>;
+    const { event_id, event_title, event_date, name, firm, role, email, phone, note, source } = body;
+    if (!event_id || !name || !email) return jsonRes({ error: 'Missing required fields.' }, 400);
+    const { error } = await db.from('event_rsvps').insert({
+      event_id, event_title, event_date,
+      attendee_name: name, attendee_firm: firm, attendee_role: role,
+      attendee_email: email.toLowerCase(), attendee_phone: phone || null,
+      note: note || null, source: source || 'unknown',
+    });
+    if (error) {
+      // Table may not exist yet — still return success so UI doesn't break
+      console.warn('[events/rsvp] insert error (run migration 006?):', error.message);
+    }
+    return jsonRes({ ok: true });
+  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
 // ─── Startup Advance: submit request ─────────────────────────────────────────
 async function handleAdvanceRequest(request: Request): Promise<Response> {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
@@ -1414,6 +1438,217 @@ async function handleGoogleCallback(request: Request, env: Env): Promise<Respons
   return new Response(null, { status: 302, headers: h });
 }
 
+// ─── VC: helpers ─────────────────────────────────────────────────────────────
+function getVCAdmin() {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+function extractVCEmail(request: Request): string | null {
+  const cookie = request.headers.get('cookie') ?? '';
+  const m = cookie.match(/auth_token=([^;]+)/);
+  if (!m) return null;
+  try {
+    const payload = JSON.parse(atob(m[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
+    return payload.email ?? null;
+  } catch { return null; }
+}
+
+// ─── VC: Save/Update mandate ──────────────────────────────────────────────────
+async function handleVCMandate(request: Request): Promise<Response> {
+  const email = extractVCEmail(request);
+  if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
+  const db = getVCAdmin();
+  try {
+    const body = await request.json() as {
+      firm_name: string; partner_name: string; investment_thesis?: string;
+      sectors?: string; stage_pref?: string; check_min?: number; check_max?: number;
+      password?: string;
+    };
+    if (!body.firm_name || !body.partner_name) return jsonRes({ error: 'Firm name and partner name are required.' }, 400);
+
+    // Build upsert payload
+    const payload: Record<string, unknown> = {
+      email,
+      firm_name: body.firm_name,
+      partner_name: body.partner_name,
+      investment_thesis: body.investment_thesis ?? null,
+      sectors: body.sectors ?? null,
+      stage_pref: body.stage_pref ?? null,
+      check_min: body.check_min ?? null,
+      check_max: body.check_max ?? null,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Hash new password if provided
+    if (body.password && body.password.trim().length > 0) {
+      payload.password_hash = await hashPassword(body.password);
+    }
+
+    const { error } = await db.from('vc_profiles')
+      .upsert(payload, { onConflict: 'email' });
+    if (error) return jsonRes({ error: error.message }, 500);
+    return jsonRes({ ok: true });
+  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
+// ─── VC: Get my mandate ───────────────────────────────────────────────────────
+async function handleVCGetMandate(request: Request): Promise<Response> {
+  const email = extractVCEmail(request);
+  if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
+  const db = getVCAdmin();
+  const { data } = await db.from('vc_profiles')
+    .select('firm_name,partner_name,investment_thesis,sectors,stage_pref,check_min,check_max,status')
+    .eq('email', email).maybeSingle();
+  return jsonRes({ profile: data ?? null });
+}
+
+// ─── VC: Confirm password ─────────────────────────────────────────────────────
+async function handleVCConfirmPassword(request: Request): Promise<Response> {
+  const email = extractVCEmail(request);
+  if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
+  const db = getVCAdmin();
+  try {
+    const { password } = await request.json() as { password: string };
+    if (!password) return jsonRes({ error: 'Password required.' }, 400);
+    const { data } = await db.from('vc_profiles').select('password_hash').eq('email', email).maybeSingle();
+    if (!data?.password_hash) return jsonRes({ error: 'No VC credentials set. Please set up your mandate first.' }, 404);
+    const ok = await verifyPassword(password, data.password_hash);
+    if (!ok) return jsonRes({ error: 'Incorrect password.' }, 401);
+    return jsonRes({ ok: true });
+  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
+// ─── VC: Submit deal interest ─────────────────────────────────────────────────
+async function handleVCDealInterest(request: Request): Promise<Response> {
+  const email = extractVCEmail(request);
+  if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
+  const db = getVCAdmin();
+  try {
+    const body = await request.json() as { startup_id: string; startup_name: string; note?: string; vc_firm?: string };
+    if (!body.startup_id || !body.startup_name) return jsonRes({ error: 'Missing startup info.' }, 400);
+    const { error } = await db.from('deal_interests').insert({
+      vc_email: email,
+      vc_firm: body.vc_firm ?? null,
+      startup_id: body.startup_id,
+      startup_name: body.startup_name,
+      note: body.note ?? null,
+    });
+    if (error) return jsonRes({ error: error.message }, 500);
+    return jsonRes({ ok: true });
+  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
+// ─── VC: Request diligence doc access ────────────────────────────────────────
+async function handleVCDiligenceRequest(request: Request): Promise<Response> {
+  const email = extractVCEmail(request);
+  if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
+  const db = getVCAdmin();
+  try {
+    const body = await request.json() as { doc_id: string; doc_name: string; startup: string; reason?: string; vc_firm?: string };
+    if (!body.doc_id || !body.doc_name || !body.startup) return jsonRes({ error: 'Missing doc info.' }, 400);
+    const { error } = await db.from('diligence_requests').insert({
+      vc_email: email,
+      vc_firm: body.vc_firm ?? null,
+      doc_id: body.doc_id,
+      doc_name: body.doc_name,
+      startup: body.startup,
+      reason: body.reason ?? null,
+    });
+    if (error) return jsonRes({ error: error.message }, 500);
+    return jsonRes({ ok: true });
+  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
+// ─── VC: Admin — get all pending VC activity ─────────────────────────────────
+async function handleVCAdminPending(request: Request): Promise<Response> {
+  const cookie = request.headers.get('cookie') ?? '';
+  const m = cookie.match(/auth_token=([^;]+)/);
+  if (!m) return jsonRes({ error: 'Unauthorized.' }, 401);
+  try {
+    const payload = JSON.parse(atob(m[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
+    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
+  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const db = getVCAdmin();
+  const [profiles, interests, diligence] = await Promise.all([
+    db.from('vc_profiles').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+    db.from('deal_interests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+    db.from('diligence_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+  ]);
+  return jsonRes({ profiles: profiles.data ?? [], interests: interests.data ?? [], diligence: diligence.data ?? [] });
+}
+
+// ─── VC: Admin — review (approve/reject) ─────────────────────────────────────
+async function handleVCAdminReview(request: Request): Promise<Response> {
+  const cookie = request.headers.get('cookie') ?? '';
+  const m = cookie.match(/auth_token=([^;]+)/);
+  if (!m) return jsonRes({ error: 'Unauthorized.' }, 401);
+  try {
+    const payload = JSON.parse(atob(m[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
+    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
+  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const db = getVCAdmin();
+  const { table, id, action } = await request.json() as { table: string; id: string; action: 'approve' | 'reject' };
+  if (!['vc_profiles', 'deal_interests', 'diligence_requests'].includes(table)) return jsonRes({ error: 'Invalid table.' }, 400);
+  if (!id || !['approve', 'reject'].includes(action)) return jsonRes({ error: 'Invalid params.' }, 400);
+  const newStatus = action === 'approve' ? 'approved' : 'rejected';
+  await db.from(table as 'vc_profiles').update({ status: newStatus, reviewed_at: new Date().toISOString() }).eq('id', id);
+  return jsonRes({ ok: true });
+}
+
+// ─── Contact: submit message ──────────────────────────────────────────────────
+async function handleContactSubmit(request: Request): Promise<Response> {
+  try {
+    const body = await request.json() as { name?: string; email?: string; message?: string };
+    const { name, email, message } = body;
+    if (!name?.trim() || !email?.trim() || !message?.trim())
+      return jsonRes({ error: 'Name, email and message are required.' }, 400);
+
+    // Use anon key for public insert — service role key has schema grant issues on new tables
+    const supaUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://kntoyozitskrblvxmbpp.supabase.co';
+    const supaKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG95b3ppdHNrcmJsdnhtYnBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4Njg1ODMiLCJleHAiOjIwOTU0NDQ1ODN9.o1nTOoJ4BPKrr95WAuqYa3FfDwIhjj10R5Ra7eBVGok';
+
+    const db = createClient(supaUrl, supaKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { error } = await db.from('contact_messages').insert({ name: name.trim(), email: email.trim(), message: message.trim() });
+    if (error) {
+      console.error('[contact] supabase error:', error.message, error.details, error.hint);
+      return jsonRes({ error: error.message || 'Failed to save message.' }, 500);
+    }
+    return jsonRes({ ok: true });
+  } catch (err) {
+    console.error('[contact] unexpected error:', err);
+    return jsonRes({ error: 'Server error. Please try again.' }, 500);
+  }
+}
+
+// ─── Contact: admin list ──────────────────────────────────────────────────────
+async function handleContactAdminList(request: Request): Promise<Response> {
+  const email = extractVCEmail(request);
+  if (email !== 'ashutoshforcorporate@gmail.com') return jsonRes({ error: 'Forbidden.' }, 403);
+
+  const db = getVCAdmin();
+  const { data, error } = await db
+    .from('contact_messages')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) return jsonRes({ error: error.message }, 500);
+  return jsonRes(data ?? []);
+}
+
+// ─── Contact: admin mark read ─────────────────────────────────────────────────
+async function handleContactMarkRead(request: Request): Promise<Response> {
+  const email = extractVCEmail(request);
+  if (email !== 'ashutoshforcorporate@gmail.com') return jsonRes({ error: 'Forbidden.' }, 403);
+
+  const { id, read } = await request.json() as { id?: string; read?: boolean };
+  if (!id) return jsonRes({ error: 'id required.' }, 400);
+
+  const db = getVCAdmin();
+  const { error } = await db.from('contact_messages').update({ read: read ?? true }).eq('id', id);
+  if (error) return jsonRes({ error: error.message }, 500);
+  return jsonRes({ ok: true });
+}
+
 // ─── Main fetch handler ───────────────────────────────────────────────────────
 export default {
   async fetch(request: Request, env: Env, ctx: unknown) {
@@ -1473,6 +1708,9 @@ export default {
     if (pathname === '/api/events/review' && method === 'POST')
       return handleEventsReview(request);
 
+    if (pathname === '/api/events/rsvp' && method === 'POST')
+      return handleEventRsvp(request);
+
     if (pathname === '/api/startup-advance/request' && method === 'POST')
       return handleAdvanceRequest(request);
 
@@ -1481,6 +1719,36 @@ export default {
 
     if (pathname === '/api/startup-advance/review' && method === 'POST')
       return handleAdvanceReview(request);
+
+    if (pathname === '/api/vc/mandate' && method === 'POST')
+      return handleVCMandate(request);
+
+    if (pathname === '/api/vc/mandate' && method === 'GET')
+      return handleVCGetMandate(request);
+
+    if (pathname === '/api/vc/confirm-password' && method === 'POST')
+      return handleVCConfirmPassword(request);
+
+    if (pathname === '/api/vc/deal-interest' && method === 'POST')
+      return handleVCDealInterest(request);
+
+    if (pathname === '/api/vc/diligence-request' && method === 'POST')
+      return handleVCDiligenceRequest(request);
+
+    if (pathname === '/api/vc/admin/pending' && method === 'GET')
+      return handleVCAdminPending(request);
+
+    if (pathname === '/api/vc/admin/review' && method === 'POST')
+      return handleVCAdminReview(request);
+
+    if (pathname === '/api/contact' && method === 'POST')
+      return handleContactSubmit(request);
+
+    if (pathname === '/api/contact/messages' && method === 'GET')
+      return handleContactAdminList(request);
+
+    if (pathname === '/api/contact/mark-read' && method === 'POST')
+      return handleContactMarkRead(request);
 
     if (
       (pathname === '/api/chat' || pathname === '/api/documents') &&

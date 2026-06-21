@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
 import { useAuth } from "@/context/AuthContext";
 import { BusinessScene3D } from "@/components/ui/business-scene";
@@ -1189,6 +1189,8 @@ function Index() {
   const heroRef = useRef<HTMLDivElement>(null);
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
   const [contactSent, setContactSent] = useState(false);
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactError, setContactError] = useState("");
   const [bhScale, setBhScale] = useState(1)
   const [bhOpacity, setBhOpacity] = useState(1)
   const [heroVisible, setHeroVisible] = useState(true)
@@ -1797,9 +1799,9 @@ function Index() {
                 One platform where founders ship and incubators scale. Track traction, manage your pipeline, connect with capital — all backed by data, not vibes.
               </p>
               <div className="lp-hero-btns flex items-center gap-4 flex-wrap" style={{ opacity: dustDone ? 1 : 0, transform: dustDone ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.45s ease 0.30s,transform 0.45s ease 0.30s" }}>
-                <a data-dust="btn1" href="/hub" className="inline-flex items-center justify-center gap-2.5 rounded-full bg-white text-black px-7 py-3.5 text-sm font-semibold hover:bg-neutral-100 transition-all shadow-[0_0_32px_rgba(255,255,255,0.1)] hover:shadow-[0_0_44px_rgba(255,255,255,0.18)]" style={{ minWidth: 160 }}>
+                <Link data-dust="btn1" to="/hub" preload="intent" className="inline-flex items-center justify-center gap-2.5 rounded-full bg-white text-black px-7 py-3.5 text-sm font-semibold hover:bg-neutral-100 transition-all shadow-[0_0_32px_rgba(255,255,255,0.1)] hover:shadow-[0_0_44px_rgba(255,255,255,0.18)]" style={{ minWidth: 160 }}>
                   <Rocket className="h-4 w-4" />Explore Hub
-                </a>
+                </Link>
                 <a data-dust="btn2" href="/scout" className="inline-flex items-center justify-center gap-2.5 rounded-full border border-violet-500/50 bg-violet-500/10 text-violet-300 px-7 py-3.5 text-sm font-semibold backdrop-blur-sm hover:bg-violet-500/20 hover:border-violet-400/70 transition-all" style={{ minWidth: 160 }}>
                   <Telescope className="h-4 w-4" />Scout Hub
                 </a>
@@ -1918,9 +1920,9 @@ function Index() {
                   </div>
                 ))}
               </div>
-              <a href="/hub" className="lp-btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 28px", borderRadius: 999, background: "linear-gradient(90deg,#7c3aed,#0ea5e9)", color: "white", textDecoration: "none", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 24px rgba(124,58,237,.35)" }}>
+              <Link to="/hub" preload="intent" className="lp-btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 28px", borderRadius: 999, background: "linear-gradient(90deg,#7c3aed,#0ea5e9)", color: "white", textDecoration: "none", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 24px rgba(124,58,237,.35)" }}>
                 Explore the Hub <ArrowRight style={{ width: 14, height: 14 }} />
-              </a>
+              </Link>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -2148,79 +2150,84 @@ function Index() {
       }}>
       <AboutWebGLCanvas />
       <section id="about" className="snap-section section-full" style={{ background: "linear-gradient(180deg, rgba(5,4,16,1) 0%, rgba(4,4,14,1) 100%)" }}>
-        <div className="ambient-blob" style={{ width: 500, height: 500, background: "#8b5cf6", top: "5%", left: "-5%", opacity: 0.06 }} />
-        <div className="ambient-blob" style={{ width: 400, height: 400, background: "#10b981", bottom: "10%", right: "0%", opacity: 0.05 }} />
 
-        <div className={`section-inner ${SC}`} style={{ ...SS }}>
-          {/* ── top two-column grid ── */}
-          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : 52, alignItems: "center" }}>
-            <div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)", marginBottom: 24 }}>
-                <Award style={{ width: 12, height: 12, color: "#a78bfa" }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", letterSpacing: ".1em", textTransform: "uppercase" }}>About Incutrack</span>
+        <style>{`
+          @keyframes ab-in { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+          @keyframes ab-glow { 0%,100%{opacity:.5} 50%{opacity:1} }
+          .ab-principle { transition: border-color .22s ease, background .22s ease, transform .2s ease; }
+          .ab-principle:hover { transform: translateY(-2px); }
+          .ab-stat { transition: transform .2s ease, box-shadow .2s ease; }
+          .ab-stat:hover { transform: translateY(-3px); }
+        `}</style>
+
+        {/* Subtle ambient */}
+        <div style={{ position: "absolute", top: "10%", left: "-8%", width: 560, height: 560, borderRadius: "50%", background: "radial-gradient(circle,rgba(139,92,246,0.06),transparent 70%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: "8%", right: "-4%", width: 420, height: 420, borderRadius: "50%", background: "radial-gradient(circle,rgba(16,185,129,0.05),transparent 70%)", pointerEvents: "none" }} />
+
+        <div className={`section-inner ${SC}`} style={{ ...SS, display: "flex", flexDirection: "column", justifyContent: "center", gap: isMobile ? 36 : 48 }}>
+
+          {/* ── Top: headline left / principles right ── */}
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 28 : 64, alignItems: "start" }}>
+
+            {/* LEFT */}
+            <div style={{ animation: "ab-in .6s ease both" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 16px", borderRadius: 999, background: "rgba(139,92,246,.08)", border: "1px solid rgba(139,92,246,.2)", marginBottom: 22 }}>
+                <Award style={{ width: 11, height: 11, color: "#a78bfa" }} />
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", letterSpacing: ".12em", textTransform: "uppercase" }}>About Incutrack</span>
               </div>
-              <h2 style={{ fontSize: isMobile ? 26 : 40, fontWeight: 900, letterSpacing: "-.02em", margin: "0 0 20px", lineHeight: 1.15, background: "linear-gradient(135deg,white,rgba(255,255,255,.5))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                Building infrastructure for the next generation of companies
+
+              <h2 style={{ fontSize: isMobile ? 28 : 42, fontWeight: 900, letterSpacing: "-.025em", margin: "0 0 22px", lineHeight: 1.12, background: "linear-gradient(150deg,#fff 30%,rgba(255,255,255,.4))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                Built for the next generation of companies.
               </h2>
-              <p style={{ fontSize: 15, color: "rgba(255,255,255,.45)", lineHeight: 1.8, margin: "0 0 18px" }}>
-                Incutrack was born out of frustration with fragmented tools and opaque processes. We watched brilliant founders spend more time on spreadsheets than on products. We watched investors miss great deals because of broken workflows.
+
+              <p style={{ fontSize: 15, color: "rgba(255,255,255,.38)", lineHeight: 1.85, margin: "0 0 28px", maxWidth: 440 }}>
+                We watched founders drown in spreadsheets and investors miss great deals in broken workflows — so we built the platform both sides wished existed.
               </p>
-              <p style={{ fontSize: 15, color: "rgba(255,255,255,.45)", lineHeight: 1.8, margin: 0 }}>
-                So we built the platform we wished existed — one that treats founders and investors as equals in a shared ecosystem, giving both sides transparency, speed, and intelligence to make better decisions together.
-              </p>
+
+              {/* Divider rule */}
+              <div style={{ width: 40, height: 1, background: "linear-gradient(90deg,rgba(139,92,246,.6),transparent)", marginBottom: 22 }} />
+
+              {/* Origin detail */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#a78bfa", boxShadow: "0 0 10px rgba(167,139,250,.8)", animation: "ab-glow 2.5s ease-in-out infinite" }} />
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,.28)", letterSpacing: ".04em" }}>Founded at <span style={{ color: "rgba(255,255,255,.55)", fontWeight: 600 }}>IIT Kharagpur</span> · 2026</span>
+              </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {[
-                { Icon: Zap,       color: "#f59e0b", title: "Speed-first philosophy", desc: "Every feature ships with the question: does this save a founder or investor meaningful time?" },
-                { Icon: Shield,    color: "#10b981", title: "Data privacy by design",  desc: "Your pitch deck, cap table, and financials are yours. End-to-end encryption always." },
-                { Icon: Globe,     color: "#06b6d4", title: "Ecosystem thinking",       desc: "We connect every player — founders, mentors, VCs, and incubators in one network." },
-                { Icon: TrendingUp,color: "#8b5cf6", title: "Honest metrics",           desc: "We don't gamify vanity metrics. Dashboards show numbers that actually predict success." },
-              ].map(({ Icon, color, title, desc }) => (
-                <div key={title} style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: "16px 18px", borderRadius: 14, background: `${color}14`, border: `1px solid ${color}30`, backdropFilter: "blur(14px)", boxShadow: `0 4px 24px ${color}14` }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 11, background: `${color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon style={{ width: 17, height: 17, color }} />
+
+            {/* RIGHT — 2×2 principle grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, animation: "ab-in .6s .12s ease both" }}>
+              {([
+                { Icon: Zap,        color: "#f59e0b", title: "Speed‑first",      desc: "Every feature saves a founder meaningful time." },
+                { Icon: Shield,     color: "#10b981", title: "Privacy by design", desc: "Your data, end-to-end encrypted. Always." },
+                { Icon: Globe,      color: "#06b6d4", title: "Ecosystem thinking",desc: "Founders, VCs, mentors — one network." },
+                { Icon: TrendingUp, color: "#8b5cf6", title: "Honest metrics",    desc: "Numbers that actually predict success." },
+              ] as { Icon: any; color: string; title: string; desc: string }[]).map(({ Icon, color, title, desc }) => (
+                <div key={title} className="ab-principle" style={{ padding: "20px 18px", borderRadius: 16, background: `linear-gradient(145deg,${color}0c,rgba(4,4,14,0.9))`, border: `1px solid ${color}20`, backdropFilter: "blur(12px)", position: "relative", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${color}55,transparent)` }} />
+                  <div style={{ width: 36, height: 36, borderRadius: 11, background: `${color}14`, border: `1px solid ${color}28`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+                    <Icon style={{ width: 16, height: 16, color }} />
                   </div>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "white", margin: "0 0 4px" }}>{title}</p>
-                    <p style={{ fontSize: 13, color: "rgba(255,255,255,.4)", margin: 0, lineHeight: 1.6 }}>{desc}</p>
-                  </div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "white", margin: "0 0 6px", letterSpacing: "-.01em" }}>{title}</p>
+                  <p style={{ fontSize: 11.5, color: "rgba(255,255,255,.3)", margin: 0, lineHeight: 1.65 }}>{desc}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* ── stat cards ── */}
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12, marginTop: 16, alignItems: "stretch" }}>
+          {/* ── Bottom: stat row ── */}
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 14 }}>
             {([
               { value: "2026",   label: "Founded",    sub: "IIT KGP · Kharagpur", color: "#a78bfa", ringColor: "#7c3aed" },
               { value: "2,400+", label: "Founders",   sub: "actively building",    color: "#22d3ee", ringColor: "#0891b2" },
               { value: "38",     label: "Ecosystems", sub: "across 12 countries",  color: "#34d399", ringColor: "#059669" },
             ] as { value: string; label: string; sub: string; color: string; ringColor: string }[]).map(({ value, label, sub, color, ringColor }) => (
-              <div key={label} style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                minHeight: 120,
-                padding: "14px 16px 14px",
-                borderRadius: 18,
-                background: `linear-gradient(145deg, ${color}12 0%, rgba(6,6,18,0.92) 100%)`,
-                border: `1px solid ${color}35`,
-                backdropFilter: "blur(16px)",
-                boxShadow: `0 8px 32px ${color}18, inset 0 1px 0 ${color}28`,
-                position: "relative",
-                overflow: "hidden",
-                boxSizing: "border-box",
-              }}>
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${color}90, transparent)` }} />
-                <div style={{ position: "absolute", top: 0, right: 0, width: 80, height: 80, background: `radial-gradient(circle at top right, ${color}14, transparent 70%)`, pointerEvents: "none" }} />
-                {/* top: planet */}
-                <div><MiniPlanetCanvas color={color} ringColor={ringColor} size={28} /></div>
-                {/* bottom: value + labels */}
-                <div>
-                  <p style={{ fontSize: 28, fontWeight: 900, margin: "0 0 1px", lineHeight: 1, background: `linear-gradient(135deg, #ffffff 20%, ${color})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{value}</p>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.8)", margin: 0 }}>{label}</p>
-                  <p style={{ fontSize: 10, color: color, margin: 0, fontWeight: 500, letterSpacing: "0.03em", opacity: 0.85 }}>{sub}</p>
-                </div>
+              <div key={label} className="ab-stat" style={{ padding: "22px 24px", borderRadius: 18, background: `linear-gradient(145deg,${color}0e,rgba(4,4,14,0.95))`, border: `1px solid ${color}28`, backdropFilter: "blur(16px)", boxShadow: `0 8px 36px ${color}12, inset 0 1px 0 ${color}22`, position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${color}80,transparent)` }} />
+                <div style={{ position: "absolute", bottom: 0, right: 0, width: 120, height: 120, background: `radial-gradient(circle at bottom right,${color}0e,transparent 70%)`, pointerEvents: "none" }} />
+                <MiniPlanetCanvas color={color} ringColor={ringColor} size={26} />
+                <p style={{ fontSize: 36, fontWeight: 900, margin: "14px 0 2px", lineHeight: 1, letterSpacing: "-.03em", background: `linear-gradient(135deg,#fff 30%,${color})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{value}</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.75)", margin: "0 0 3px" }}>{label}</p>
+                <p style={{ fontSize: 11, color, margin: 0, fontWeight: 500, opacity: .8, letterSpacing: ".02em" }}>{sub}</p>
               </div>
             ))}
           </div>
@@ -2295,8 +2302,27 @@ function Index() {
                       onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,.09)")}
                     />
                   </div>
-                  <button onClick={() => { if (contactForm.name && contactForm.email) setContactSent(true); }} className="lp-btn" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", borderRadius: 10, background: "linear-gradient(90deg,#0e7490,#0ea5e9)", color: "white", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 18px rgba(6,182,212,.3)" }}>
-                    <Send style={{ width: 13, height: 13 }} />Send Message
+                  {contactError && <p style={{ fontSize: 12, color: '#f87171', margin: '-4px 0 0', textAlign: 'center' }}>{contactError}</p>}
+                  <button
+                    disabled={contactLoading}
+                    onClick={async () => {
+                      if (!contactForm.name || !contactForm.email || !contactForm.message) {
+                        setContactError("Please fill in all fields."); return;
+                      }
+                      setContactError(""); setContactLoading(true);
+                      try {
+                        const res = await fetch('/api/contact', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(contactForm),
+                        });
+                        if (res.ok) { setContactSent(true); }
+                        else { const d = await res.json() as { error?: string }; setContactError(d.error ?? "Failed to send. Please try again."); }
+                      } catch { setContactError("Network error. Please try again."); }
+                      finally { setContactLoading(false); }
+                    }}
+                    className="lp-btn" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", borderRadius: 10, background: contactLoading ? "rgba(14,116,144,.5)" : "linear-gradient(90deg,#0e7490,#0ea5e9)", color: "white", border: "none", cursor: contactLoading ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 18px rgba(6,182,212,.3)", opacity: contactLoading ? 0.7 : 1 }}>
+                    <Send style={{ width: 13, height: 13 }} />{contactLoading ? "Sending…" : "Send Message"}
                   </button>
                 </div>
               )}
@@ -2311,9 +2337,9 @@ function Index() {
               </div>
               {[
                 { Icon: Mail, color: "#06b6d4", label: "Email", value: "hello@incutrack.in" },
-                { Icon: Phone, color: "#10b981", label: "Phone", value: "+91 98765 43210" },
+                { Icon: Phone, color: "#10b981", label: "Phone", value: "+91 93481 53073" },
                 { Icon: MapPin, color: "#8b5cf6", label: "Location", value: "IIT KGP Innovation Cell · Kharagpur, West Bengal" },
-                { Icon: Globe, color: "#f59e0b", label: "Website", value: "www.incutrack.in" },
+                { Icon: Globe, color: "#f59e0b", label: "Website", value: "incutrack.ashutosh-palai2005.workers.dev" },
               ].map(({ Icon, color, label, value }) => (
                 <div key={label} style={{ display: "flex", gap: 12, alignItems: "center" }}>
                   <div style={{ width: 40, height: 40, borderRadius: 12, background: `${color}13`, border: `1px solid ${color}25`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -2330,9 +2356,9 @@ function Index() {
                 <p style={{ fontSize: 13.5, fontWeight: 700, color: "white", margin: "0 0 4px" }}>Ready to get started?</p>
                 <p style={{ fontSize: 11.5, color: "rgba(255,255,255,.4)", margin: "0 0 10px", lineHeight: 1.5 }}>Join 2,400+ founders already building on Incutrack. Free to get started.</p>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <a href="/hub" className="lp-btn" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "9px 0", borderRadius: 9, background: "linear-gradient(90deg,#7c3aed,#0ea5e9)", color: "white", textDecoration: "none", fontSize: 12.5, fontWeight: 700 }}>
+                  <Link to="/hub" preload="intent" className="lp-btn" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "9px 0", borderRadius: 9, background: "linear-gradient(90deg,#7c3aed,#0ea5e9)", color: "white", textDecoration: "none", fontSize: 12.5, fontWeight: 700 }}>
                     <Rocket style={{ width: 11, height: 11 }} />Explore Hub
-                  </a>
+                  </Link>
                   <a href="/scout" className="lp-btn" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "9px 0", borderRadius: 9, background: "rgba(6,182,212,.12)", border: "1px solid rgba(6,182,212,.3)", color: "#22d3ee", textDecoration: "none", fontSize: 12.5, fontWeight: 700 }}>
                     <Telescope style={{ width: 11, height: 11 }} />Scout Hub
                   </a>

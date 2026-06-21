@@ -1591,95 +1591,431 @@ function ScoutPage() {
                     })()}
 
                     {/* ══ 4. STARTUP NETWORK ══ */}
-                    {tab === 'network' && (() => (
-                        <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
+                    {tab === 'network' && (() => {
+                        const TAG_COL: Record<string, string> = { SaaS: '#8b5cf6', FinTech: '#06b6d4', DeepTech: '#10b981', HealthTech: '#f59e0b' };
+                        const activityDays = (s: string) => parseInt(s) || 0;
+                        const health = (c: typeof NETWORK_CONTACTS[0]) => {
+                            const d = activityDays(c.lastContact);
+                            if (d <= 2) return { label: 'Active', col: '#10b981' };
+                            if (d <= 7) return { label: 'Warm', col: '#f59e0b' };
+                            return { label: 'Cold', col: '#f87171' };
+                        };
+                        return (
+                        <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px 24px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
                             <NetworkStarMap />
-
                             <style>{`
                               @keyframes nw-drift{0%,100%{transform:translate(0,0)}40%{transform:translate(12px,-10px)}70%{transform:translate(-8px,8px)}}
+                              @keyframes nw-glow{0%,100%{opacity:.45}50%{opacity:1}}
+                              @keyframes nw-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
                               @keyframes nw-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-                              @keyframes nw-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+                              @keyframes nw-rspin{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+                              @keyframes nw-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
                               @keyframes nw-morph{0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%}50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%}}
+                              @keyframes nw-flow{0%{background-position:-80% 0}100%{background-position:180% 0}}
+                              @keyframes nw-pulse-ring{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.4);opacity:0}}
+                              @keyframes nw-shimmer{0%{transform:translateX(-120%) skewX(-12deg)}100%{transform:translateX(240%) skewX(-12deg)}}
+                              @keyframes nw-holo{0%,100%{opacity:.4}50%{opacity:.8}}
+                              .nw-card{
+                                transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s ease;
+                                animation:nw-rise .35s ease both;
+                              }
+                              .nw-card:hover{
+                                transform:translateY(-7px) scale(1.016);
+                                box-shadow:0 30px 80px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.1),0 0 60px rgba(139,92,246,.12)!important;
+                              }
+                              .nw-card:hover .nw-shimmer{
+                                animation:nw-shimmer .65s ease forwards;
+                              }
+                              .nw-action{transition:all .18s ease;}
+                              .nw-action:hover{filter:brightness(1.3);transform:translateY(-2px);}
+                              .nw-kpi{transition:transform .2s ease,box-shadow .2s ease;}
+                              .nw-kpi:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 16px 40px rgba(0,0,0,.55)!important;}
+                              .nw-panel{transition:box-shadow .2s ease,border-color .2s ease;}
+                              .nw-panel:hover{box-shadow:0 0 0 1px rgba(255,255,255,.1),0 20px 60px rgba(0,0,0,.45)!important;}
                             `}</style>
-                            <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-                                <div style={{ position: 'absolute', top: '6%', left: '12%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,.07),transparent 70%)', animation: 'nw-drift 11s ease-in-out infinite' }} />
-                                <div style={{ position: 'absolute', bottom: '8%', right: '8%', width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle,rgba(6,182,212,.06),transparent 70%)', animation: 'nw-drift 14s ease-in-out infinite reverse' }} />
-                                <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: 180, height: 180 }}>
-                                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: 14, height: 14, marginLeft: -7, marginTop: -7, borderRadius: '50%', background: '#a78bfa', boxShadow: '0 0 16px rgba(167,139,250,.9)', animation: 'sc-pulse2 2.5s ease-in-out infinite' }} />
-                                    {[{ w: 54, c: '#8b5cf6', sp: '3s' }, { w: 92, c: '#06b6d4', sp: '5.5s', rev: true }, { w: 140, c: '#10b981', sp: '8.5s' }, { w: 178, c: '#f59e0b', sp: '12s', rev: true }].map((o, i) => (
-                                        <div key={i} style={{ position: 'absolute', top: '50%', left: '50%', width: o.w, height: o.w, marginLeft: -o.w / 2, marginTop: -o.w / 2, borderRadius: '50%', border: `1px solid ${o.c}${i < 2 ? '35' : '20'}` }}>
-                                            <div style={{ position: 'absolute', top: i % 2 === 0 ? -4 : 'auto', bottom: i % 2 === 1 ? -4 : 'auto', left: '50%', width: 8, height: 8, marginLeft: -4, borderRadius: '50%', background: o.c, boxShadow: `0 0 8px ${o.c}`, animation: `nw-spin ${o.sp} linear infinite ${o.rev ? 'reverse' : ''}`, transformOrigin: `4px ${o.w / 2 + 4}px` }} />
+
+                            {/* ── ULTRA ambient BG ── */}
+                            <div aria-hidden style={{ position:'absolute',inset:0,overflow:'hidden',pointerEvents:'none',zIndex:0 }}>
+                                {/* gradient blob orbs */}
+                                <div style={{ position:'absolute',top:'-8%',left:'2%',width:520,height:520,borderRadius:'50%',background:'radial-gradient(circle,rgba(139,92,246,.06),transparent 65%)',animation:'nw-drift 15s ease-in-out infinite',filter:'blur(2px)' }} />
+                                <div style={{ position:'absolute',bottom:'-4%',right:'4%',width:420,height:420,borderRadius:'50%',background:'radial-gradient(circle,rgba(6,182,212,.05),transparent 65%)',animation:'nw-drift 19s ease-in-out infinite reverse',filter:'blur(2px)' }} />
+                                <div style={{ position:'absolute',top:'45%',left:'38%',width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle,rgba(16,185,129,.04),transparent 65%)',animation:'nw-drift 12s ease-in-out infinite 4s' }} />
+                                {/* morphing blob decorators */}
+                                <div style={{ position:'absolute',bottom:'6%',left:'5%',width:180,height:180,background:'linear-gradient(135deg,rgba(139,92,246,.1),rgba(6,182,212,.06))',animation:'nw-morph 9s ease-in-out infinite',border:'1px solid rgba(139,92,246,.14)',filter:'blur(1px)' }} />
+                                <div style={{ position:'absolute',top:'12%',right:'10%',width:110,height:110,background:'linear-gradient(135deg,rgba(6,182,212,.08),rgba(16,185,129,.05))',animation:'nw-morph 13s ease-in-out infinite reverse',border:'1px solid rgba(6,182,212,.1)' }} />
+                                {/* premium orrery — top right corner */}
+                                <div style={{ position:'absolute',top:-70,right:-70,width:300,height:300 }}>
+                                    <div style={{ position:'absolute',top:'50%',left:'50%',width:14,height:14,marginLeft:-7,marginTop:-7,borderRadius:'50%',background:'radial-gradient(circle at 35% 35%,#c4b5fd,#7c3aed)',boxShadow:'0 0 22px rgba(139,92,246,.9),0 0 44px rgba(139,92,246,.4)',animation:'nw-glow 2.5s ease-in-out infinite' }} />
+                                    {[
+                                        { w:72,  c:'#8b5cf6', sp:'4.2s' },
+                                        { w:118, c:'#06b6d4', sp:'7.5s', rev:true },
+                                        { w:178, c:'#10b981', sp:'12s' },
+                                        { w:248, c:'#f59e0b', sp:'17s', rev:true },
+                                    ].map((o,i)=>(
+                                        <div key={i} style={{ position:'absolute',top:'50%',left:'50%',width:o.w,height:o.w,marginLeft:-o.w/2,marginTop:-o.w/2,borderRadius:'50%',border:`1px solid ${o.c}${i<2?'42':'22'}` }}>
+                                            <div style={{ position:'absolute',top:i%2===0?-5:'auto',bottom:i%2===1?-5:'auto',left:'50%',width:10,height:10,marginLeft:-5,borderRadius:'50%',background:o.c,boxShadow:`0 0 12px ${o.c},0 0 24px ${o.c}60`,animation:`nw-spin ${o.sp} linear infinite ${'rev' in o && o.rev?'reverse':''}`,transformOrigin:`5px ${o.w/2+5}px` }} />
                                         </div>
                                     ))}
                                 </div>
-                                <div style={{ position: 'absolute', bottom: 20, left: 12, width: 100, height: 100, background: 'linear-gradient(135deg,rgba(139,92,246,.12),rgba(6,182,212,.08))', animation: 'nw-morph 7s ease-in-out infinite', border: '1px solid rgba(139,92,246,.18)' }} />
-                                {[{ x: '6%', y: '42%', s: 4, c: '#8b5cf6', d: '0s' }, { x: '48%', y: '86%', s: 3, c: '#06b6d4', d: '1s' }, { x: '72%', y: '15%', s: 5, c: '#10b981', d: '2.5s' }].map((p, i) => (
-                                    <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, width: p.s, height: p.s, borderRadius: '50%', background: p.c, boxShadow: `0 0 ${p.s * 2.5}px ${p.c}`, opacity: .45, animation: `nw-float ${3.5 + i * .6}s ease-in-out ${p.d} infinite` }} />
+                                {/* spinning diamond left-center */}
+                                <div style={{ position:'absolute',bottom:'28%',left:'34%',display:'flex',alignItems:'center',justifyContent:'center',width:64,height:64 }}>
+                                    <div style={{ position:'absolute',width:48,height:48,border:'1.5px solid rgba(139,92,246,.28)',borderRadius:6,animation:'nw-spin 11s linear infinite',transform:'rotate(45deg)' }} />
+                                    <div style={{ position:'absolute',width:24,height:24,background:'rgba(139,92,246,.05)',borderRadius:3,animation:'nw-rspin 7s linear infinite',transform:'rotate(45deg)' }} />
+                                    <div style={{ width:6,height:6,borderRadius:'50%',background:'rgba(139,92,246,.55)',boxShadow:'0 0 12px rgba(139,92,246,.75)' }} />
+                                </div>
+                                {/* floating glow particles */}
+                                {[
+                                    {x:'7%',y:'62%',s:5,c:'#8b5cf6',d:'0s'},{x:'21%',y:'28%',s:3,c:'#06b6d4',d:'1.2s'},
+                                    {x:'54%',y:'10%',s:4,c:'#10b981',d:'2.6s'},{x:'74%',y:'58%',s:3,c:'#f59e0b',d:'.7s'},
+                                    {x:'17%',y:'82%',s:3,c:'#06b6d4',d:'2s'},{x:'43%',y:'73%',s:5,c:'#8b5cf6',d:'3.3s'},
+                                    {x:'87%',y:'22%',s:3,c:'#10b981',d:'1.5s'},{x:'61%',y:'86%',s:4,c:'#f59e0b',d:'.3s'},
+                                ].map((p,i)=>(
+                                    <div key={i} style={{ position:'absolute',left:p.x,top:p.y,width:p.s,height:p.s,borderRadius:'50%',background:p.c,boxShadow:`0 0 ${p.s*3}px ${p.c}`,animation:`nw-float ${3+i*.4}s ease-in-out ${p.d} infinite`,opacity:.5 }} />
+                                ))}
+                                {/* animated horizontal flow lines */}
+                                {[{d:'0s',dur:'9s',c:'#8b5cf6'},{d:'3s',dur:'12s',c:'#06b6d4'},{d:'6s',dur:'15s',c:'#10b981'}].map((l,i)=>(
+                                    <div key={i} style={{ position:'absolute',left:0,right:0,top:`${22+i*28}%`,height:1,background:`linear-gradient(90deg,transparent,${l.c}16,transparent)`,backgroundSize:'38% 100%',animation:`nw-flow ${l.dur} linear ${l.d} infinite` }} />
+                                ))}
+                                {/* subtle perspective grid */}
+                                <div style={{ position:'absolute',inset:0,backgroundImage:`linear-gradient(rgba(139,92,246,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(139,92,246,.022) 1px,transparent 1px)`,backgroundSize:'64px 64px',opacity:.7 }} />
+                            </div>
+
+                            {/* ── ELITE Header ── */}
+                            <div style={{ flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:1 }}>
+                                <div style={{ display:'flex',flexDirection:'column',gap:5 }}>
+                                    <div style={{ display:'flex',alignItems:'center',gap:12 }}>
+                                        <div style={{ position:'relative',width:32,height:32,borderRadius:10,background:'linear-gradient(135deg,rgba(139,92,246,.35),rgba(6,182,212,.2))',border:'1px solid rgba(139,92,246,.45)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 20px rgba(139,92,246,.3)' }}>
+                                            <Users style={{ width:15,height:15,color:'#c4b5fd' }} />
+                                            <div style={{ position:'absolute',top:-3,right:-3,width:9,height:9,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 10px #10b981',border:'1.5px solid rgba(10,10,22,.9)' }} />
+                                        </div>
+                                        <h2 style={{ fontSize:21,fontWeight:900,margin:0,letterSpacing:'-.5px',background:'linear-gradient(135deg,#ffffff 30%,rgba(196,181,253,.85) 65%,rgba(34,211,238,.7))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text' }}>Founder Network</h2>
+                                        <div style={{ padding:'3px 10px',borderRadius:999,background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.35)',fontSize:9,fontWeight:900,color:'#10b981',textTransform:'uppercase',letterSpacing:'.1em',boxShadow:'0 0 14px rgba(16,185,129,.18)' }}>LIVE</div>
+                                    </div>
+                                    <p style={{ fontSize:11,color:'rgba(255,255,255,.32)',margin:0,paddingLeft:44 }}>
+                                        {NETWORK_CONTACTS.length} founders · {NETWORK_CONTACTS.reduce((a,c)=>a+c.meetings,0)} meetings · {NETWORK_CONTACTS.reduce((a,c)=>a+c.msgs,0)} messages
+                                    </p>
+                                </div>
+                                <div style={{ display:'flex',alignItems:'center',gap:10 }}>
+                                    {[{l:'Active',c:'#10b981'},{l:'Warm',c:'#f59e0b'},{l:'Cold',c:'#f87171'}].map(h=>(
+                                        <div key={h.l} style={{ display:'flex',alignItems:'center',gap:6,padding:'5px 13px',borderRadius:999,background:`${h.c}0e`,border:`1px solid ${h.c}32`,backdropFilter:'blur(8px)' }}>
+                                            <div style={{ position:'relative',width:7,height:7 }}>
+                                                <div style={{ position:'absolute',inset:0,borderRadius:'50%',background:h.c,boxShadow:`0 0 7px ${h.c}` }} />
+                                                <div style={{ position:'absolute',inset:-3,borderRadius:'50%',border:`1px solid ${h.c}50`,animation:'nw-pulse-ring 2.2s ease-out infinite' }} />
+                                            </div>
+                                            <span style={{ fontSize:10,fontWeight:700,color:h.c }}>{h.l}</span>
+                                        </div>
+                                    ))}
+                                    <button onClick={()=>setRegisterOpen(true)} className="sc-btn" style={{ display:'flex',alignItems:'center',gap:7,padding:'9px 18px',borderRadius:12,background:'linear-gradient(135deg,rgba(124,58,237,.92),rgba(14,165,233,.82))',border:'1px solid rgba(255,255,255,.15)',cursor:'pointer',fontSize:11,fontWeight:800,color:'white',boxShadow:'0 6px 22px rgba(124,58,237,.45),0 0 0 1px rgba(255,255,255,.04)',marginLeft:4,backdropFilter:'blur(8px)',letterSpacing:'.02em' }}>
+                                        <UserPlus style={{ width:13,height:13 }} />Add Contact
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* ── HOLOGRAPHIC KPI BAR ── */}
+                            <div style={{ flexShrink:0,display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,position:'relative',zIndex:1 }}>
+                                {[
+                                    { label:'Total Contacts', value:NETWORK_CONTACTS.length, color:'#8b5cf6', sub:'in network', icon:'⬡' },
+                                    { label:'Total Meetings', value:NETWORK_CONTACTS.reduce((a,c)=>a+c.meetings,0), color:'#06b6d4', sub:'scheduled', icon:'◈' },
+                                    { label:'Messages', value:NETWORK_CONTACTS.reduce((a,c)=>a+c.msgs,0), color:'#10b981', sub:'exchanged', icon:'◎' },
+                                    { label:'Active Relations', value:NETWORK_CONTACTS.filter(c=>parseInt(c.lastContact)<=3).length, color:'#f59e0b', sub:'last 3 days', icon:'◆' },
+                                ].map((k,i)=>(
+                                    <div key={k.label} className="nw-kpi" style={{ padding:'14px 16px',borderRadius:14,background:'linear-gradient(145deg,rgba(12,12,26,.96),rgba(7,7,18,.99))',border:`1px solid ${k.color}22`,position:'relative',overflow:'hidden',boxShadow:`0 10px 30px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.035)`,backdropFilter:'blur(12px)',animation:`nw-rise .3s ease ${i*.065}s both` }}>
+                                        {/* chromatic top bar */}
+                                        <div style={{ position:'absolute',top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${k.color},transparent)`,opacity:.85 }} />
+                                        {/* corner glow orb */}
+                                        <div style={{ position:'absolute',top:-24,right:-24,width:90,height:90,borderRadius:'50%',background:`radial-gradient(circle,${k.color}22,transparent 70%)` }} />
+                                        {/* CRT scanlines */}
+                                        <div style={{ position:'absolute',inset:0,backgroundImage:`repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,.007) 3px,rgba(255,255,255,.007) 4px)`,pointerEvents:'none' }} />
+                                        <div style={{ position:'relative' }}>
+                                            <p style={{ fontSize:9,color:'rgba(255,255,255,.32)',margin:'0 0 7px',textTransform:'uppercase',letterSpacing:'.08em',fontWeight:700 }}>{k.label}</p>
+                                            <p style={{ fontSize:30,fontWeight:900,color:k.color,margin:'0 0 3px',lineHeight:1,textShadow:`0 0 24px ${k.color}55,0 0 48px ${k.color}28` }}>{k.value}</p>
+                                            <p style={{ fontSize:9,color:'rgba(255,255,255,.22)',margin:0 }}>{k.sub}</p>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
 
-                            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
-                                <div>
-                                    <h2 style={{ fontSize: 16, fontWeight: 800, color: 'white', margin: 0 }}>Founder Network</h2>
-                                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,.3)', margin: '3px 0 0' }}>{NETWORK_CONTACTS.length} founders · {NETWORK_CONTACTS.reduce((a, c) => a + c.meetings, 0)} total meetings</p>
-                                </div>
-                                <button onClick={() => setRegisterOpen(true)} className="sc-btn" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, background: 'linear-gradient(90deg,rgba(124,58,237,.8),rgba(14,165,233,.7))', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'white', boxShadow: '0 4px 16px rgba(124,58,237,.35)' }}>
-                                    <UserPlus style={{ width: 13, height: 13 }} />Add Contact
-                                </button>
-                            </div>
+                            {/* ── Main body: cards + right sidebar ── */}
+                            <div style={{ flex:'1 1 0',minHeight:0,display:'flex',gap:14,position:'relative',zIndex:1 }}>
 
-                            <div className="sc-scroll sc-network-scroll" style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
-                                <div className="sc-network-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-                                    {NETWORK_CONTACTS.map(c => {
-                                        const col = ({ SaaS: '#8b5cf6', FinTech: '#06b6d4', DeepTech: '#10b981' } as Record<string, string>)[c.tag] || '#f59e0b';
-                                        const startup = ALL_STARTUPS.find(s => s.name === c.company);
-                                        return (
-                                            <div key={c.id} className="sc-card" style={{ ...G(), padding: '18px', display: 'flex', flexDirection: 'column', gap: 12, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
-                                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${col}70,transparent)` }} />
-                                                <div style={{ position: 'absolute', top: -28, right: -28, width: 120, height: 120, borderRadius: '50%', background: `radial-gradient(circle,${col}16,transparent 70%)`, pointerEvents: 'none' }} />
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                    <div style={{ width: 44, height: 44, borderRadius: 13, background: `linear-gradient(135deg,${col}50,${col}22)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 900, color: col, border: `1.5px solid ${col}45`, flexShrink: 0, boxShadow: `0 4px 14px ${col}25` }}>{c.avatar}</div>
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</p>
-                                                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', margin: '2px 0 0' }}>{c.role} · {c.company}</p>
+                                {/* LEFT: PREMIUM contact cards grid */}
+                                <div className="sc-scroll" style={{ flex:'1 1 0',minWidth:0,overflowY:'auto' }}>
+                                    <div style={{ display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:14 }}>
+                                        {NETWORK_CONTACTS.map((c,idx)=>{
+                                            const col = TAG_COL[c.tag] || '#a78bfa';
+                                            const h = health(c);
+                                            const startup = ALL_STARTUPS.find(s=>s.name===c.company);
+                                            const engPct = Math.min(Math.round((c.meetings*8+c.msgs)/1.2),100);
+                                            return (
+                                                <div key={c.id} className="nw-card" style={{ background:'linear-gradient(145deg,rgba(11,11,24,.97),rgba(6,6,17,.99))',border:`1px solid ${col}28`,borderRadius:18,padding:0,display:'flex',flexDirection:'column',cursor:'pointer',position:'relative',overflow:'hidden',boxShadow:`0 14px 44px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.03),0 0 40px ${col}08`,animationDelay:`${idx*.06}s` }}>
+                                                    {/* holographic shimmer sweep */}
+                                                    <div className="nw-shimmer" style={{ position:'absolute',top:0,left:0,bottom:0,width:'45%',background:'linear-gradient(105deg,transparent,rgba(255,255,255,.055),transparent)',pointerEvents:'none',zIndex:10,transform:'translateX(-120%) skewX(-12deg)' }} />
+                                                    {/* chromatic top stripe */}
+                                                    <div style={{ height:2,background:`linear-gradient(90deg,${col}00,${col}cc,${col}80,${col}00)`,flexShrink:0 }} />
+                                                    {/* ambient corner glows */}
+                                                    <div style={{ position:'absolute',top:-55,right:-55,width:170,height:170,borderRadius:'50%',background:`radial-gradient(circle,${col}14,transparent 68%)`,pointerEvents:'none' }} />
+                                                    <div style={{ position:'absolute',bottom:-35,left:-35,width:130,height:130,borderRadius:'50%',background:`radial-gradient(circle,${col}07,transparent 68%)`,pointerEvents:'none' }} />
+                                                    {/* CRT scanline texture */}
+                                                    <div style={{ position:'absolute',inset:0,backgroundImage:`repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.005) 2px,rgba(255,255,255,.005) 3px)`,pointerEvents:'none' }} />
+
+                                                    <div style={{ padding:'16px 18px 0',display:'flex',flexDirection:'column',gap:12,position:'relative' }}>
+                                                        {/* identity */}
+                                                        <div style={{ display:'flex',alignItems:'center',gap:12 }}>
+                                                            {/* rotating conic border avatar */}
+                                                            <div style={{ position:'relative',width:52,height:52,flexShrink:0 }}>
+                                                                <div style={{ position:'absolute',inset:-2,borderRadius:16,background:`conic-gradient(from 0deg,${col}90,${col}30,${col}90,${col}30,${col}90)`,animation:'nw-spin 5s linear infinite',opacity:.65 }} />
+                                                                <div style={{ position:'absolute',inset:0,borderRadius:14,background:`linear-gradient(145deg,${col}65,${col}28)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,fontWeight:900,color:'white',boxShadow:`0 4px 22px ${col}45,inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(0,0,0,.3)` }}>
+                                                                    {c.avatar}
+                                                                </div>
+                                                            </div>
+                                                            <div style={{ flex:1,minWidth:0 }}>
+                                                                <div style={{ display:'flex',alignItems:'center',gap:7,marginBottom:4 }}>
+                                                                    <p style={{ fontSize:14,fontWeight:900,color:'white',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',textShadow:'0 0 22px rgba(255,255,255,.12)' }}>{c.name}</p>
+                                                                    <div style={{ display:'flex',alignItems:'center',gap:4,padding:'2px 8px',borderRadius:999,background:`${h.col}12`,border:`1px solid ${h.col}38`,flexShrink:0,boxShadow:`0 0 12px ${h.col}20` }}>
+                                                                        <div style={{ position:'relative',width:6,height:6 }}>
+                                                                            <div style={{ position:'absolute',inset:0,borderRadius:'50%',background:h.col,boxShadow:`0 0 7px ${h.col}` }} />
+                                                                            <div style={{ position:'absolute',inset:-3,borderRadius:'50%',border:`1px solid ${h.col}40`,animation:'nw-pulse-ring 2.3s ease-out infinite' }} />
+                                                                        </div>
+                                                                        <span style={{ fontSize:9,fontWeight:800,color:h.col,textTransform:'uppercase',letterSpacing:'.06em' }}>{h.label}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <p style={{ fontSize:10,color:'rgba(255,255,255,.42)',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{c.role} · <span style={{ color:col,fontWeight:700 }}>{c.company}</span></p>
+                                                            </div>
+                                                            <span style={{ background:`${col}15`,color:col,border:`1px solid ${col}38`,borderRadius:8,padding:'4px 10px',fontSize:9,fontWeight:800,flexShrink:0,backdropFilter:'blur(6px)',boxShadow:`inset 0 1px 0 rgba(255,255,255,.07),0 0 10px ${col}20` }}>{c.tag}</span>
+                                                        </div>
+
+                                                        {/* engagement bar */}
+                                                        <div style={{ padding:'10px 12px',borderRadius:10,background:'rgba(255,255,255,.034)',border:'1px solid rgba(255,255,255,.06)',position:'relative',overflow:'hidden' }}>
+                                                            <div style={{ position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)` }} />
+                                                            <div style={{ display:'flex',justifyContent:'space-between',marginBottom:7,alignItems:'center' }}>
+                                                                <span style={{ fontSize:9,color:'rgba(255,255,255,.42)',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em' }}>Engagement Score</span>
+                                                                <span style={{ fontSize:12,fontWeight:900,color:col,textShadow:`0 0 12px ${col}55` }}>{engPct}%</span>
+                                                            </div>
+                                                            <div style={{ height:5,borderRadius:999,background:'rgba(255,255,255,.07)',overflow:'hidden',position:'relative' }}>
+                                                                <div style={{ height:'100%',width:`${engPct}%`,background:`linear-gradient(90deg,${col}80,${col},${col}d0)`,borderRadius:999,boxShadow:`0 0 12px ${col}55`,position:'relative' }}>
+                                                                    <div style={{ position:'absolute',top:0,right:0,bottom:0,width:'30%',background:'linear-gradient(90deg,transparent,rgba(255,255,255,.28))',borderRadius:'0 999px 999px 0' }} />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* stat chips */}
+                                                        <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8 }}>
+                                                            {[
+                                                                { label:'Last Contact',value:c.lastContact,color:'rgba(255,255,255,.75)',Icon:Clock },
+                                                                { label:'Meetings',value:c.meetings,color:col,Icon:CalendarDays },
+                                                                { label:'Messages',value:c.msgs,color:'#a78bfa',Icon:MessageSquare },
+                                                            ].map(st=>(
+                                                                <div key={st.label} style={{ padding:'9px 6px',borderRadius:10,background:'rgba(255,255,255,.038)',border:'1px solid rgba(255,255,255,.065)',textAlign:'center',position:'relative',overflow:'hidden' }}>
+                                                                    <div style={{ position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${st.color}28,transparent)` }} />
+                                                                    <st.Icon style={{ width:12,height:12,color:st.color,opacity:.8,marginBottom:3 }} />
+                                                                    <p style={{ fontSize:8,color:'rgba(255,255,255,.32)',margin:'0 0 3px',textTransform:'uppercase',letterSpacing:'.05em',fontWeight:600 }}>{st.label}</p>
+                                                                    <p style={{ fontSize:14,fontWeight:900,color:st.color,margin:0,textShadow:`0 0 12px ${st.color}50` }}>{st.value}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* funding */}
+                                                        {startup && (
+                                                            <div style={{ padding:'10px 12px',borderRadius:10,background:`linear-gradient(135deg,${col}0c,${col}05)`,border:`1px solid ${col}25`,position:'relative',overflow:'hidden' }}>
+                                                                <div style={{ position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${col}45,transparent)` }} />
+                                                                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:7 }}>
+                                                                    <span style={{ fontSize:9,color:'rgba(255,255,255,.42)',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em' }}>Funding Goal</span>
+                                                                    <span style={{ fontSize:10,fontWeight:800,color:col }}>{fmt(startup.raised)} / {fmt(startup.fundingGoal)}</span>
+                                                                </div>
+                                                                <div style={{ height:5,borderRadius:999,background:'rgba(255,255,255,.07)',overflow:'hidden',position:'relative' }}>
+                                                                    <div style={{ height:'100%',width:`${Math.min((startup.raised/startup.fundingGoal)*100,100)}%`,background:`linear-gradient(90deg,${col}75,${col},${col}cc)`,borderRadius:999,boxShadow:`0 0 12px ${col}50` }}>
+                                                                        <div style={{ position:'absolute',top:0,right:0,bottom:0,width:'25%',background:'linear-gradient(90deg,transparent,rgba(255,255,255,.22))',borderRadius:'0 999px 999px 0' }} />
+                                                                    </div>
+                                                                </div>
+                                                                <div style={{ display:'flex',justifyContent:'space-between',marginTop:5 }}>
+                                                                    <p style={{ fontSize:9,color:'rgba(255,255,255,.32)',margin:0 }}>Stage: <span style={{ color:'rgba(255,255,255,.6)',fontWeight:700 }}>{startup.stage}</span></p>
+                                                                    <p style={{ fontSize:9,color:col,fontWeight:800,margin:0 }}>{Math.round((startup.raised/startup.fundingGoal)*100)}% funded</p>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <span className="sc-badge" style={{ background: `${col}18`, color: col, border: `1px solid ${col}35`, flexShrink: 0 }}>{c.tag}</span>
-                                                </div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                                                    {[['Last Contact', c.lastContact, '#fff'], ['Meetings', c.meetings, col], ['Messages', c.msgs, '#a78bfa']].map(([l, v, clr]) => (
-                                                        <div key={String(l)} style={{ padding: '8px 6px', borderRadius: 10, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', textAlign: 'center' }}>
-                                                            <p style={{ fontSize: 8, color: 'rgba(255,255,255,.25)', margin: 0, textTransform: 'uppercase', letterSpacing: '.05em' }}>{l}</p>
-                                                            <p style={{ fontSize: 12, fontWeight: 800, color: clr as string, margin: '2px 0 0' }}>{v}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                {startup && (
-                                                    <div style={{ padding: '8px 10px', borderRadius: 10, background: `${col}08`, border: `1px solid ${col}1e` }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>Funding Goal</span>
-                                                            <span style={{ fontSize: 10, fontWeight: 700, color: col }}>{fmt(startup.fundingGoal)}</span>
-                                                        </div>
-                                                        <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,.06)', overflow: 'hidden' }}>
-                                                            <div style={{ height: '100%', width: `${Math.min((startup.raised / startup.fundingGoal) * 100, 100)}%`, background: `linear-gradient(90deg,${col},${col}60)`, borderRadius: 2 }} />
-                                                        </div>
-                                                        <span style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', marginTop: 3, display: 'block' }}>{fmt(startup.raised)} raised · Stage: {startup.stage}</span>
+
+                                                    {/* action buttons */}
+                                                    <div style={{ display:'flex',marginTop:14,borderTop:'1px solid rgba(255,255,255,.055)',position:'relative' }}>
+                                                        <div style={{ position:'absolute',top:0,left:'20%',right:'20%',height:1,background:`linear-gradient(90deg,transparent,${col}35,transparent)` }} />
+                                                        <button onClick={()=>setMsgOpen(c)} className="nw-action sc-btn" style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'11px 0',fontSize:11,fontWeight:800,cursor:'pointer',background:`linear-gradient(135deg,${col}16,${col}09)`,color:col,border:'none',borderRight:'1px solid rgba(255,255,255,.05)',borderRadius:0,letterSpacing:'.02em' }}>
+                                                            <MessageSquare style={{ width:11,height:11 }} />Message
+                                                        </button>
+                                                        <button className="nw-action sc-btn" style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'11px 0',fontSize:11,fontWeight:800,cursor:'pointer',background:'rgba(255,255,255,.03)',color:'rgba(255,255,255,.42)',border:'none',borderRadius:0,letterSpacing:'.02em' }}>
+                                                            <CalendarDays style={{ width:11,height:11 }} />Schedule
+                                                        </button>
                                                     </div>
-                                                )}
-                                                <div style={{ display: 'flex', gap: 7 }}>
-                                                    <button onClick={() => setMsgOpen(c)} className="sc-btn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: `${col}18`, color: col, border: `1px solid ${col}38` }}>
-                                                        <MessageSquare style={{ width: 10, height: 10 }} />Message
-                                                    </button>
-                                                    <button className="sc-btn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(255,255,255,.04)', color: 'rgba(255,255,255,.4)', border: '1px solid rgba(255,255,255,.08)' }}>
-                                                        <CalendarDays style={{ width: 10, height: 10 }} />Schedule
-                                                    </button>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
+
+{/* RIGHT: PREMIUM scrollable panels — sidebar scrolls as one column, panels size to content */}
+<div
+    className="sc-scroll"
+    style={{
+        width: 242,
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        minHeight: 0,
+        height: '100%',      // inherit the sidebar's available height
+        maxHeight: '100%',
+        overflowY: 'auto',   // the COLUMN scrolls, not each panel
+        paddingRight: 4,
+    }}
+>
+
+    {/* Panel 1: Network Pulse */}
+    <div className="nw-panel" style={{ flexShrink:0,display:'flex',flexDirection:'column',background:'linear-gradient(160deg,rgba(9,9,22,.98),rgba(5,5,15,.99))',border:'1px solid rgba(139,92,246,.22)',borderRadius:16,overflow:'hidden',boxShadow:'0 10px 36px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.025)' }}>
+        <div style={{ flexShrink:0,padding:'12px 14px 10px',borderBottom:'1px solid rgba(255,255,255,.045)',background:'linear-gradient(135deg,rgba(139,92,246,.12),rgba(139,92,246,.04))',position:'relative' }}>
+            <div style={{ position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(139,92,246,.65),transparent)' }} />
+            <div style={{ display:'flex',alignItems:'center',gap:8 }}>
+                <div style={{ width:24,height:24,borderRadius:8,background:'rgba(139,92,246,.22)',border:'1px solid rgba(139,92,246,.38)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 12px rgba(139,92,246,.2)' }}>
+                    <Activity style={{ width:12,height:12,color:'#a78bfa' }} />
+                </div>
+                <span style={{ fontSize:12,fontWeight:800,color:'white',letterSpacing:'-.2px' }}>Network Pulse</span>
+                <div style={{ marginLeft:'auto',width:7,height:7,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 10px #10b981',animation:'nw-glow 2s ease-in-out infinite' }} />
+            </div>
+            <p style={{ fontSize:9,color:'rgba(255,255,255,.32)',margin:'4px 0 0',paddingLeft:32 }}>Live activity stream</p>
+        </div>
+        <div style={{ padding:'10px 12px',display:'flex',flexDirection:'column',gap:7 }}>
+            {[
+                { avatar:'KS',col:'#8b5cf6',name:'Kabir Sen',action:'replied to your message',time:'2m ago' },
+                { avatar:'AP',col:'#06b6d4',name:'Ashutosh Palai',action:'confirmed a meeting',time:'18m ago' },
+                { avatar:'AK',col:'#10b981',name:'Ankit Raj Singh',action:'shared a deck',time:'1h ago' },
+                { avatar:'PK',col:'#f59e0b',name:'Pawan Kumar',action:'updated funding stage',time:'3h ago' },
+                { avatar:'MI',col:'#8b5cf6',name:'Meera Iyer',action:'sent connection request',time:'5h ago' },
+                { avatar:'CS',col:'#06b6d4',name:'Chetan Sharma',action:'posted a new update',time:'8h ago' },
+            ].map((a,i)=>(
+                <div key={i} style={{ display:'flex',gap:9,alignItems:'flex-start',padding:'9px 10px',borderRadius:10,background:'rgba(255,255,255,.028)',border:'1px solid rgba(255,255,255,.055)',position:'relative',overflow:'hidden' }}>
+                    <div style={{ position:'absolute',left:0,top:0,bottom:0,width:2,background:`linear-gradient(180deg,${a.col}65,transparent)`,borderRadius:'10px 0 0 10px' }} />
+                    <div style={{ width:28,height:28,borderRadius:8,background:`linear-gradient(135deg,${a.col}40,${a.col}18)`,border:`1px solid ${a.col}42`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:900,color:a.col,flexShrink:0,boxShadow:`0 2px 8px ${a.col}22` }}>{a.avatar}</div>
+                    <div style={{ flex:1,minWidth:0 }}>
+                        <p style={{ fontSize:10,fontWeight:800,color:'rgba(255,255,255,.9)',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{a.name}</p>
+                        <p style={{ fontSize:9,color:'rgba(255,255,255,.42)',margin:'2px 0 0',lineHeight:1.4 }}>{a.action}</p>
+                        <p style={{ fontSize:8,color:'rgba(255,255,255,.22)',margin:'2px 0 0' }}>{a.time}</p>
+                    </div>
+                </div>
+            ))}
+            <div style={{ marginTop:4,padding:'10px 12px',borderRadius:10,background:'rgba(255,255,255,.022)',border:'1px solid rgba(255,255,255,.055)',position:'relative' }}>
+                <div style={{ position:'absolute',top:0,left:18,right:18,height:1,background:'linear-gradient(90deg,transparent,rgba(139,92,246,.35),transparent)' }} />
+                <p style={{ fontSize:9,color:'rgba(255,255,255,.38)',margin:'0 0 9px',textTransform:'uppercase',letterSpacing:'.07em',fontWeight:700 }}>Sector Activity</p>
+                {[{l:'SaaS',v:75,c:'#8b5cf6'},{l:'FinTech',v:55,c:'#06b6d4'},{l:'DeepTech',v:40,c:'#10b981'}].map(b=>(
+                    <div key={b.l} style={{ marginBottom:8 }}>
+                        <div style={{ display:'flex',justifyContent:'space-between',marginBottom:4 }}>
+                            <span style={{ fontSize:10,color:'rgba(255,255,255,.68)',fontWeight:700 }}>{b.l}</span>
+                            <span style={{ fontSize:9,color:b.c,fontWeight:800,textShadow:`0 0 8px ${b.c}50` }}>{b.v}%</span>
+                        </div>
+                        <div style={{ height:4,borderRadius:999,background:'rgba(255,255,255,.06)',overflow:'hidden' }}>
+                            <div style={{ height:'100%',width:`${b.v}%`,background:`linear-gradient(90deg,${b.c}75,${b.c})`,borderRadius:999,boxShadow:`0 0 6px ${b.c}45` }} />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+
+    {/* Panel 2: Sector Spread */}
+    <div className="nw-panel" style={{ flexShrink:0,display:'flex',flexDirection:'column',background:'linear-gradient(160deg,rgba(9,9,22,.98),rgba(5,5,15,.99))',border:'1px solid rgba(6,182,212,.22)',borderRadius:16,overflow:'hidden',boxShadow:'0 10px 36px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.025)' }}>
+        <div style={{ flexShrink:0,padding:'12px 14px 10px',borderBottom:'1px solid rgba(255,255,255,.045)',background:'linear-gradient(135deg,rgba(6,182,212,.12),rgba(6,182,212,.04))',position:'relative' }}>
+            <div style={{ position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(6,182,212,.65),transparent)' }} />
+            <div style={{ display:'flex',alignItems:'center',gap:8 }}>
+                <div style={{ width:24,height:24,borderRadius:8,background:'rgba(6,182,212,.22)',border:'1px solid rgba(6,182,212,.38)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 12px rgba(6,182,212,.2)' }}>
+                    <TrendingUp style={{ width:12,height:12,color:'#22d3ee' }} />
+                </div>
+                <span style={{ fontSize:12,fontWeight:800,color:'white',letterSpacing:'-.2px' }}>Sector Spread</span>
+            </div>
+            <p style={{ fontSize:9,color:'rgba(255,255,255,.32)',margin:'4px 0 0',paddingLeft:32 }}>Portfolio distribution</p>
+        </div>
+        <div style={{ padding:'10px 12px',display:'flex',flexDirection:'column',gap:7 }}>
+            {[
+                { sector:'SaaS',pct:38,col:'#8b5cf6',deals:14,deployed:'₹220Cr',stage:'Growth' },
+                { sector:'FinTech',pct:27,col:'#06b6d4',deals:9,deployed:'₹157Cr',stage:'MVP Built' },
+                { sector:'DeepTech',pct:22,col:'#10b981',deals:7,deployed:'₹128Cr',stage:'Validation' },
+                { sector:'HealthTech',pct:8,col:'#f59e0b',deals:3,deployed:'₹46Cr',stage:'Ideation' },
+                { sector:'Other',pct:5,col:'#6b7280',deals:2,deployed:'₹29Cr',stage:'Ideation' },
+            ].map((s,i)=>(
+                <div key={i} style={{ padding:'10px 12px',borderRadius:10,background:`linear-gradient(135deg,${s.col}0c,${s.col}05)`,border:`1px solid ${s.col}22`,position:'relative',overflow:'hidden' }}>
+                    <div style={{ position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${s.col}40,transparent)` }} />
+                    <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6 }}>
+                        <span style={{ fontSize:11,fontWeight:800,color:'rgba(255,255,255,.88)' }}>{s.sector}</span>
+                        <span style={{ fontSize:14,fontWeight:900,color:s.col,textShadow:`0 0 12px ${s.col}50` }}>{s.pct}%</span>
+                    </div>
+                    <div style={{ height:4,borderRadius:999,background:'rgba(255,255,255,.06)',overflow:'hidden',marginBottom:6 }}>
+                        <div style={{ height:'100%',width:`${s.pct}%`,background:`linear-gradient(90deg,${s.col}70,${s.col})`,borderRadius:999,boxShadow:`0 0 7px ${s.col}45` }} />
+                    </div>
+                    <div style={{ display:'flex',justifyContent:'space-between' }}>
+                        <span style={{ fontSize:9,color:'rgba(255,255,255,.38)' }}>{s.deals} deals · {s.deployed}</span>
+                        <span style={{ fontSize:9,color:'rgba(255,255,255,.28)' }}>{s.stage}</span>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+
+    {/* Panel 3: Top Connections */}
+    <div className="nw-panel" style={{ flexShrink:0,display:'flex',flexDirection:'column',background:'linear-gradient(160deg,rgba(9,9,22,.98),rgba(5,5,15,.99))',border:'1px solid rgba(16,185,129,.22)',borderRadius:16,overflow:'hidden',boxShadow:'0 10px 36px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.025)' }}>
+        <div style={{ flexShrink:0,padding:'12px 14px 10px',borderBottom:'1px solid rgba(255,255,255,.045)',background:'linear-gradient(135deg,rgba(16,185,129,.12),rgba(16,185,129,.04))',position:'relative' }}>
+            <div style={{ position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(16,185,129,.65),transparent)' }} />
+            <div style={{ display:'flex',alignItems:'center',gap:8 }}>
+                <div style={{ width:24,height:24,borderRadius:8,background:'rgba(16,185,129,.22)',border:'1px solid rgba(16,185,129,.38)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 12px rgba(16,185,129,.2)' }}>
+                    <Star style={{ width:12,height:12,color:'#34d399' }} />
+                </div>
+                <span style={{ fontSize:12,fontWeight:800,color:'white',letterSpacing:'-.2px' }}>Top Connections</span>
+            </div>
+            <p style={{ fontSize:9,color:'rgba(255,255,255,.32)',margin:'4px 0 0',paddingLeft:32 }}>Ranked by engagement</p>
+        </div>
+        <div style={{ padding:'10px 12px',display:'flex',flexDirection:'column',gap:7 }}>
+            {[...NETWORK_CONTACTS]
+                .sort((a,b)=>(b.meetings*8+b.msgs)-(a.meetings*8+a.msgs))
+                .map((c,i)=>{
+                    const col = TAG_COL[c.tag] || '#a78bfa';
+                    const score = Math.min(Math.round((c.meetings*8+c.msgs)/1.2),100);
+                    const rankCol = i===0?'#f59e0b':i===1?'rgba(210,210,235,.8)':i===2?'#cd7f32':'rgba(255,255,255,.2)';
+                    return (
+                        <div key={c.id} style={{ display:'flex',alignItems:'center',gap:9,padding:'9px 10px',borderRadius:10,background:`linear-gradient(135deg,${col}0e,${col}06)`,border:`1px solid ${col}28`,position:'relative',overflow:'hidden' }}>
+                            <div style={{ position:'absolute',left:0,top:0,bottom:0,width:2,background:`linear-gradient(180deg,${rankCol},transparent)`,opacity:.7,borderRadius:'10px 0 0 10px' }} />
+                            <span style={{ fontSize:12,fontWeight:900,color:rankCol,width:18,textAlign:'center',flexShrink:0,textShadow:i<3?`0 0 8px ${rankCol}`:'none' }}>#{i+1}</span>
+                            <div style={{ width:32,height:32,borderRadius:10,background:`linear-gradient(135deg,${col}55,${col}25)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:900,color:'white',border:`1px solid ${col}48`,flexShrink:0,boxShadow:`0 2px 10px ${col}28` }}>{c.avatar}</div>
+                            <div style={{ flex:1,minWidth:0 }}>
+                                <p style={{ fontSize:11,fontWeight:800,color:'rgba(255,255,255,.95)',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{c.name}</p>
+                                <p style={{ fontSize:9,color:'rgba(255,255,255,.38)',margin:'1px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{c.company}</p>
+                            </div>
+                            <div style={{ textAlign:'right',flexShrink:0 }}>
+                                <p style={{ fontSize:14,fontWeight:900,color:col,margin:0,textShadow:`0 0 10px ${col}60` }}>{score}</p>
+                                <p style={{ fontSize:8,color:'rgba(255,255,255,.28)',margin:0 }}>score</p>
                             </div>
                         </div>
-                    ))()}
+                    );
+                })}
+            <div style={{ marginTop:4,padding:'10px 12px',borderRadius:10,background:'rgba(255,255,255,.022)',border:'1px solid rgba(255,255,255,.055)',position:'relative' }}>
+                <div style={{ position:'absolute',top:0,left:18,right:18,height:1,background:'linear-gradient(90deg,transparent,rgba(16,185,129,.35),transparent)' }} />
+                <p style={{ fontSize:9,color:'rgba(255,255,255,.38)',margin:'0 0 9px',textTransform:'uppercase',letterSpacing:'.07em',fontWeight:700 }}>Engagement Overview</p>
+                {NETWORK_CONTACTS.map(c=>{
+                    const col = TAG_COL[c.tag] || '#a78bfa';
+                    const pct = Math.min(Math.round((c.meetings*8+c.msgs)/1.2),100);
+                    return (
+                        <div key={c.id} style={{ display:'flex',alignItems:'center',gap:7,marginBottom:6 }}>
+                            <span style={{ fontSize:9,color:'rgba(255,255,255,.6)',width:58,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontWeight:600 }}>{c.name.split(' ')[0]}</span>
+                            <div style={{ flex:1,height:4,borderRadius:999,background:'rgba(255,255,255,.06)',overflow:'hidden' }}>
+                                <div style={{ height:'100%',width:`${pct}%`,background:`linear-gradient(90deg,${col}70,${col})`,borderRadius:999,boxShadow:`0 0 5px ${col}40` }} />
+                            </div>
+                            <span style={{ fontSize:9,fontWeight:800,color:col,width:24,textAlign:'right',flexShrink:0 }}>{pct}</span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    </div>
+
+</div>{/* end right sidebar */}
+                            </div>{/* end main body */}
+                        </div>
+                        );
+                    })()}
 
                     {/* ══ 5. DEMO DAYS ══ */}
                     {tab === 'demodays' && (() => {

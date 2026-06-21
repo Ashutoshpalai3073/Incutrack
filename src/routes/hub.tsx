@@ -11,7 +11,7 @@ import {
   Plus, X, Edit3, Save, Search, ArrowRight, Bell, TrendingUp, DollarSign,
   Award, Clock, Filter, Star, Building2, Activity, Rocket,
   Shield, Lightbulb, Wallet, Upload, CheckCircle, Briefcase,
-  ChevronRight, MoreHorizontal, Globe, Zap, Target, Lock, Eye, EyeOff, Key, UserCheck, AlertTriangle
+  ChevronRight, MoreHorizontal, Globe, Zap, Target, Lock, Eye, EyeOff, Key, UserCheck, AlertTriangle, Telescope, MessageSquare, Pencil, Trash2
 } from 'lucide-react';
 
 export const Route = createFileRoute('/hub')({
@@ -594,6 +594,92 @@ function ArmillaryOrb({ color }: { color: string }) {
     </div>
   );
 }
+// ─── Event Arena: 2D Canvas Background ────────────────────────────────────────
+function EventArenaCanvasBg() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
+    let alive = true, raf = 0, lastT = 0;
+    const FRAME = 1000 / 40;
+    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+    resize();
+
+    type Star = { x: number; y: number; r: number; a: number; phase: number; spd: number };
+    const STARS: Star[] = Array.from({ length: 130 }, () => ({
+      x: Math.random(), y: Math.random(),
+      r: Math.pow(Math.random(), 2.5) * 1.8 + 0.15,
+      a: 0.1 + Math.random() * 0.55, phase: Math.random() * Math.PI * 2, spd: 0.006 + Math.random() * 0.014,
+    }));
+
+    type Ring = { r: number; color: string; dotR: number; angle: number; spd: number; ry: number };
+    const RINGS: Ring[] = [
+      { r: 68,  color: '#8b5cf6', dotR: 5, angle: 0.3,          spd:  0.014, ry: 0.28 },
+      { r: 108, color: '#06b6d4', dotR: 4, angle: Math.PI * 0.7, spd: -0.009, ry: 0.28 },
+      { r: 152, color: '#f59e0b', dotR: 4, angle: Math.PI * 1.4, spd:  0.006, ry: 0.28 },
+      { r: 200, color: '#10b981', dotR: 3, angle: Math.PI * 0.3, spd: -0.004, ry: 0.28 },
+    ];
+
+    const NEBULAE = [
+      { fx: 0.78, fy: 0.22, r: 180, hex: '#5b21b6', a: 0.07 },
+      { fx: 0.10, fy: 0.78, r: 130, hex: '#0e7490', a: 0.05 },
+      { fx: 0.45, fy: 0.55, r: 100, hex: '#064e3b', a: 0.04 },
+    ];
+
+    const tick = (t: number) => {
+      if (!alive) return;
+      raf = requestAnimationFrame(tick);
+      if (t - lastT < FRAME) return;
+      lastT = t;
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      // nebulae
+      for (const n of NEBULAE) {
+        const x = n.fx * W, y = n.fy * H;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, n.r);
+        g.addColorStop(0, `${n.hex}${Math.round(n.a * 255).toString(16).padStart(2, '0')}`);
+        g.addColorStop(1, `${n.hex}00`);
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      }
+
+      // stars
+      for (const s of STARS) {
+        const tw = 0.5 + 0.5 * Math.sin(t * s.spd * 0.001 + s.phase);
+        ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${s.a * tw})`; ctx.fill();
+      }
+
+      // orrery
+      const OCX = W * 0.78, OCY = H * 0.22;
+      // center star
+      const cg = ctx.createRadialGradient(OCX, OCY, 0, OCX, OCY, 22);
+      cg.addColorStop(0, 'rgba(255,255,248,0.95)'); cg.addColorStop(0.35, 'rgba(200,175,255,0.55)'); cg.addColorStop(1, 'rgba(120,60,200,0)');
+      ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(OCX, OCY, 22, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(OCX, OCY, 5.5, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,250,1)'; ctx.fill();
+
+      for (const ring of RINGS) {
+        ring.angle += ring.spd;
+        // ring ellipse
+        ctx.beginPath(); ctx.ellipse(OCX, OCY, ring.r, ring.r * ring.ry, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = `${ring.color}25`; ctx.lineWidth = 1; ctx.stroke();
+        // dot
+        const px = OCX + Math.cos(ring.angle) * ring.r;
+        const py = OCY + Math.sin(ring.angle) * ring.r * ring.ry;
+        const dg = ctx.createRadialGradient(px, py, 0, px, py, ring.dotR * 2.8);
+        dg.addColorStop(0, ring.color + 'ff'); dg.addColorStop(1, ring.color + '00');
+        ctx.fillStyle = dg; ctx.beginPath(); ctx.arc(px, py, ring.dotR * 2.8, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px, py, ring.dotR, 0, Math.PI * 2); ctx.fillStyle = ring.color; ctx.fill();
+      }
+    };
+
+    raf = requestAnimationFrame(tick);
+    window.addEventListener('resize', resize);
+    return () => { alive = false; cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, []);
+  return <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />;
+}
+
 // AsteroidKPIRow
 const ASTEROID_COLORS = ['#8b5cf6', '#10b981', '#f59e0b', '#06b6d4'];
 
@@ -734,6 +820,7 @@ function HubPage() {
   const [mentorFilter, setMentorFilter] = useState('All');
   const [eventType, setEventType] = useState('All');
   const [notifOpen, setNotifOpen] = useState(false);
+  const [notifAllRead, setNotifAllRead] = useState(false);
   // Modals
   const [registerOpen, setRegisterOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -783,6 +870,15 @@ function HubPage() {
   const [pendingAdvances, setPendingAdvances] = useState<any[]>([]);
   const [adminAdvancesLoading, setAdminAdvancesLoading] = useState(false);
   const [adminAdvanceAction, setAdminAdvanceAction] = useState<Record<string, 'approving' | 'rejecting'>>({});
+  // ── VC Admin ───────────────────────────────────────────────────────────────
+  const [pendingVCProfiles, setPendingVCProfiles] = useState<any[]>([]);
+  const [pendingDealInterests, setPendingDealInterests] = useState<any[]>([]);
+  const [pendingDiligenceReqs, setPendingDiligenceReqs] = useState<any[]>([]);
+  const [adminVCLoading, setAdminVCLoading] = useState(false);
+  const [adminVCAction, setAdminVCAction] = useState<Record<string, 'approving' | 'rejecting'>>({});
+  // ── Contact Messages ───────────────────────────────────────────────────────
+  const [contactMessages, setContactMessages] = useState<any[]>([]);
+  const [contactMsgsLoading, setContactMsgsLoading] = useState(false);
   // ── Advance Request modal ─────────────────────────────────────────────────
   const [advanceRequestOpen, setAdvanceRequestOpen] = useState(false);
   const [advanceRequestStartup, setAdvanceRequestStartup] = useState<any>(null);
@@ -1025,16 +1121,29 @@ function HubPage() {
     const load = async () => {
       setAdminEventsLoading(true);
       setAdminAdvancesLoading(true);
+      setAdminVCLoading(true);
+      setContactMsgsLoading(true);
       try {
-        const [evRes, advRes] = await Promise.all([
+        const [evRes, advRes, vcRes, cmRes] = await Promise.all([
           fetch('/api/events/pending', { credentials: 'include' }),
           fetch('/api/startup-advance/pending', { credentials: 'include' }),
+          fetch('/api/vc/admin/pending', { credentials: 'include' }),
+          fetch('/api/contact/messages', { credentials: 'include' }),
         ]);
         if (evRes.ok) { const d = await evRes.json(); setPendingEvents(Array.isArray(d) ? d : []); }
         if (advRes.ok) { const d = await advRes.json(); setPendingAdvances(Array.isArray(d) ? d : []); }
+        if (vcRes.ok) {
+          const d = await vcRes.json();
+          setPendingVCProfiles(Array.isArray(d.profiles) ? d.profiles : []);
+          setPendingDealInterests(Array.isArray(d.interests) ? d.interests : []);
+          setPendingDiligenceReqs(Array.isArray(d.diligence) ? d.diligence : []);
+        }
+        if (cmRes.ok) { const d = await cmRes.json(); setContactMessages(Array.isArray(d) ? d : []); }
       } catch { /* ignore */ }
       setAdminEventsLoading(false);
       setAdminAdvancesLoading(false);
+      setAdminVCLoading(false);
+      setContactMsgsLoading(false);
     };
     load();
   }, [tab, isAdmin]);
@@ -1064,8 +1173,8 @@ function HubPage() {
 
   // Filtered data for each tab
   const filteredPipeline = useMemo(() => startups.filter(s => {
-    const q = search.toLowerCase();
-    const matchSearch = s.name.toLowerCase().includes(q) || s.founder.toLowerCase().includes(q);
+    const q = search.toLowerCase().trim();
+    const matchSearch = !q || s.name.toLowerCase().includes(q);
     const matchSector = pipelineSector === 'All' || s.industry === pipelineSector;
     return matchSearch && matchSector;
   }), [startups, search, pipelineSector]);
@@ -1300,11 +1409,8 @@ function HubPage() {
   };
 
   // ── Auth gate: placed here AFTER all hooks so React rules are satisfied ──
-  if (authLoading) return (
-    <div style={{ minHeight: '100vh', background: '#06060f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid rgba(139,92,246,0.2)', borderTop: '3px solid #8b5cf6', animation: 'spin 0.8s linear infinite' }} />
-    </div>
-  );
+  // Show nothing (not a spinner) while auth resolves — avoids visible flash
+  if (authLoading) return <div style={{ minHeight: '100vh', background: '#06060f' }} />;
   if (!user) return <AuthGate />;
 
   return (
@@ -1423,40 +1529,59 @@ function HubPage() {
           <div className="flex items-center gap-3">
             <div className="hub-topbar-search relative">
               <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-white/25" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search startups…"
-                className="pl-9 pr-4 py-2 w-52 text-xs bg-white/[0.04] border border-white/[0.08] rounded-full focus:outline-none focus:border-violet-500/50 text-white placeholder-white/20 transition" />
+              <input
+                value={search}
+                onChange={e => {
+                  setSearch(e.target.value);
+                  if (e.target.value.trim()) setTab('pipeline');
+                }}
+                onKeyDown={e => { if (e.key === 'Escape') { setSearch(''); } }}
+                placeholder="Search startups…"
+                className="pl-9 pr-4 py-2 w-52 text-xs bg-white/[0.04] border border-white/[0.08] rounded-full focus:outline-none focus:border-violet-500/50 text-white placeholder-white/20 transition"
+              />
+              {search && (
+                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: 14, lineHeight: 1, padding: 0 }}>✕</button>
+              )}
             </div>
             <div onClick={() => setNotifOpen(p => !p)} className="relative w-8 h-8 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center cursor-pointer hover:bg-white/[0.07] transition">
               <Bell className="h-3.5 w-3.5 text-white/40" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-violet-400 rounded-full" />
+              {!notifAllRead && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-violet-400 rounded-full" />}
             </div>
             {notifOpen && (
-              <div className="hub-notif-dropdown" style={{ position: 'absolute', top: 52, right: 160, width: 300, background: '#000000', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, zIndex: 100, overflow: 'hidden', boxShadow: '0 16px 48px rgba(0,0,0,0.8)', opacity: 1 }}>
-                <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>Notifications</span>
-                  <span style={{ fontSize: 10, color: '#a78bfa', cursor: 'pointer', fontWeight: 600 }}>Mark all read</span>
-                </div>
-                <div className="notif-scroll" style={{ maxHeight: 280, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(99,102,241,0.5) transparent' }}>
-                  {ACTIVITY.map((a, i) => {
-                    const Icon = a.icon;
-                    return (
-                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer', background: i === 0 ? 'rgba(139,92,246,0.05)' : 'transparent' }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 8, background: `${a.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <Icon style={{ width: 13, height: 13, color: a.color }} />
+              <>
+                {/* Click-outside overlay */}
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setNotifOpen(false)} />
+                <div className="hub-notif-dropdown" style={{ position: 'absolute', top: 52, right: 160, width: 300, background: '#000000', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, zIndex: 100, overflow: 'hidden', boxShadow: '0 16px 48px rgba(0,0,0,0.8)' }}>
+                  <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>Notifications</span>
+                    <span
+                      onClick={e => { e.stopPropagation(); setNotifAllRead(true); }}
+                      style={{ fontSize: 10, color: notifAllRead ? 'rgba(255,255,255,0.25)' : '#a78bfa', cursor: notifAllRead ? 'default' : 'pointer', fontWeight: 600 }}
+                    >{notifAllRead ? 'All read' : 'Mark all read'}</span>
+                  </div>
+                  <div className="notif-scroll" style={{ maxHeight: 280, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(99,102,241,0.5) transparent' }}>
+                    {ACTIVITY.map((a, i) => {
+                      const Icon = a.icon;
+                      const isUnread = i === 0 && !notifAllRead;
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer', background: isUnread ? 'rgba(139,92,246,0.05)' : 'transparent' }}>
+                          <div style={{ width: 28, height: 28, borderRadius: 8, background: `${a.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Icon style={{ width: 13, height: 13, color: a.color }} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', margin: 0, lineHeight: 1.4 }}>{a.text}</p>
+                            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', margin: '3px 0 0' }}>{a.time}</p>
+                          </div>
+                          {isUnread && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa', flexShrink: 0, marginTop: 4 }} />}
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', margin: 0, lineHeight: 1.4 }}>{a.text}</p>
-                          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', margin: '3px 0 0' }}>{a.time}</p>
-                        </div>
-                        {i === 0 && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa', flexShrink: 0, marginTop: 4 }} />}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                  <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
+                    <span onClick={() => setNotifOpen(false)} style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', cursor: 'pointer' }}>View all activity</span>
+                  </div>
                 </div>
-                <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', cursor: 'pointer' }}>View all activity</span>
-                </div>
-              </div>
+              </>
             )}
             <button onClick={() => requireAuth('Sign in to register your startup on Incutrack.', () => setRegisterOpen(true))}
               className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-gradient-to-r from-violet-600 to-sky-500 text-white hover:opacity-90 transition shadow-lg shadow-violet-500/20">
@@ -1972,7 +2097,7 @@ function HubPage() {
                                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(167,139,250,0.1)')}
                                         onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                                       >
-                                        ✏️ Edit
+                                        <Pencil style={{ width: 12, height: 12 }} /> Edit
                                       </button>
                                       <button
                                         onClick={e => removeStartup(s.id, e)}
@@ -1980,7 +2105,7 @@ function HubPage() {
                                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.1)')}
                                         onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                                       >
-                                        🗑 Remove
+                                        <Trash2 style={{ width: 12, height: 12 }} /> Remove
                                       </button>
                                     </div>
                                   </div>
@@ -2089,7 +2214,7 @@ function HubPage() {
                             if (!user) { setSignInPromptMsg('Sign in as a verified investor to access this deck.'); setSignInPromptOpen(true); return; }
                             if (!isVC) { setSignInPromptMsg('This deck is restricted to verified investors only. Contact the platform admin to get VC access.'); setSignInPromptOpen(true); return; }
                           }
-                          if (d.file_url) setViewingDoc(d);
+                          setViewingDoc(d);
                         }}
                         style={{
                           background: `linear-gradient(135deg,${tc}14 0%,rgba(0,0,0,0.7) 55%,${scoreCol}07 100%)`,
@@ -2216,7 +2341,7 @@ function HubPage() {
                                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(167,139,250,0.1)')}
                                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                               >
-                                ✏️ Edit / Re-upload
+                                <Pencil style={{ width: 12, height: 12 }} /> Edit / Re-upload
                               </button>
                               {/* Remove button */}
                               <button
@@ -2243,7 +2368,7 @@ function HubPage() {
                                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.1)')}
                                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                               >
-                                🗑 Remove
+                                <Trash2 style={{ width: 12, height: 12 }} /> Remove
                               </button>
                             </div>
                           </div>
@@ -2590,170 +2715,144 @@ function HubPage() {
           {/* ── EVENT ARENA ──────────────────────────────────────────────── */}
           {tab === 'events' && (() => {
             const TYPE_META: Record<string, { color: string; icon: string }> = {
-              Pitching: { color: '#8b5cf6', icon: '🎯' },
-              Workshop: { color: '#06b6d4', icon: '⚡' },
+              Pitching:   { color: '#8b5cf6', icon: '🎯' },
+              Workshop:   { color: '#06b6d4', icon: '⚡' },
               Mentorship: { color: '#f59e0b', icon: '🌟' },
-              Hackathon: { color: '#10b981', icon: '🚀' },
+              Hackathon:  { color: '#10b981', icon: '🚀' },
             };
             const TYPES = ['All', 'Pitching', 'Workshop', 'Mentorship', 'Hackathon'];
             return (
               <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 14 }}>
 
-                {/* ── Full CSS ambient layer ── */}
                 <style>{`
-                  @keyframes ea-drift  { 0%,100%{transform:translate(0,0)} 40%{transform:translate(16px,-14px)} 70%{transform:translate(-10px,12px)} }
-                  @keyframes ea-spin   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-                  @keyframes ea-rspin  { from{transform:rotate(0deg)} to{transform:rotate(-360deg)} }
-                  @keyframes ea-pulse  { 0%,100%{opacity:.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.1)} }
-                  @keyframes ea-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-                  @keyframes ea-hex    { 0%,100%{transform:rotate(0deg) scale(1)} 50%{transform:rotate(180deg) scale(1.05)} }
-                  @keyframes ea-morph  { 0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%} 50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%} }
-                  @keyframes ea-flow   { 0%{background-position:-100% 0} 100%{background-position:200% 0} }
-                  @keyframes ea-shimmer{ 0%,100%{opacity:0.4} 50%{opacity:0.9} }
-                  .ea-card { transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease; }
-                  .ea-card:hover { transform:translateY(-3px); box-shadow:0 22px 60px rgba(0,0,0,0.55), 0 0 0 1px var(--hc,rgba(255,255,255,0.15)); border-color:var(--hc,rgba(255,255,255,0.15)) !important; }
-                  .ea-card:hover .ea-glow { opacity:1 !important; }
-                  .ea-rsvp:hover { filter:brightness(1.15); transform:scale(1.04); }
-                  .ea-rsvp { transition:all .18s; }
+                  @keyframes ea2-livepulse { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(1.6);opacity:0} }
+                  @keyframes ea2-orbit     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+                  @keyframes ea2-rorbit    { from{transform:rotate(0deg)} to{transform:rotate(-360deg)} }
+                  @keyframes ea2-float     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+                  @keyframes ea2-scan      { 0%{transform:translateY(-5%);opacity:0} 3%{opacity:1} 97%{opacity:1} 100%{transform:translateY(105%);opacity:0} }
+                  .ea2-card { transition: transform .2s ease, box-shadow .2s ease, border-color .22s ease; }
+                  .ea2-card:hover { transform: translateY(-3px); box-shadow: 0 20px 56px rgba(0,0,0,0.65) !important; }
+                  .ea2-card:hover .ea2-topbar  { opacity: 1 !important; }
+                  .ea2-card:hover .ea2-bg-glow { opacity: 1 !important; }
+                  .ea2-card:hover .ea2-leftbar { opacity: 1 !important; }
+                  .ea2-rsvp { transition: all .15s ease; }
+                  .ea2-rsvp:hover { filter: brightness(1.18); transform: scale(1.04); }
+                  .ea2-pill-btn { transition: all .18s ease; border: none; cursor: pointer; }
+                  .ea2-pill-btn:hover { filter: brightness(1.1); }
                 `}</style>
 
-                {/* ── Background layer with MULTIPLE 3D CSS elements ── */}
+                {/* ── Canvas + scan-line background ── */}
                 <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-
-                  {/* Ambient blobs */}
-                  <div style={{ position: 'absolute', top: '6%', left: '8%', width: 380, height: 380, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,0.07),transparent 70%)', animation: 'ea-drift 10s ease-in-out infinite' }} />
-                  <div style={{ position: 'absolute', bottom: '12%', right: '8%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle,rgba(6,182,212,0.06),transparent 70%)', animation: 'ea-drift 13s ease-in-out infinite reverse' }} />
-                  <div style={{ position: 'absolute', top: '45%', left: '38%', width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle,rgba(16,185,129,0.05),transparent 70%)', animation: 'ea-drift 8s ease-in-out infinite 2s' }} />
-
-                  {/* 3D Element 1 — Orrery top-right */}
-                  <div style={{ position: 'absolute', top: -35, right: -35, width: 230, height: 230 }}>
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: 22, height: 22, marginLeft: -11, marginTop: -11, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%,#c4b5fd,#7c3aed)', boxShadow: '0 0 22px rgba(139,92,246,0.9), 0 0 44px rgba(139,92,246,0.35)', animation: 'ea-pulse 2.8s ease-in-out infinite' }} />
-                    {[{ w: 76, c: '#8b5cf6', sp: '3.2s' }, { w: 120, c: '#06b6d4', sp: '5.8s', rev: true }, { w: 180, c: '#f59e0b', sp: '9.5s' }, { w: 226, c: '#10b981', sp: '14s', rev: true }].map((o, i) => (
-                      <div key={i} style={{ position: 'absolute', top: '50%', left: '50%', width: o.w, height: o.w, marginLeft: -o.w / 2, marginTop: -o.w / 2, borderRadius: '50%', border: `1px solid ${o.c}${i < 2 ? '38' : '22'}` }}>
-                        <div style={{ position: 'absolute', top: i % 2 ? 'auto' : -5, bottom: i % 2 ? -5 : 'auto', left: '50%', width: i < 2 ? 10 : 8, height: i < 2 ? 10 : 8, marginLeft: i < 2 ? -5 : -4, borderRadius: '50%', background: o.c, boxShadow: `0 0 10px ${o.c}`, animation: `ea-spin ${o.sp} linear infinite ${o.rev ? 'reverse' : ''}`, transformOrigin: `${i < 2 ? 5 : 4}px ${o.w / 2 + (i < 2 ? 5 : 4)}px` }} />
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* 3D Element 2 — Morphing blob bottom-left */}
-                  <div style={{ position: 'absolute', bottom: 30, left: 20, width: 120, height: 120, background: 'linear-gradient(135deg,rgba(139,92,246,0.15),rgba(6,182,212,0.1))', animation: 'ea-morph 7s ease-in-out infinite', filter: 'blur(1px)', border: '1px solid rgba(139,92,246,0.2)' }} />
-
-                  {/* 3D Element 3 — Rotating hexagon mid-left */}
-                  <div style={{ position: 'absolute', top: '38%', left: '3%', width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ width: 48, height: 48, border: '2px solid rgba(6,182,212,0.35)', borderRadius: 8, animation: 'ea-hex 6s ease-in-out infinite', boxShadow: '0 0 18px rgba(6,182,212,0.2)', transform: 'rotate(45deg)' }} />
-                    <div style={{ position: 'absolute', width: 28, height: 28, border: '1px solid rgba(6,182,212,0.5)', borderRadius: 4, animation: 'ea-hex 4s ease-in-out infinite reverse', boxShadow: '0 0 10px rgba(6,182,212,0.3)' }} />
-                  </div>
-
-                  {/* 3D Element 4 — Spinning diamond center-bottom */}
-                  <div style={{ position: 'absolute', bottom: '18%', left: '42%', width: 50, height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ width: 36, height: 36, border: '2px solid rgba(245,158,11,0.4)', borderRadius: 4, animation: 'ea-spin 8s linear infinite', boxShadow: '0 0 16px rgba(245,158,11,0.25)', transform: 'rotate(45deg)' }} />
-                    <div style={{ position: 'absolute', width: 16, height: 16, background: 'rgba(245,158,11,0.12)', borderRadius: 2, animation: 'ea-rspin 5s linear infinite', boxShadow: '0 0 8px rgba(245,158,11,0.4)', transform: 'rotate(45deg)' }} />
-                  </div>
-
-                  {/* 3D Element 5 — Cross/star mid-right of left panel */}
-                  <div style={{ position: 'absolute', top: '22%', left: '28%', opacity: 0.35 }}>
-                    <div style={{ position: 'relative', width: 40, height: 40, animation: 'ea-spin 12s linear infinite' }}>
-                      <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,#8b5cf6,transparent)', marginTop: -1 }} />
-                      <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 2, background: 'linear-gradient(180deg,transparent,#8b5cf6,transparent)', marginLeft: -1 }} />
-                      <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,#06b6d4,transparent)', marginTop: -1, transform: 'rotate(45deg)' }} />
-                      <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,#10b981,transparent)', marginTop: -1, transform: 'rotate(-45deg)' }} />
-                    </div>
-                  </div>
-
-                  {/* 3D Element 6 — Triangle bottom-right area */}
-                  <div style={{ position: 'absolute', bottom: '25%', right: '23%', opacity: 0.3, animation: 'ea-float 5s ease-in-out 1s infinite' }}>
-                    <svg width="50" height="44" viewBox="0 0 50 44"><polygon points="25,2 48,42 2,42" fill="none" stroke="rgba(16,185,129,0.6)" strokeWidth="1.5" /><polygon points="25,12 40,38 10,38" fill="rgba(16,185,129,0.06)" stroke="rgba(16,185,129,0.3)" strokeWidth="1" /></svg>
-                  </div>
-
-                  {/* Floating particles */}
-                  {[{ x: '14%', y: '68%', s: 4, c: '#8b5cf6', d: '0s' }, { x: '44%', y: '18%', s: 3, c: '#06b6d4', d: '1.4s' }, { x: '68%', y: '52%', s: 5, c: '#10b981', d: '2.8s' }, { x: '80%', y: '28%', s: 3, c: '#f59e0b', d: '0.6s' }, { x: '24%', y: '82%', s: 3, c: '#06b6d4', d: '2s' }, { x: '55%', y: '88%', s: 4, c: '#8b5cf6', d: '3.5s' }, { x: '72%', y: '75%', s: 3, c: '#f59e0b', d: '1s' }].map((p, i) => (
-                    <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, width: p.s, height: p.s, borderRadius: '50%', background: p.c, boxShadow: `0 0 ${p.s * 2.5}px ${p.c}`, animation: `ea-float 4s ease-in-out ${p.d} infinite`, opacity: 0.5 }} />
-                  ))}
-
-                  {/* Flowing horizontal lines */}
-                  {[{ t: '30%', c: '#8b5cf6', d: '0s' }, { t: '60%', c: '#06b6d4', d: '1.5s' }, { t: '80%', c: '#10b981', d: '3s' }].map((l, i) => (
-                    <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: l.t, height: 1, background: `linear-gradient(90deg,transparent,${l.c}18,transparent)`, backgroundSize: '40% 100%', animation: `ea-flow 6s linear ${l.d} infinite` }} />
-                  ))}
+                  <EventArenaCanvasBg />
+                  <div style={{ position: 'absolute', left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent 5%,rgba(139,92,246,0.35) 40%,rgba(6,182,212,0.25) 60%,transparent 95%)', animation: 'ea2-scan 11s linear 1.5s infinite' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 78% 22%, transparent 25%, rgba(0,0,8,0.55) 70%, rgba(0,0,8,0.88) 100%)' }} />
                 </div>
 
-                {/* ── Header row ── */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+                {/* ── Header ── */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: 2 }}>
+
+                  {/* Filter pill group */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 5 }}><Filter style={{ width: 11, height: 11 }} />Filter</span>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <Filter style={{ width: 12, height: 12, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                    <div style={{ display: 'flex', padding: '3px', borderRadius: 999, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', gap: 3 }}>
                       {TYPES.map(t => {
                         const active = eventType === t;
                         const mc = t === 'All' ? '#8b5cf6' : (TYPE_META[t]?.color || '#8b5cf6');
-                        return <button key={t} onClick={() => setEventType(t)} style={{ padding: '5px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .18s', background: active ? `${mc}28` : 'rgba(255,255,255,0.04)', color: active ? mc : 'rgba(255,255,255,0.35)', border: `1px solid ${active ? mc + '50' : 'rgba(255,255,255,0.08)'}`, boxShadow: active ? `0 0 14px ${mc}35` : 'none', letterSpacing: '.03em' }}>{t}</button>;
+                        return (
+                          <button key={t} onClick={() => setEventType(t)} className="ea2-pill-btn"
+                            style={{ padding: '5px 15px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: active ? `${mc}22` : 'transparent', color: active ? mc : 'rgba(255,255,255,0.3)', boxShadow: active ? `0 0 14px ${mc}28, inset 0 0 6px ${mc}10` : 'none', letterSpacing: '.03em' }}
+                          >{t}</button>
+                        );
                       })}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {[['5', 'Events', '#8b5cf6'], [String(rsvpedIds.length), 'RSVPd', '#10b981'], ['₹5L', 'Prize', '#f59e0b']].map(([val, lbl, col]) => (
-                      <div key={lbl} style={{ padding: '4px 12px', borderRadius: 10, background: `${col}10`, border: `1px solid ${col}28`, textAlign: 'center' }}>
-                        <p style={{ fontSize: 13, fontWeight: 800, color: col, margin: 0, lineHeight: 1 }}>{val}</p>
-                        <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '.06em' }}>{lbl}</p>
+
+                  {/* Stats + CTA */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {([['5', 'Events', '#8b5cf6'], [String(rsvpedIds.length), 'RSVPd', '#10b981'], ['₹5L', 'Prize', '#f59e0b']] as [string,string,string][]).map(([val, lbl, col]) => (
+                      <div key={lbl} style={{ padding: '5px 13px', borderRadius: 10, background: `${col}0d`, border: `1px solid ${col}22`, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${col}80,transparent)` }} />
+                        <p style={{ fontSize: 14, fontWeight: 800, color: col, margin: 0, lineHeight: 1 }}>{val}</p>
+                        <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.22)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '.08em' }}>{lbl}</p>
                       </div>
                     ))}
-                    <button onClick={openAddEvent} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.4)', letterSpacing: '.03em' }}>
-                      <Plus style={{ width: 13, height: 13 }} /> Add Event
-                    </button>
+                    <button onClick={openAddEvent}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 22px rgba(124,58,237,0.45)', letterSpacing: '.03em', transition: 'all .18s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 30px rgba(124,58,237,0.65)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 22px rgba(124,58,237,0.45)'; (e.currentTarget as HTMLButtonElement).style.transform = ''; }}
+                    ><Plus style={{ width: 13, height: 13 }} />Add Event</button>
                   </div>
                 </div>
 
-                {/* ── Main: 2-col ── */}
-                <div className="hub-events-main" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 300px', gap: 14, position: 'relative', zIndex: 1 }}>
+                {/* ── Main 2-col ── */}
+                <div className="hub-events-main" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 288px', gap: 14, position: 'relative', zIndex: 2 }}>
 
-                  {/* LEFT — scrollable rigid box */}
-                  <div style={{ borderRadius: 20, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(8,8,20,0.7)', backdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-                    <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.9)', flexShrink: 0, display: 'inline-block' }} />
-                      <span style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>Upcoming Events</span>
-                      <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,0.28)' }}>{filteredEvents.length} scheduled</span>
+                  {/* ── LEFT: Event list ── */}
+                  <div style={{ borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', background: 'rgba(5,5,14,0.78)', backdropFilter: 'blur(24px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, position: 'relative', boxShadow: '0 8px 48px rgba(0,0,0,0.4)' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,0.6),rgba(6,182,212,0.4),transparent)', pointerEvents: 'none' }} />
+
+                    {/* List header */}
+                    <div style={{ padding: '13px 20px 11px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                      <div style={{ position: 'relative', width: 10, height: 10 }}>
+                        <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.9)' }} />
+                        <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', background: 'rgba(16,185,129,0.2)', animation: 'ea2-livepulse 1.8s ease-out infinite' }} />
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'white', letterSpacing: '-0.01em' }}>Upcoming Events</span>
+                      <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.04)', padding: '2px 10px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.07)' }}>{filteredEvents.length} scheduled</span>
                     </div>
 
-                    <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
-                      {filteredEvents.length === 0 && <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.15)', fontSize: 13 }}>No events for this filter</div>}
+                    <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
+                      {filteredEvents.length === 0 && (
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: .2 }}>
+                          <CalendarDays style={{ width: 32, height: 32, color: 'white' }} />
+                          <span style={{ fontSize: 13, color: 'white' }}>No events match this filter</span>
+                        </div>
+                      )}
                       {filteredEvents.map(ev => {
                         const ec = TYPE_META[ev.type]?.color || '#8b5cf6';
                         const dp = parseDate(ev.date);
                         const isRsvpd = rsvpedIds.includes(ev.id);
                         return (
-                          <div key={ev.id} className="ea-card" style={{ ['--hc' as string]: `${ec}55`, borderRadius: 14, border: `1px solid ${ec}20`, background: `linear-gradient(135deg,${ec}08 0%,rgba(6,6,18,0.85) 100%)`, overflow: 'hidden', position: 'relative' }}>
-                            {/* Top bar */}
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,${ec}80,${ec}30,transparent)` }} />
-                            <div className="ea-glow" style={{ position: 'absolute', top: -50, left: -30, width: 160, height: 160, borderRadius: '50%', background: `radial-gradient(circle,${ec}14,transparent 70%)`, opacity: 0, transition: 'opacity .3s', pointerEvents: 'none' }} />
+                          <div key={ev.id} className="ea2-card"
+                            style={{ borderRadius: 16, border: `1px solid ${ec}1a`, background: `linear-gradient(135deg,${ec}0b 0%,rgba(4,4,12,0.92) 100%)`, overflow: 'hidden', position: 'relative', boxShadow: `0 4px 28px rgba(0,0,0,0.38)` }}
+                          >
+                            {/* Left accent bar */}
+                            <div className="ea2-leftbar" style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 3, background: `linear-gradient(180deg,${ec},${ec}50,transparent)`, opacity: 0.6, transition: 'opacity .22s', borderRadius: '16px 0 0 16px' }} />
+                            {/* Top shimmer */}
+                            <div className="ea2-topbar" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,${ec}80,${ec}30,transparent)`, opacity: 0.4, transition: 'opacity .22s' }} />
+                            {/* Corner bg glow */}
+                            <div className="ea2-bg-glow" style={{ position: 'absolute', top: -30, left: 10, width: 130, height: 130, borderRadius: '50%', background: `radial-gradient(circle,${ec}0f,transparent 70%)`, opacity: 0, transition: 'opacity .3s', pointerEvents: 'none' }} />
 
-                            {/* Card body — explicit grid to prevent squeezing */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '62px 1fr auto', gap: 0, alignItems: 'stretch', padding: '14px 16px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '68px 1fr auto', alignItems: 'center', padding: '13px 16px 13px 20px' }}>
 
                               {/* Date block */}
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 8px', marginRight: 14, borderRadius: 11, background: `${ec}12`, border: `1px solid ${ec}25`, flexShrink: 0, alignSelf: 'center' }}>
-                                <p style={{ fontSize: 9, fontWeight: 800, color: ec, margin: 0, textTransform: 'uppercase', letterSpacing: '.1em', lineHeight: 1 }}>{dp.month}</p>
-                                <p style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: '1px 0', lineHeight: 1, letterSpacing: '-1px' }}>{dp.day}</p>
-                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', margin: 0, lineHeight: 1 }}>{dp.year}</p>
+                              <div style={{ width: 54, height: 62, borderRadius: 14, background: `linear-gradient(155deg,${ec}20,${ec}08)`, border: `1px solid ${ec}32`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: 16, boxShadow: `0 4px 18px ${ec}18, inset 0 1px 0 ${ec}30` }}>
+                                <p style={{ fontSize: 8.5, fontWeight: 800, color: ec, margin: 0, textTransform: 'uppercase', letterSpacing: '.1em', lineHeight: 1 }}>{dp.month}</p>
+                                <p style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: '0', lineHeight: 1, letterSpacing: '-2px', textShadow: `0 0 22px ${ec}55` }}>{dp.day}</p>
+                                <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.18)', margin: '1px 0 0', lineHeight: 1 }}>{dp.year}</p>
                               </div>
 
-                              {/* Content — always has room, never squished */}
+                              {/* Content */}
                               <div style={{ minWidth: 0, paddingRight: 14 }}>
-                                <h3 style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: '0 0 5px', lineHeight: 1.3, wordBreak: 'break-word' }}>{ev.title}</h3>
-                                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.36)', lineHeight: 1.55, margin: '0 0 8px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{ev.description}</p>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-                                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>
-                                    <Clock style={{ width: 11, height: 11, color: ec, flexShrink: 0 }} />{ev.time}
+                                <h3 style={{ fontSize: 13.5, fontWeight: 700, color: 'white', margin: '0 0 5px', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</h3>
+                                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', lineHeight: 1.6, margin: '0 0 9px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{ev.description}</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14 }}>
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'rgba(255,255,255,0.32)' }}>
+                                    <Clock style={{ width: 10, height: 10, color: ec, flexShrink: 0 }} />{ev.time}
                                   </span>
-                                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>
-                                    <Building2 style={{ width: 11, height: 11, color: ec, flexShrink: 0 }} />{ev.location}
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'rgba(255,255,255,0.32)' }}>
+                                    <Globe style={{ width: 10, height: 10, color: ec, flexShrink: 0 }} />{ev.location}
                                   </span>
                                 </div>
                               </div>
 
-                              {/* Right column — type badge + RSVP stacked, fixed width */}
-                              <div style={{ width: 96, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, flexShrink: 0 }}>
-                                <span style={{ fontSize: 9, fontWeight: 800, padding: '4px 10px', borderRadius: 999, color: ec, background: `${ec}18`, border: `1px solid ${ec}40`, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>{ev.type}</span>
-                                <button className="ea-rsvp" onClick={e => { e.stopPropagation(); if (!isRsvpd) { setRsvpName(userStartups[0]?.founder ?? user?.name ?? ''); setRsvpEvent(ev); } }} style={{ width: '100%', padding: '7px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: isRsvpd ? 'default' : 'pointer', background: isRsvpd ? 'rgba(16,185,129,0.15)' : `linear-gradient(90deg,${ec}40,${ec}20)`, color: isRsvpd ? '#10b981' : ec, border: `1px solid ${isRsvpd ? 'rgba(16,185,129,0.4)' : ec + '50'}`, boxShadow: isRsvpd ? 'none' : `0 0 14px ${ec}28`, textAlign: 'center' }}>
-                                  {isRsvpd ? '✓ Going' : 'RSVP →'}
-                                </button>
+                              {/* Right: badge + RSVP */}
+                              <div style={{ width: 94, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, flexShrink: 0 }}>
+                                <span style={{ fontSize: 9, fontWeight: 800, padding: '4px 10px', borderRadius: 999, color: ec, background: `${ec}1a`, border: `1px solid ${ec}40`, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>{ev.type}</span>
+                                <button className="ea2-rsvp"
+                                  onClick={e => { e.stopPropagation(); if (!isRsvpd) { setRsvpName(userStartups[0]?.founder ?? user?.name ?? ''); setRsvpEvent(ev); } }}
+                                  style={{ width: '100%', padding: '7px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: isRsvpd ? 'default' : 'pointer', background: isRsvpd ? 'rgba(16,185,129,0.12)' : `linear-gradient(90deg,${ec}45,${ec}22)`, color: isRsvpd ? '#10b981' : ec, border: `1px solid ${isRsvpd ? 'rgba(16,185,129,0.35)' : ec + '45'}`, boxShadow: isRsvpd ? 'none' : `0 2px 14px ${ec}20`, textAlign: 'center' }}
+                                >{isRsvpd ? '✓ Going' : 'RSVP →'}</button>
                               </div>
                             </div>
                           </div>
@@ -2762,89 +2861,134 @@ function HubPage() {
                     </div>
                   </div>
 
-                  {/* RIGHT — sidebar */}
+                  {/* ── RIGHT: Sidebar ── */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 11, minHeight: 0, overflow: 'hidden' }}>
 
-                    {/* Next Up */}
+                    {/* Next Up spotlight */}
                     {(() => {
                       const next = filteredEvents[0]; if (!next) return null;
                       const ec = TYPE_META[next.type]?.color || '#8b5cf6';
                       const dp = parseDate(next.date);
                       return (
-                        <div style={{ borderRadius: 16, border: `1px solid ${ec}35`, background: `linear-gradient(160deg,${ec}15 0%,rgba(8,8,20,0.97) 70%)`, padding: '16px', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${ec}90,transparent)` }} />
-                          <div style={{ position: 'absolute', top: -45, right: -45, width: 150, height: 150, borderRadius: '50%', background: `radial-gradient(circle,${ec}16,transparent 70%)`, pointerEvents: 'none' }} />
-                          {/* mini spinning ring decoration */}
-                          <div style={{ position: 'absolute', bottom: -20, left: -20, width: 80, height: 80, borderRadius: '50%', border: `1px solid ${ec}25`, animation: 'ea-spin 10s linear infinite', pointerEvents: 'none' }}>
-                            <div style={{ position: 'absolute', top: -4, left: '50%', width: 8, height: 8, marginLeft: -4, borderRadius: '50%', background: ec, boxShadow: `0 0 8px ${ec}`, transformOrigin: `4px 44px` }} />
-                          </div>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase', letterSpacing: '.12em', margin: '0 0 10px' }}>⚡ Next Up</p>
-                          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
-                            <div style={{ width: 44, height: 44, borderRadius: 12, background: `${ec}20`, border: `1px solid ${ec}40`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <span style={{ fontSize: 8, fontWeight: 800, color: ec, textTransform: 'uppercase', letterSpacing: '.08em' }}>{dp.month}</span>
-                              <span style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{dp.day}</span>
+                        <div style={{ borderRadius: 18, border: `1px solid ${ec}38`, background: `linear-gradient(160deg,${ec}1c 0%,rgba(4,4,14,0.97) 65%)`, padding: '16px', position: 'relative', overflow: 'hidden', flexShrink: 0, boxShadow: `0 8px 44px ${ec}16` }}>
+                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${ec}cc,transparent)` }} />
+                          <div style={{ position: 'absolute', top: -50, right: -50, width: 140, height: 140, borderRadius: '50%', background: `radial-gradient(circle,${ec}1a,transparent 70%)`, pointerEvents: 'none' }} />
+                          {/* Corner orbit */}
+                          <div style={{ position: 'absolute', bottom: -30, left: -30, width: 90, height: 90, pointerEvents: 'none' }}>
+                            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `1px solid ${ec}20`, animation: 'ea2-orbit 9s linear infinite' }}>
+                              <div style={{ position: 'absolute', top: -3.5, left: '50%', width: 7, height: 7, marginLeft: -3.5, borderRadius: '50%', background: ec, boxShadow: `0 0 8px ${ec}` }} />
                             </div>
-                            <div style={{ minWidth: 0 }}>
-                              <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0, lineHeight: 1.3 }}>{next.title}</p>
-                              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', margin: '4px 0 0' }}>{next.time}</p>
-                              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{next.location}</p>
+                            <div style={{ position: 'absolute', inset: 16, borderRadius: '50%', border: `1px solid ${ec}14`, animation: 'ea2-rorbit 6s linear infinite' }}>
+                              <div style={{ position: 'absolute', bottom: -3, left: '50%', width: 5, height: 5, marginLeft: -2.5, borderRadius: '50%', background: ec + '80' }} />
                             </div>
                           </div>
-                          <button onClick={() => { setRsvpName(userStartups[0]?.founder ?? user?.name ?? ''); setRsvpEvent(next); }} style={{ width: '100%', padding: '8px', borderRadius: 11, fontSize: 11, fontWeight: 700, background: `linear-gradient(90deg,${ec},${ec}80)`, color: 'white', border: 'none', cursor: 'pointer', boxShadow: `0 4px 18px ${ec}45`, letterSpacing: '.04em' }}>
-                            Reserve My Spot →
-                          </button>
+
+                          <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase', letterSpacing: '.14em', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Zap style={{ width: 10, height: 10, color: ec }} />Next Up
+                          </p>
+                          <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start', marginBottom: 14 }}>
+                            <div style={{ width: 48, height: 54, borderRadius: 13, background: `linear-gradient(155deg,${ec}2a,${ec}0f)`, border: `1px solid ${ec}42`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 16px ${ec}22, inset 0 1px 0 ${ec}38` }}>
+                              <span style={{ fontSize: 8, fontWeight: 800, color: ec, textTransform: 'uppercase', letterSpacing: '.1em', lineHeight: 1 }}>{dp.month}</span>
+                              <span style={{ fontSize: 23, fontWeight: 900, color: 'white', lineHeight: 1, letterSpacing: '-1px', textShadow: `0 0 18px ${ec}80` }}>{dp.day}</span>
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <p style={{ fontSize: 12.5, fontWeight: 700, color: 'white', margin: 0, lineHeight: 1.35 }}>{next.title}</p>
+                              <p style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.28)', margin: '5px 0 2px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <Clock style={{ width: 9, height: 9 }} />{next.time}
+                              </p>
+                              <p style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.22)', margin: 0, display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <Globe style={{ width: 9, height: 9 }} />{next.location}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => { setRsvpName(userStartups[0]?.founder ?? user?.name ?? ''); setRsvpEvent(next); }}
+                            style={{ width: '100%', padding: '9px', borderRadius: 12, fontSize: 11.5, fontWeight: 700, background: `linear-gradient(90deg,${ec},${ec}80)`, color: 'white', border: 'none', cursor: 'pointer', boxShadow: `0 4px 22px ${ec}48`, letterSpacing: '.04em', transition: 'all .18s' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.12)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = ''; (e.currentTarget as HTMLButtonElement).style.transform = ''; }}
+                          >Reserve My Spot →</button>
                         </div>
                       );
                     })()}
 
-                    {/* Category Split */}
-                    <div style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(8,8,20,0.7)', padding: '14px 16px', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
-                      {/* mini decorative spinning diamond */}
-                      <div style={{ position: 'absolute', top: -12, right: -12, width: 40, height: 40, border: '1px solid rgba(139,92,246,0.2)', borderRadius: 4, animation: 'ea-spin 12s linear infinite', opacity: .5 }} />
-                      <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '.1em', margin: '0 0 12px' }}>Category Split</p>
-                      {(['Pitching', 'Workshop', 'Mentorship', 'Hackathon'] as const).map(t => {
-                        const ec = TYPE_META[t]?.color || '#8b5cf6';
-                        const count = ALL_EVENTS.filter(e => e.type === t).length;
-                        const pct = Math.round((count / ALL_EVENTS.length) * 100);
-                        return (
-                          <div key={t} style={{ marginBottom: 9 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.42)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: ec, display: 'inline-block', boxShadow: `0 0 6px ${ec}` }} />{t}
-                              </span>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: ec }}>{count}</span>
-                            </div>
-                            <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.05)' }}>
-                              <div style={{ height: '100%', borderRadius: 2, width: `${pct}%`, background: `linear-gradient(90deg,${ec},${ec}60)`, boxShadow: `0 0 6px ${ec}55`, transition: 'width .5s' }} />
+                    {/* Category Split — SVG donut */}
+                    {(() => {
+                      const cats = ['Pitching', 'Workshop', 'Mentorship', 'Hackathon'] as const;
+                      const counts = cats.map(t => ALL_EVENTS.filter(e => e.type === t).length);
+                      const total = counts.reduce((a, b) => a + b, 0);
+                      const R = 26, sw = 6, circ = 2 * Math.PI * R;
+                      let cum = 0;
+                      return (
+                        <div style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(5,5,14,0.78)', backdropFilter: 'blur(16px)', padding: '14px 16px', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,0.5),transparent)' }} />
+                          <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase', letterSpacing: '.1em', margin: '0 0 12px' }}>Category Split</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <svg width={66} height={66} viewBox="0 0 66 66" style={{ flexShrink: 0 }}>
+                              <circle cx={33} cy={33} r={R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={sw} />
+                              {cats.map((t, i) => {
+                                const ec = TYPE_META[t]?.color || '#8b5cf6';
+                                const dash = (counts[i] / total) * circ;
+                                const offset = circ * 0.25 - cum;
+                                cum += (counts[i] / total) * circ;
+                                return (
+                                  <circle key={t} cx={33} cy={33} r={R} fill="none" stroke={ec} strokeWidth={sw}
+                                    strokeDasharray={`${dash - 1.5} ${circ - dash + 1.5}`}
+                                    strokeDashoffset={offset}
+                                    strokeLinecap="round"
+                                    style={{ filter: `drop-shadow(0 0 3px ${ec}88)` }}
+                                  />
+                                );
+                              })}
+                              <text x={33} y={30} textAnchor="middle" fill="white" fontSize={11} fontWeight={800} fontFamily="Inter,sans-serif">{total}</text>
+                              <text x={33} y={40} textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize={6.5} fontFamily="Inter,sans-serif">events</text>
+                            </svg>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              {cats.map((t, i) => {
+                                const ec = TYPE_META[t]?.color || '#8b5cf6';
+                                return (
+                                  <div key={t} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'rgba(255,255,255,0.38)' }}>
+                                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: ec, boxShadow: `0 0 5px ${ec}`, display: 'inline-block', flexShrink: 0 }} />{t}
+                                    </span>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: ec }}>{counts[i]}</span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Your RSVPs */}
-                    <div style={{ flex: 1, minHeight: 0, borderRadius: 16, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(8,8,20,0.7)', padding: '14px 16px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    <div style={{ flex: 1, minHeight: 0, borderRadius: 16, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(5,5,14,0.78)', backdropFilter: 'blur(16px)', padding: '14px 16px', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,0.4),transparent)' }} />
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexShrink: 0 }}>
-                        <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '.1em', margin: 0 }}>Your RSVPs</p>
-                        {rsvpedIds.length > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: '#10b981' }}>{rsvpedIds.length} going</span>}
+                        <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase', letterSpacing: '.1em', margin: 0 }}>Your RSVPs</p>
+                        {rsvpedIds.length > 0 && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 999, border: '1px solid rgba(16,185,129,0.25)' }}>{rsvpedIds.length} going</span>
+                        )}
                       </div>
                       <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
                         {rsvpedIds.length === 0 ? (
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: .25 }}>
-                            <CalendarDays style={{ width: 28, height: 28, color: 'white' }} />
-                            <span style={{ fontSize: 11, color: 'white', textAlign: 'center', lineHeight: 1.5 }}>No RSVPs yet —<br />register for events</span>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(139,92,246,0.07)', border: '1px solid rgba(139,92,246,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'ea2-float 3s ease-in-out infinite' }}>
+                              <CalendarDays style={{ width: 20, height: 20, color: 'rgba(139,92,246,0.35)' }} />
+                            </div>
+                            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)', textAlign: 'center', lineHeight: 1.6, margin: 0 }}>No RSVPs yet —<br/>register for events</p>
                           </div>
                         ) : (
                           ALL_EVENTS.filter(e => rsvpedIds.includes(e.id)).map(ev => {
                             const ec = EVENT_COLOR[ev.type] || '#8b5cf6';
                             const dp = parseDate(ev.date);
                             return (
-                              <div key={ev.id} style={{ padding: '9px 11px', borderRadius: 11, background: `${ec}0c`, border: `1px solid ${ec}25`, borderLeft: `3px solid ${ec}75` }}>
+                              <div key={ev.id} style={{ padding: '9px 12px', borderRadius: 12, background: `${ec}0a`, border: `1px solid ${ec}1e`, borderLeft: `3px solid ${ec}70`, position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,${ec}45,transparent)` }} />
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
                                   <p style={{ fontSize: 11, fontWeight: 600, color: 'white', margin: 0, lineHeight: 1.3, flex: 1 }}>{ev.title}</p>
-                                  <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 7px', borderRadius: 999, color: '#10b981', background: 'rgba(16,185,129,0.14)', border: '1px solid rgba(16,185,129,0.32)', flexShrink: 0 }}>✓</span>
+                                  <span style={{ fontSize: 8, fontWeight: 800, padding: '2px 7px', borderRadius: 999, color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.28)', flexShrink: 0 }}>✓</span>
                                 </div>
-                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)', margin: '4px 0 0' }}>{dp.month} {dp.day} · {ev.time}</p>
+                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.24)', margin: '4px 0 0' }}>{dp.month} {dp.day} · {ev.time}</p>
                               </div>
                             );
                           })
@@ -3646,6 +3790,173 @@ function HubPage() {
                   ))
                 )}
               </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+
+              {/* Section: VC Profile Verifications */}
+              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <Telescope style={{ width: 14, height: 14, color: '#a78bfa' }} />
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>VC Profile Verifications</p>
+                  {!adminVCLoading && (
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: pendingVCProfiles.length > 0 ? 'rgba(139,92,246,0.12)' : 'rgba(255,255,255,0.06)', color: pendingVCProfiles.length > 0 ? '#a78bfa' : 'rgba(255,255,255,0.3)', border: `1px solid ${pendingVCProfiles.length > 0 ? 'rgba(139,92,246,0.35)' : 'rgba(255,255,255,0.1)'}` }}>
+                      {pendingVCProfiles.length} pending
+                    </span>
+                  )}
+                </div>
+                {adminVCLoading ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 0' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2.5px solid rgba(139,92,246,0.2)', borderTop: '2.5px solid #a78bfa', animation: 'spin 0.8s linear infinite' }} />
+                  </div>
+                ) : pendingVCProfiles.length === 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '20px 0', opacity: 0.4 }}>
+                    <Telescope style={{ width: 28, height: 28, color: 'rgba(255,255,255,0.15)' }} />
+                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No pending VC verifications</p>
+                  </div>
+                ) : pendingVCProfiles.map((vc: any) => (
+                  <div key={vc.id} style={{ background: 'rgba(139,92,246,0.03)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                      <div>
+                        <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 800, color: '#fff' }}>{vc.firm_name}</p>
+                        <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{vc.partner_name} · {vc.email}</p>
+                        {vc.sectors && <p style={{ margin: '4px 0 0', fontSize: 10, color: 'rgba(139,92,246,0.8)' }}>Sectors: {vc.sectors}</p>}
+                        {vc.stage_pref && <p style={{ margin: '2px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>Stages: {vc.stage_pref}</p>}
+                      </div>
+                      <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 9px', borderRadius: 999, color: '#fbbf24', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', flexShrink: 0 }}>PENDING</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button disabled={!!adminVCAction[vc.id]} onClick={async () => { setAdminVCAction(a => ({ ...a, [vc.id]: 'rejecting' })); await fetch('/api/vc/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ table: 'vc_profiles', id: vc.id, action: 'reject' }) }); setPendingVCProfiles(prev => prev.filter(v => v.id !== vc.id)); setAdminVCAction(a => { const n = { ...a }; delete n[vc.id]; return n; }); }} style={{ flex: 1, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', cursor: adminVCAction[vc.id] ? 'wait' : 'pointer', opacity: adminVCAction[vc.id] ? 0.5 : 1 }}>{adminVCAction[vc.id] === 'rejecting' ? 'Rejecting…' : '✕ Reject'}</button>
+                      <button disabled={!!adminVCAction[vc.id]} onClick={async () => { setAdminVCAction(a => ({ ...a, [vc.id]: 'approving' })); await fetch('/api/vc/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ table: 'vc_profiles', id: vc.id, action: 'approve' }) }); setPendingVCProfiles(prev => prev.filter(v => v.id !== vc.id)); setAdminVCAction(a => { const n = { ...a }; delete n[vc.id]; return n; }); }} style={{ flex: 2, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,rgba(139,92,246,0.25),rgba(139,92,246,0.1))', border: '1px solid rgba(139,92,246,0.45)', color: '#a78bfa', cursor: adminVCAction[vc.id] ? 'wait' : 'pointer', opacity: adminVCAction[vc.id] ? 0.5 : 1 }}>{adminVCAction[vc.id] === 'approving' ? 'Approving…' : '✓ Verify VC'}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+
+              {/* Section: Deal Interest Requests */}
+              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <DollarSign style={{ width: 14, height: 14, color: '#10b981' }} />
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Deal Interest Submissions</p>
+                  {!adminVCLoading && (
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: pendingDealInterests.length > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.06)', color: pendingDealInterests.length > 0 ? '#34d399' : 'rgba(255,255,255,0.3)', border: `1px solid ${pendingDealInterests.length > 0 ? 'rgba(16,185,129,0.35)' : 'rgba(255,255,255,0.1)'}` }}>
+                      {pendingDealInterests.length} pending
+                    </span>
+                  )}
+                </div>
+                {pendingDealInterests.length === 0 && !adminVCLoading ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '20px 0', opacity: 0.4 }}>
+                    <DollarSign style={{ width: 28, height: 28, color: 'rgba(255,255,255,0.15)' }} />
+                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No pending deal interests</p>
+                  </div>
+                ) : pendingDealInterests.map((di: any) => (
+                  <div key={di.id} style={{ background: 'rgba(16,185,129,0.03)', border: '1px solid rgba(16,185,129,0.12)', borderRadius: 14, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                      <div>
+                        <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 800, color: '#fff' }}>{di.startup_name}</p>
+                        <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>from {di.vc_firm || di.vc_email} · {new Date(di.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+                        {di.note && <p style={{ margin: '6px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{di.note}</p>}
+                      </div>
+                      <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 9px', borderRadius: 999, color: '#fbbf24', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', flexShrink: 0 }}>PENDING</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button disabled={!!adminVCAction[di.id]} onClick={async () => { setAdminVCAction(a => ({ ...a, [di.id]: 'rejecting' })); await fetch('/api/vc/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ table: 'deal_interests', id: di.id, action: 'reject' }) }); setPendingDealInterests(prev => prev.filter(d => d.id !== di.id)); setAdminVCAction(a => { const n = { ...a }; delete n[di.id]; return n; }); }} style={{ flex: 1, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', cursor: adminVCAction[di.id] ? 'wait' : 'pointer', opacity: adminVCAction[di.id] ? 0.5 : 1 }}>{adminVCAction[di.id] === 'rejecting' ? 'Passing…' : '✕ Pass'}</button>
+                      <button disabled={!!adminVCAction[di.id]} onClick={async () => { setAdminVCAction(a => ({ ...a, [di.id]: 'approving' })); await fetch('/api/vc/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ table: 'deal_interests', id: di.id, action: 'approve' }) }); setPendingDealInterests(prev => prev.filter(d => d.id !== di.id)); setAdminVCAction(a => { const n = { ...a }; delete n[di.id]; return n; }); }} style={{ flex: 2, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,rgba(16,185,129,0.2),rgba(16,185,129,0.1))', border: '1px solid rgba(16,185,129,0.4)', color: '#34d399', cursor: adminVCAction[di.id] ? 'wait' : 'pointer', opacity: adminVCAction[di.id] ? 0.5 : 1 }}>{adminVCAction[di.id] === 'approving' ? 'Reviewing…' : '✓ Mark Reviewed'}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+
+              {/* Section: Diligence Access Requests */}
+              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <FolderKey style={{ width: 14, height: 14, color: '#f59e0b' }} />
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Diligence Access Requests</p>
+                  {!adminVCLoading && (
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: pendingDiligenceReqs.length > 0 ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.06)', color: pendingDiligenceReqs.length > 0 ? '#fbbf24' : 'rgba(255,255,255,0.3)', border: `1px solid ${pendingDiligenceReqs.length > 0 ? 'rgba(245,158,11,0.35)' : 'rgba(255,255,255,0.1)'}` }}>
+                      {pendingDiligenceReqs.length} pending
+                    </span>
+                  )}
+                </div>
+                {pendingDiligenceReqs.length === 0 && !adminVCLoading ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '20px 0', opacity: 0.4 }}>
+                    <FolderKey style={{ width: 28, height: 28, color: 'rgba(255,255,255,0.15)' }} />
+                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No pending diligence requests</p>
+                  </div>
+                ) : pendingDiligenceReqs.map((dr: any) => (
+                  <div key={dr.id} style={{ background: 'rgba(245,158,11,0.03)', border: '1px solid rgba(245,158,11,0.12)', borderRadius: 14, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                      <div>
+                        <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 800, color: '#fff' }}>{dr.doc_name}</p>
+                        <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{dr.startup} · from {dr.vc_firm || dr.vc_email} · {new Date(dr.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+                        {dr.reason && <p style={{ margin: '6px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{dr.reason}</p>}
+                      </div>
+                      <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 9px', borderRadius: 999, color: '#fbbf24', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', flexShrink: 0 }}>PENDING</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button disabled={!!adminVCAction[dr.id]} onClick={async () => { setAdminVCAction(a => ({ ...a, [dr.id]: 'rejecting' })); await fetch('/api/vc/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ table: 'diligence_requests', id: dr.id, action: 'reject' }) }); setPendingDiligenceReqs(prev => prev.filter(r => r.id !== dr.id)); setAdminVCAction(a => { const n = { ...a }; delete n[dr.id]; return n; }); }} style={{ flex: 1, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', cursor: adminVCAction[dr.id] ? 'wait' : 'pointer', opacity: adminVCAction[dr.id] ? 0.5 : 1 }}>{adminVCAction[dr.id] === 'rejecting' ? 'Rejecting…' : '✕ Deny'}</button>
+                      <button disabled={!!adminVCAction[dr.id]} onClick={async () => { setAdminVCAction(a => ({ ...a, [dr.id]: 'approving' })); await fetch('/api/vc/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ table: 'diligence_requests', id: dr.id, action: 'approve' }) }); setPendingDiligenceReqs(prev => prev.filter(r => r.id !== dr.id)); setAdminVCAction(a => { const n = { ...a }; delete n[dr.id]; return n; }); }} style={{ flex: 2, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,rgba(245,158,11,0.2),rgba(245,158,11,0.1))', border: '1px solid rgba(245,158,11,0.4)', color: '#fbbf24', cursor: adminVCAction[dr.id] ? 'wait' : 'pointer', opacity: adminVCAction[dr.id] ? 0.5 : 1 }}>{adminVCAction[dr.id] === 'approving' ? 'Granting…' : '✓ Grant Access'}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+
+              {/* Section: Contact Messages */}
+              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <MessageSquare style={{ width: 14, height: 14, color: '#06b6d4' }} />
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Contact Messages</p>
+                  {!contactMsgsLoading && (
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: contactMessages.filter((m: any) => !m.read).length > 0 ? 'rgba(6,182,212,0.12)' : 'rgba(255,255,255,0.06)', color: contactMessages.filter((m: any) => !m.read).length > 0 ? '#22d3ee' : 'rgba(255,255,255,0.3)', border: `1px solid ${contactMessages.filter((m: any) => !m.read).length > 0 ? 'rgba(6,182,212,0.35)' : 'rgba(255,255,255,0.1)'}` }}>
+                      {contactMessages.filter((m: any) => !m.read).length} unread
+                    </span>
+                  )}
+                </div>
+                {contactMsgsLoading ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2.5px solid rgba(6,182,212,0.2)', borderTop: '2.5px solid #06b6d4', animation: 'spin 0.8s linear infinite' }} />
+                  </div>
+                ) : contactMessages.length === 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '20px 0', opacity: 0.4 }}>
+                    <MessageSquare style={{ width: 28, height: 28, color: 'rgba(255,255,255,0.15)' }} />
+                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No messages yet</p>
+                  </div>
+                ) : contactMessages.map((msg: any) => (
+                  <div key={msg.id} style={{ background: msg.read ? 'rgba(255,255,255,0.02)' : 'rgba(6,182,212,0.05)', border: `1px solid ${msg.read ? 'rgba(255,255,255,0.08)' : 'rgba(6,182,212,0.22)'}`, borderRadius: 14, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2 }}>
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#fff' }}>{msg.name}</p>
+                          {!msg.read && <span style={{ fontSize: 8, fontWeight: 800, padding: '2px 6px', borderRadius: 999, background: 'rgba(6,182,212,0.18)', color: '#22d3ee', border: '1px solid rgba(6,182,212,0.35)' }}>NEW</span>}
+                        </div>
+                        <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{msg.email} · {new Date(msg.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.72)', lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.message}</p>
+                      </div>
+                    </div>
+                    {!msg.read && (
+                      <button
+                        onClick={async () => {
+                          await fetch('/api/contact/mark-read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: msg.id, read: true }) });
+                          setContactMessages(prev => prev.map((m: any) => m.id === msg.id ? { ...m, read: true } : m));
+                        }}
+                        style={{ alignSelf: 'flex-start', padding: '6px 14px', borderRadius: 999, fontSize: 10, fontWeight: 700, background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', color: '#22d3ee', cursor: 'pointer' }}
+                      >
+                        ✓ Mark as read
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
             </div>
           )}
 
@@ -3699,26 +4010,116 @@ function HubPage() {
 
               {/* Viewer body */}
               <div style={{ flex: 1, overflow: 'hidden', position: 'relative', minHeight: 0, background: '#05050d' }}>
-                {!url ? (
-                  /* No file — mock doc info */
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, padding: 40 }}>
-                    <div style={{ width: 72, height: 72, borderRadius: '50%', background: `${tc}15`, border: `2px solid ${tc}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, boxShadow: `0 0 30px ${tc}30` }}>
-                      {vd.type === 'Deck' ? '📊' : vd.type === 'Video' ? '🎬' : vd.type === 'Sheet' ? '📋' : vd.type === 'Bundle' ? '📦' : '📄'}
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <p style={{ fontSize: 15, fontWeight: 700, color: '#fff', margin: '0 0 8px' }}>{vd.name}</p>
-                      <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: '0 0 20px', maxWidth: 360 }}>This is a demo document. Upload a real file to preview it here.</p>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, maxWidth: 380 }}>
-                        {[['📅 Date', vd.date], ['👁 Views', `${vd.views}×`], ['🤖 AI Score', `${vd.score}/100`]].map(([label, val]) => (
-                          <div key={label as string} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
-                            <p style={{ margin: 0, fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</p>
-                            <p style={{ margin: '4px 0 0', fontSize: 14, fontWeight: 800, color: tc }}>{val}</p>
+                {!url ? (() => {
+                  const brand = vd.name.replace(/v\d[\d.]*$/, '').replace(/(Pitch Deck|Executive Summary|Due Diligence Pack|Product Demo|Financial Projections|Cap Table Structure)/gi, '').trim();
+                  const taglines: Record<string, string> = {
+                    'NeuralKit': 'No-code ML model builder for every team.',
+                    'FinFlow': 'Decentralised invoice financing at scale.',
+                    'QuantumGrid': 'Next-gen liquid cooling for data clusters.',
+                    'ClimateOS': 'Carbon accounting built for modern SMEs.',
+                    'EduSphere': 'AI-powered personalised study spaces.',
+                    'BioWeave': 'High-performance materials grown from mycelium.',
+                  };
+                  const tagline = taglines[brand] ?? `Innovating the future with ${brand}.`;
+                  const mockSlides: Record<string, { title: string; body: string }[]> = {
+                    Deck: [
+                      { title: 'Problem', body: `Founders lack efficient tools to manage ${brand}'s core workflow at scale.` },
+                      { title: 'Solution', body: `${brand} delivers an intelligent, end-to-end platform built for speed and precision.` },
+                      { title: 'Traction', body: `3,400+ active users · ₹1.2Cr MRR · 32% MoM growth in Q1 2026.` },
+                      { title: 'Market', body: `₹280Cr TAM across SaaS & DeepTech verticals. Growing at 28% YoY.` },
+                      { title: 'Team', body: `Ex-Google, IIT & INSEAD alumni. Combined 40+ years in product & finance.` },
+                      { title: 'Ask', body: `Raising ₹15Cr Seed round to expand GTM & accelerate product R&D.` },
+                    ],
+                    Doc: [
+                      { title: 'Executive Overview', body: `${brand} is redefining the market through focused innovation and rapid deployment.` },
+                      { title: 'Business Model', body: `SaaS subscription at ₹999–₹4,999/mo per seat. Enterprise plans custom-priced.` },
+                      { title: 'Key Metrics', body: `NPS: 74 · Churn: 2.1% · CAC: ₹1,200 · LTV: ₹28,000.` },
+                    ],
+                    Sheet: [
+                      { title: 'Revenue Forecast', body: `FY27 projected revenue: ₹4.8Cr. EBITDA positive by Q3 2026.` },
+                      { title: 'Cap Structure', body: `Founders 62% · Angels 18% · Seed VCs 20%. Pre-money valuation ₹42Cr.` },
+                      { title: 'Unit Economics', body: `Gross margin: 74% · Payback period: 9 months · ARR target ₹6Cr FY28.` },
+                    ],
+                    Bundle: [
+                      { title: 'Data Room Index', body: `Pitch deck, financials, legal docs, cap table & technical architecture included.` },
+                      { title: 'Legal & Compliance', body: `Incorporated in India. DPIIT recognised. All IP assigned. Shareholder agreements executed.` },
+                      { title: 'Technical Due Diligence', body: `SOC-2 in progress. 99.97% uptime SLA. 42ms average API response time.` },
+                    ],
+                    Video: [
+                      { title: 'Product Demo', body: `Watch ${brand} in action — end-to-end workflow in under 3 minutes.` },
+                      { title: 'Key Features', body: `Real-time collaboration · AI-assisted insights · One-click integrations.` },
+                      { title: 'Customer Testimonial', body: `"${brand} cut our reporting time by 60%. Game-changer." — Early Beta User` },
+                    ],
+                  };
+                  const slides = mockSlides[vd.type] ?? mockSlides.Doc;
+                  return (
+                    <div style={{ height: '100%', overflowY: 'auto', background: '#07070f' }}>
+                      {/* Hero banner */}
+                      <div style={{ position: 'relative', padding: '48px 56px 40px', background: `linear-gradient(135deg, ${tc}18 0%, #09090f 60%)`, borderBottom: `1px solid ${tc}25`, overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: -60, right: -60, width: 300, height: 300, borderRadius: '50%', background: `radial-gradient(circle, ${tc}20, transparent 70%)`, pointerEvents: 'none' }} />
+                        <div style={{ position: 'absolute', bottom: -40, left: '40%', width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${tc}10, transparent 70%)`, pointerEvents: 'none' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24 }}>
+                          <div style={{ width: 64, height: 64, borderRadius: 18, background: `linear-gradient(135deg, ${tc}40, ${tc}15)`, border: `2px solid ${tc}60`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 900, color: tc, boxShadow: `0 0 32px ${tc}40`, flexShrink: 0 }}>
+                            {brand.slice(0, 2).toUpperCase()}
                           </div>
-                        ))}
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: tc, textTransform: 'uppercase', letterSpacing: '.1em', padding: '3px 10px', borderRadius: 999, background: `${tc}18`, border: `1px solid ${tc}40` }}>{vd.type}</span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc, display: 'inline-block' }} />
+                                <span style={{ fontSize: 10, color: sc, fontWeight: 600 }}>{vd.status}</span>
+                              </span>
+                            </div>
+                            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, color: '#f1f5f9', letterSpacing: '-0.5px', lineHeight: 1.2 }}>Hello, we are <span style={{ color: tc }}>{brand}</span></h1>
+                            <p style={{ margin: '8px 0 0', fontSize: 14, color: 'rgba(255,255,255,.5)', lineHeight: 1.5, maxWidth: 540 }}>{tagline}</p>
+                          </div>
+                        </div>
+                        {/* Stats row */}
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                          {[
+                            { label: 'Document', val: vd.name, col: tc },
+                            { label: 'Added', val: vd.date, col: 'rgba(255,255,255,.6)' },
+                            { label: 'Views', val: `${vd.views}×`, col: '#a78bfa' },
+                            { label: 'AI Score', val: `${vd.score}/100`, col: vd.score >= 85 ? '#10b981' : '#f59e0b' },
+                          ].map(s => (
+                            <div key={s.label} style={{ padding: '8px 14px', borderRadius: 10, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                              <p style={{ margin: 0, fontSize: 9, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.07em', fontWeight: 700 }}>{s.label}</p>
+                              <p style={{ margin: '3px 0 0', fontSize: 13, fontWeight: 700, color: s.col, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>{s.val}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Mock slides grid */}
+                      <div style={{ padding: '32px 56px 48px' }}>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.25)', textTransform: 'uppercase', letterSpacing: '.1em', margin: '0 0 20px' }}>Document Preview — {vd.type}</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+                          {slides.map((slide, i) => (
+                            <div key={i} style={{ borderRadius: 14, border: `1px solid ${tc}22`, background: `linear-gradient(145deg, ${tc}0c, rgba(10,10,20,.9))`, padding: '22px 20px', position: 'relative', overflow: 'hidden' }}>
+                              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${tc}60, transparent)` }} />
+                              <div style={{ width: 28, height: 28, borderRadius: 8, background: `${tc}18`, border: `1px solid ${tc}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: tc }}>{i + 1}</span>
+                              </div>
+                              <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>{slide.title}</p>
+                              <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,.45)', lineHeight: 1.6 }}>{slide.body}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Upload CTA */}
+                        <div style={{ marginTop: 32, padding: '20px 24px', borderRadius: 14, background: 'rgba(255,255,255,.03)', border: '1px dashed rgba(255,255,255,.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                          <div>
+                            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,.7)' }}>This is a demo preview for <span style={{ color: tc }}>{vd.name}</span></p>
+                            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'rgba(255,255,255,.3)' }}>Upload the actual file to replace this preview with the real document.</p>
+                          </div>
+                          <button onClick={() => { setViewingDoc(null); setUploadOpen(true); }} style={{ flexShrink: 0, padding: '9px 20px', borderRadius: 9, background: `${tc}18`, border: `1px solid ${tc}40`, color: tc, fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                            Upload Real File
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : isVideo ? (
+                  );
+                })() : isVideo ? (
                   <video controls src={url} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
                 ) : isImage ? (
                   <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto', padding: 20, boxSizing: 'border-box' }}>
@@ -4112,7 +4513,8 @@ function HubPage() {
       {/* ── MODAL: ADD EVENT ─────────────────────────────────────────────── */}
       {addEventOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)' }} onClick={() => setAddEventOpen(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#09090f', border: '1px solid rgba(139,92,246,0.3)', borderTop: '2px solid #8b5cf6', borderRadius: 22, width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 0 80px rgba(139,92,246,0.18), 0 40px 80px rgba(0,0,0,0.8)' }}>
+          <div onClick={e => e.stopPropagation()} className="hub-modal-scroll" style={{ background: '#09090f', border: '1px solid rgba(139,92,246,0.3)', borderTop: '2px solid #8b5cf6', borderRadius: 22, width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(139,92,246,0.5) transparent', boxShadow: '0 0 80px rgba(139,92,246,0.18), 0 40px 80px rgba(0,0,0,0.8)' }}>
+            <style>{`.hub-modal-scroll::-webkit-scrollbar{width:4px}.hub-modal-scroll::-webkit-scrollbar-track{background:transparent}.hub-modal-scroll::-webkit-scrollbar-thumb{background:rgba(139,92,246,0.5);border-radius:99px}.hub-modal-scroll::-webkit-scrollbar-thumb:hover{background:rgba(167,139,250,0.75)}`}</style>
             {/* Header */}
             <div style={{ padding: '22px 26px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#09090f', zIndex: 2 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
