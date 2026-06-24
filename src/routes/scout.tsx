@@ -711,6 +711,7 @@ function ScoutPage() {
     const [startups, setStartups] = useState(ALL_STARTUPS);
     const [accessRequests, setAccessRequests] = useState<string[]>([]);
     const [viewedDocs, setViewedDocs] = useState<string[]>([]);
+    const [mandateGate, setMandateGate] = useState(false);
     // Diligence vault docs — seeded with demo corporate decks, then merged with live
     // `investor` (corporate pitch) documents uploaded from the Explore Hub Brand Vault.
     const [diligenceDocs, setDiligenceDocs] = useState<any[]>(DILIGENCE_DOCS);
@@ -814,6 +815,17 @@ function ScoutPage() {
         } catch { /* keep seed */ }
     };
     useEffect(() => { loadVCs(); }, []);
+
+    // Gate check — user must have a registered VC mandate to use elite investor actions
+    const [hasMandate, setHasMandate] = useState(false);
+    useEffect(() => {
+        if (!user?.email) return;
+        fetch('/api/vc/mandate', { credentials: 'include' })
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (d?.firm_name) setHasMandate(true); })
+            .catch(() => {});
+    }, [user?.email]);
+    const requireMandate = (fn: () => void) => { if (hasMandate) { fn(); } else { setMandateGate(true); } };
 
     // Load startups uploaded in the Explore Hub so they appear in the Scout selector / diligence room
     useEffect(() => {
@@ -1675,10 +1687,10 @@ function ScoutPage() {
                                                                 ))}
                                                             </div>
                                                             <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
-                                                                <button onClick={() => { if (sl) { setRevokeReason(''); setRevokeTarget(s); } else { shortlistStartup(s); } }} className="sc-btn" style={{ flex: 1, padding: '5px 0', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', background: sl ? 'rgba(16,185,129,.15)' : 'rgba(139,92,246,.15)', color: sl ? '#10b981' : '#a78bfa', border: `1px solid ${sl ? 'rgba(16,185,129,.35)' : 'rgba(139,92,246,.35)'}` }}>
+                                                                <button onClick={() => requireMandate(() => { if (sl) { setRevokeReason(''); setRevokeTarget(s); } else { shortlistStartup(s); } })} className="sc-btn" style={{ flex: 1, padding: '5px 0', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', background: sl ? 'rgba(16,185,129,.15)' : 'rgba(139,92,246,.15)', color: sl ? '#10b981' : '#a78bfa', border: `1px solid ${sl ? 'rgba(16,185,129,.35)' : 'rgba(139,92,246,.35)'}` }}>
                                                                     {sl ? '✓ Listed' : 'Shortlist'}
                                                                 </button>
-                                                                <button onClick={() => { setSelectedStartupId(s.id); setTab('diligence'); }} className="sc-btn" style={{ flex: 1, padding: '5px 0', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', background: `${sc}18`, color: sc, border: `1px solid ${sc}42` }}>
+                                                                <button onClick={() => requireMandate(() => { setSelectedStartupId(s.id); setTab('diligence'); })} className="sc-btn" style={{ flex: 1, padding: '5px 0', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', background: `${sc}18`, color: sc, border: `1px solid ${sc}42` }}>
                                                                     Diligence →
                                                                 </button>
                                                             </div>
@@ -1906,16 +1918,16 @@ function ScoutPage() {
                                                             <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                                                                 {doc.access ? (
                                                                     <>
-                                                                        <button onClick={() => { const firstView = !viewedDocs.includes(doc.id); setViewedDocs(prev => prev.includes(doc.id) ? prev : [...prev, doc.id]); setDocOpen(doc); if (firstView) logAudit('Viewed', doc); }} className="dr-btn" aria-label={`View ${doc.name}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, background: `${tc}20`, border: `1px solid ${tc}45`, color: tc, fontSize: 11, fontWeight: 700, cursor: 'pointer', boxShadow: `0 0 10px ${tc}25` }}>
+                                                                        <button onClick={() => requireMandate(() => { const firstView = !viewedDocs.includes(doc.id); setViewedDocs(prev => prev.includes(doc.id) ? prev : [...prev, doc.id]); setDocOpen(doc); if (firstView) logAudit('Viewed', doc); })} className="dr-btn" aria-label={`View ${doc.name}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, background: `${tc}20`, border: `1px solid ${tc}45`, color: tc, fontSize: 11, fontWeight: 700, cursor: 'pointer', boxShadow: `0 0 10px ${tc}25` }}>
                                                                             <Eye style={{ width: 11, height: 11 }} />View
                                                                         </button>
-                                                                        <button onClick={() => { if (doc.file_url) { window.open(doc.file_url, '_blank', 'noopener'); showToast(`Opening ${doc.name}…`, tc); } else { showToast(`Downloading ${doc.name}…`, tc); } logAudit('Downloaded', doc); }} className="dr-btn" aria-label={`Download ${doc.name}`} style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.45)', cursor: 'pointer' }}>
+                                                                        <button onClick={() => requireMandate(() => { if (doc.file_url) { window.open(doc.file_url, '_blank', 'noopener'); showToast(`Opening ${doc.name}…`, tc); } else { showToast(`Downloading ${doc.name}…`, tc); } logAudit('Downloaded', doc); })} className="dr-btn" aria-label={`Download ${doc.name}`} style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.45)', cursor: 'pointer' }}>
                                                                             <Download style={{ width: 12, height: 12 }} />
                                                                         </button>
                                                                     </>
                                                                 ) : (
                                                                     <button
-                                                                        onClick={() => { if (!requested) { setAccessRequests(prev => [...prev, doc.id]); showToast(`Access requested — ${doc.name}`, '#f59e0b'); logAudit('Requested', doc); } }}
+                                                                        onClick={() => requireMandate(() => { if (!requested) { setAccessRequests(prev => [...prev, doc.id]); showToast(`Access requested — ${doc.name}`, '#f59e0b'); logAudit('Requested', doc); } })}
                                                                         disabled={requested}
                                                                         className="dr-btn"
                                                                         aria-label={requested ? `Access requested for ${doc.name}` : `Request access to ${doc.name}`}
@@ -2164,7 +2176,7 @@ function ScoutPage() {
                                         {NETWORK_CONTACTS.length} founders · {NETWORK_CONTACTS.reduce((a,c)=>a+c.meetings,0)} meetings · {NETWORK_CONTACTS.reduce((a,c)=>a+c.msgs,0)} messages
                                     </p>
                                 </div>
-                                <div style={{ display:'flex',alignItems:'center',gap:10 }}>
+                                <div style={{ display:'flex',alignItems:'center',gap:8,marginLeft:'auto' }}>
                                     {[{l:'Active',c:'#10b981'},{l:'Warm',c:'#f59e0b'},{l:'Cold',c:'#f87171'}].map(h=>(
                                         <div key={h.l} style={{ display:'flex',alignItems:'center',gap:6,padding:'5px 13px',borderRadius:999,background:`${h.c}0e`,border:`1px solid ${h.c}32`,backdropFilter:'blur(8px)' }}>
                                             <div style={{ position:'relative',width:7,height:7 }}>
@@ -2174,9 +2186,6 @@ function ScoutPage() {
                                             <span style={{ fontSize:10,fontWeight:700,color:h.c }}>{h.l}</span>
                                         </div>
                                     ))}
-                                    <button onClick={()=>setRegisterOpen(true)} className="sc-btn" style={{ display:'flex',alignItems:'center',gap:7,padding:'9px 18px',borderRadius:12,background:'linear-gradient(135deg,rgba(124,58,237,.92),rgba(14,165,233,.82))',border:'1px solid rgba(255,255,255,.15)',cursor:'pointer',fontSize:11,fontWeight:800,color:'white',boxShadow:'0 6px 22px rgba(124,58,237,.45),0 0 0 1px rgba(255,255,255,.04)',marginLeft:4,backdropFilter:'blur(8px)',letterSpacing:'.02em' }}>
-                                        <UserPlus style={{ width:13,height:13 }} />Add Contact
-                                    </button>
                                 </div>
                             </div>
 
@@ -2307,10 +2316,10 @@ function ScoutPage() {
                                                     {/* action buttons */}
                                                     <div style={{ display:'flex',marginTop:14,borderTop:'1px solid rgba(255,255,255,.055)',position:'relative' }}>
                                                         <div style={{ position:'absolute',top:0,left:'20%',right:'20%',height:1,background:`linear-gradient(90deg,transparent,${col}35,transparent)` }} />
-                                                        <button onClick={()=>setMsgOpen(c)} className="nw-action sc-btn" style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'11px 0',fontSize:11,fontWeight:800,cursor:'pointer',background:`linear-gradient(135deg,${col}16,${col}09)`,color:col,border:'none',borderRight:'1px solid rgba(255,255,255,.05)',borderRadius:0,letterSpacing:'.02em' }}>
+                                                        <button onClick={()=>requireMandate(()=>setMsgOpen(c))} className="nw-action sc-btn" style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'11px 0',fontSize:11,fontWeight:800,cursor:'pointer',background:`linear-gradient(135deg,${col}16,${col}09)`,color:col,border:'none',borderRight:'1px solid rgba(255,255,255,.05)',borderRadius:0,letterSpacing:'.02em' }}>
                                                             <MessageSquare style={{ width:11,height:11 }} />Message
                                                         </button>
-                                                        <button onClick={()=>{ setScheduleForm({ date:'', time:'', topic:'' }); setScheduleOpen(c); }} className="nw-action sc-btn" style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'11px 0',fontSize:11,fontWeight:800,cursor:'pointer',background:'rgba(255,255,255,.03)',color:'rgba(255,255,255,.42)',border:'none',borderRadius:0,letterSpacing:'.02em' }}>
+                                                        <button onClick={()=>requireMandate(()=>{ setScheduleForm({ date:'', time:'', topic:'' }); setScheduleOpen(c); })} className="nw-action sc-btn" style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'11px 0',fontSize:11,fontWeight:800,cursor:'pointer',background:'rgba(255,255,255,.03)',color:'rgba(255,255,255,.42)',border:'none',borderRadius:0,letterSpacing:'.02em' }}>
                                                             <CalendarDays style={{ width:11,height:11 }} />Schedule
                                                         </button>
                                                     </div>
@@ -2696,7 +2705,7 @@ function ScoutPage() {
                                                                         <CheckCircle style={{ width: 11, height: 11 }} />Registered
                                                                     </span>
                                                                 ) : (
-                                                                    <button onClick={e => { e.stopPropagation(); setRegName(VC_PROFILE.name); setRegEvent(ev); }} className="dd-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, background: `${tc}20`, border: `1px solid ${tc}45`, color: tc, fontSize: 11, fontWeight: 700, cursor: 'pointer', boxShadow: `0 0 10px ${tc}25` }}>
+                                                                    <button onClick={e => { e.stopPropagation(); requireMandate(() => { setRegName(VC_PROFILE.name); setRegEvent(ev); }); }} className="dd-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, background: `${tc}20`, border: `1px solid ${tc}45`, color: tc, fontSize: 11, fontWeight: 700, cursor: 'pointer', boxShadow: `0 0 10px ${tc}25` }}>
                                                                         Register <ArrowRight style={{ width: 10, height: 10 }} />
                                                                     </button>
                                                                 )}
@@ -2751,7 +2760,7 @@ function ScoutPage() {
                                                             <CheckCircle style={{ width: 13, height: 13 }} />Seat Reserved
                                                         </div>
                                                     ) : (
-                                                        <button className="dd-btn" onClick={() => { setRegName(VC_PROFILE.name); setRegEvent(next); }} style={{ width: '100%', padding: '9px 0', borderRadius: 11, fontSize: 12, fontWeight: 700, background: `linear-gradient(90deg,${tc},${tc}80)`, color: 'white', border: 'none', cursor: 'pointer', boxShadow: `0 4px 18px ${tc}45`, letterSpacing: '.02em' }}>
+                                                        <button className="dd-btn" onClick={() => requireMandate(() => { setRegName(VC_PROFILE.name); setRegEvent(next); })} style={{ width: '100%', padding: '9px 0', borderRadius: 11, fontSize: 12, fontWeight: 700, background: `linear-gradient(90deg,${tc},${tc}80)`, color: 'white', border: 'none', cursor: 'pointer', boxShadow: `0 4px 18px ${tc}45`, letterSpacing: '.02em' }}>
                                                             Reserve My Spot →
                                                         </button>
                                                     )}
@@ -2900,6 +2909,7 @@ function ScoutPage() {
           @keyframes mi-spin   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
           @keyframes mi-rspin  { from{transform:rotate(0deg)} to{transform:rotate(-360deg)} }
           @keyframes mi-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+          @keyframes mi-card-bob { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-4px)} }
           @keyframes mi-drift  { 0%,100%{transform:translate(0,0)} 40%{transform:translate(14px,-12px)} 70%{transform:translate(-9px,10px)} }
           @keyframes mi-morph  { 0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%} 50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%} }
           @keyframes mi-flow   { 0%{background-position:-80% 0} 100%{background-position:180% 0} }
@@ -3065,22 +3075,22 @@ function ScoutPage() {
 
                                     {/* Sector cards */}
                                     <div className="sc-scroll" style={{ flex: 1, overflowY: 'auto', padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                        {visibleSectors.map(s => (
+                                        {visibleSectors.map((s, i) => (
                                             <div key={s.sector} className="sc-card" style={{ borderRadius: 14, border: `1px solid ${s.color}22`, background: `linear-gradient(135deg,${s.color}0d 0%,rgba(0,0,0,.55) 100%)`, padding: '12px 13px', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
                                                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${s.color}60,transparent)` }} />
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                                                    {!isMobile && <SectorPlanet color={s.color} size={38} />}
+                                                    {!isMobile && <div style={{ animation: `mi-card-bob ${3.8 + i * 0.5}s ease-in-out infinite`, animationDelay: `${i * 0.7}s`, flexShrink: 0 }}><SectorPlanet color={s.color} size={38} /></div>}
                                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                                                            <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>{s.sector}</span>
-                                                            <span style={{ fontSize: 11, fontWeight: 800, color: '#10b981', filter: 'drop-shadow(0 0 4px rgba(16,185,129,.6))' }}>{s.growth}</span>
-                                                        </div>
-                                                        <div style={{ display: 'flex', gap: 8 }}>
+                                                        <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>{s.sector}</span>
+                                                        <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
                                                             <span style={{ fontSize: 9, color: 'rgba(255,255,255,.3)' }}>{s.pct}% of AUM</span>
                                                             <span style={{ fontSize: 9, color: 'rgba(255,255,255,.3)' }}>{s.deals} deals</span>
                                                         </div>
                                                     </div>
-                                                    <span style={{ fontSize: 11, fontWeight: 800, color: s.color, textShadow: `0 0 8px ${s.color}55`, flexShrink: 0 }}>{fmt(s.deployed)}</span>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+                                                        <span style={{ fontSize: 11, fontWeight: 800, color: '#10b981', filter: 'drop-shadow(0 0 4px rgba(16,185,129,.6))' }}>{s.growth}</span>
+                                                        <span style={{ fontSize: 11, fontWeight: 800, color: s.color, textShadow: `0 0 8px ${s.color}55` }}>{fmt(s.deployed)}</span>
+                                                    </div>
                                                 </div>
                                                 <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
                                                     <div style={{ height: '100%', borderRadius: 2, width: `${s.pct}%`, background: `linear-gradient(90deg,${s.color},${s.color}65)`, boxShadow: `0 0 8px ${s.color}55`, transition: 'width .6s ease' }} />
@@ -3796,6 +3806,48 @@ function ScoutPage() {
                 </main>
             </div >
 
+            {/* ══ MODAL: Mandate Gate ══ */}
+            {mandateGate && (
+                <div onClick={() => setMandateGate(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.85)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 20 }}>
+                    <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#0d0d1a', border: '1px solid rgba(139,92,246,.3)', borderRadius: 20, padding: '32px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, boxShadow: '0 0 80px rgba(139,92,246,.2), 0 32px 80px rgba(0,0,0,.8)' }}>
+                        {/* Icon */}
+                        <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(139,92,246,.15)', border: '1px solid rgba(139,92,246,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Telescope style={{ width: 24, height: 24, color: '#a78bfa' }} />
+                        </div>
+                        {/* Heading */}
+                        <div style={{ textAlign: 'center' }}>
+                            <p style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-.01em' }}>Investor Access Required</p>
+                            <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,.45)', lineHeight: 1.6 }}>This action is reserved for registered investors.<br />Set up your mandate first to unlock deal flow,<br />diligence, network access &amp; event reservations.</p>
+                        </div>
+                        {/* Divider */}
+                        <div style={{ width: '100%', height: 1, background: 'rgba(255,255,255,.07)' }} />
+                        {/* Feature list */}
+                        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {[
+                                { Icon: Star,         label: 'Shortlist deals & build pipeline',    color: '#a78bfa' },
+                                { Icon: FolderKey,    label: 'Access & download diligence docs',     color: '#34d399' },
+                                { Icon: MessageSquare,label: 'Message founders & schedule calls',    color: '#38bdf8' },
+                                { Icon: CalendarDays, label: 'Reserve seats at Demo Days',           color: '#fb923c' },
+                            ].map(f => (
+                                <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 13px', borderRadius: 10, background: `${f.color}0a`, border: `1px solid ${f.color}22` }}>
+                                    <f.Icon style={{ width: 14, height: 14, color: f.color, flexShrink: 0 }} />
+                                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,.65)', fontWeight: 500 }}>{f.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                        {/* CTAs */}
+                        <div style={{ width: '100%', display: 'flex', gap: 10, marginTop: 4 }}>
+                            <button onClick={() => setMandateGate(false)} style={{ flex: 1, padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.45)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                                Maybe Later
+                            </button>
+                            <button onClick={() => { setMandateGate(false); setRegisterOpen(true); }} style={{ flex: 2, padding: '11px', borderRadius: 12, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', border: 'none', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 24px rgba(124,58,237,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                <Telescope style={{ width: 14, height: 14 }} />Set Up My Mandate →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ══ MODAL: Message ══ */}
             {
                 msgOpen && (
@@ -4016,6 +4068,7 @@ function ScoutPage() {
                                         setMandateSubmitting(false);
                                         const firm = mandate.firm_name;
                                         setRegisterOpen(false); setMandate({}); setMandateErr({});
+                                        setHasMandate(true);
                                         showToast(`Mandate submitted — ${firm} is pending verification`, '#a78bfa');
                                         loadVCs();
                                     }}
@@ -4124,7 +4177,7 @@ function ScoutPage() {
                                         </div>
                                     )}
 
-                                    <button onClick={() => { if (url) { window.open(url, '_blank', 'noopener'); } else { showToast(`Downloading ${docOpen.name}…`, tc); } logAudit('Downloaded', docOpen); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, background: `${tc}20`, border: `1px solid ${tc}45`, color: tc, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                                    <button onClick={() => requireMandate(() => { if (url) { window.open(url, '_blank', 'noopener'); } else { showToast(`Downloading ${docOpen.name}…`, tc); } logAudit('Downloaded', docOpen); })} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, background: `${tc}20`, border: `1px solid ${tc}45`, color: tc, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                                         <Download style={{ width: 12, height: 12 }} />{url ? 'Download / Open' : 'Download'}
                                     </button>
                                 </div>
