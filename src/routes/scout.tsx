@@ -9,7 +9,7 @@ import {
     LayoutDashboard, GitBranch, FolderKey, Users, CalendarDays, BarChart3,
     DollarSign, Plus, X, Search, ArrowRight, Bell, TrendingUp, Clock,
     Filter, Star, Building2, Activity, Wallet, CheckCircle,
-    ChevronRight, Target, Telescope, Eye, Download, MessageSquare,
+    ChevronRight, Target, Telescope, Eye, Download, MessageSquare, FileText,
     Globe, Lock, UserPlus, Bookmark, Send, MoreHorizontal,
     Award, Zap, Shield, PieChart
 } from 'lucide-react';
@@ -35,29 +35,25 @@ const VC_PROFILE = {
 };
 
 const ALL_STARTUPS = [
-    { id: 'st-1', name: 'EduSphere', tagline: 'AI-powered personalised study spaces.', stage: 'Ideation', industry: 'SaaS', founder: 'Ashutosh Palai', fundingGoal: 15_000_000, raised: 2_000_000, score: 88, mrr: 120_000, users: 3_400, growth: 18, shortlisted: false, diligenceStatus: null },
-    { id: 'st-2', name: 'FinFlow', tagline: 'Decentralised invoice financing.', stage: 'MVP Built', industry: 'FinTech', founder: 'Ankit Raj Singh', fundingGoal: 25_000_000, raised: 12_500_000, score: 92, mrr: 480_000, users: 12_000, growth: 32, shortlisted: true, diligenceStatus: 'In Review' },
-    { id: 'st-3', name: 'QuantumGrid', tagline: 'Next-gen cooling for data clusters.', stage: 'Funding Secured', industry: 'DeepTech', founder: 'Pawan Kumar', fundingGoal: 50_000_000, raised: 50_000_000, score: 95, mrr: 2_100_000, users: 42, growth: 8, shortlisted: true, diligenceStatus: 'Approved' },
-    { id: 'st-4', name: 'BioWeave', tagline: 'Materials grown from mycelium fungi.', stage: 'Ideation', industry: 'DeepTech', founder: 'Chetan Sharma', fundingGoal: 18_000_000, raised: 0, score: 84, mrr: 0, users: 0, growth: 0, shortlisted: false, diligenceStatus: null },
-    { id: 'st-5', name: 'ClimateOS', tagline: 'Carbon accounting for SMEs.', stage: 'Validation', industry: 'DeepTech', founder: 'Meera Iyer', fundingGoal: 20_000_000, raised: 3_000_000, score: 79, mrr: 85_000, users: 1_200, growth: 24, shortlisted: false, diligenceStatus: 'Requested' },
-    { id: 'st-6', name: 'NeuralKit', tagline: 'No-code ML model builder.', stage: 'Growth', industry: 'SaaS', founder: 'Kabir Sen', fundingGoal: 40_000_000, raised: 28_000_000, score: 93, mrr: 1_400_000, users: 28_000, growth: 41, shortlisted: true, diligenceStatus: 'Approved' },
+    { id: 'st-1', name: 'EduSphere', tagline: 'AI-powered personalised study spaces.', stage: 'Ideation', industry: 'SaaS', founder: 'Ashutosh Palai', fundingGoal: 15_000_000, raised: 2_000_000, score: 88, mrr: 120_000, users: 3_400, growth: 18 },
+    { id: 'st-2', name: 'FinFlow', tagline: 'Decentralised invoice financing.', stage: 'MVP Built', industry: 'FinTech', founder: 'Ankit Raj Singh', fundingGoal: 25_000_000, raised: 12_500_000, score: 92, mrr: 480_000, users: 12_000, growth: 32 },
+    { id: 'st-3', name: 'QuantumGrid', tagline: 'Next-gen cooling for data clusters.', stage: 'Funding Secured', industry: 'DeepTech', founder: 'Pawan Kumar', fundingGoal: 50_000_000, raised: 50_000_000, score: 95, mrr: 2_100_000, users: 42, growth: 8 },
+    { id: 'st-4', name: 'BioWeave', tagline: 'Materials grown from mycelium fungi.', stage: 'Ideation', industry: 'DeepTech', founder: 'Chetan Sharma', fundingGoal: 18_000_000, raised: 0, score: 84, mrr: 0, users: 0, growth: 0 },
+    { id: 'st-5', name: 'ClimateOS', tagline: 'Carbon accounting for SMEs.', stage: 'Validation', industry: 'DeepTech', founder: 'Meera Iyer', fundingGoal: 20_000_000, raised: 3_000_000, score: 79, mrr: 85_000, users: 1_200, growth: 24 },
+    { id: 'st-6', name: 'NeuralKit', tagline: 'No-code ML model builder.', stage: 'Growth', industry: 'SaaS', founder: 'Kabir Sen', fundingGoal: 40_000_000, raised: 28_000_000, score: 93, mrr: 1_400_000, users: 28_000, growth: 41 },
 ];
 
+// `corporate: true` (deck_type 'investor') = the restricted Corporate Pitch Deck uploaded from the
+// Explore Hub Brand Vault. These are the decks founders intend for investors and that surface here.
 const DILIGENCE_DOCS = [
-    { id: 'd1', startup: 'NeuralKit', name: 'NeuralKit Pitch Deck v4.1', type: 'Deck', date: 'Jun 12', access: true, viewed: true, viewedAt: 'Jun 14 09:42', size: '4.2 MB' },
-    { id: 'd2', startup: 'NeuralKit', name: 'Financial Projections FY27', type: 'Sheet', date: 'Jun 10', access: true, viewed: false, viewedAt: null, size: '1.1 MB' },
-    { id: 'd3', startup: 'FinFlow', name: 'FinFlow Executive Summary', type: 'Doc', date: 'Jun 10', access: true, viewed: true, viewedAt: 'Jun 13 14:18', size: '0.8 MB' },
-    { id: 'd4', startup: 'FinFlow', name: 'Cap Table & Dilution Model', type: 'Sheet', date: 'Jun 8', access: false, viewed: false, viewedAt: null, size: '0.6 MB' },
-    { id: 'd5', startup: 'QuantumGrid', name: 'Technical Deep Dive Deck', type: 'Deck', date: 'May 30', access: true, viewed: true, viewedAt: 'Jun 12 11:05', size: '8.4 MB' },
-    { id: 'd6', startup: 'ClimateOS', name: 'Market Research Report', type: 'Doc', date: 'Jun 5', access: false, viewed: false, viewedAt: null, size: '2.3 MB' },
-];
-
-const AUDIT_LOG = [
-    { id: 'a1', action: 'Viewed', doc: 'NeuralKit Pitch Deck v4.1', by: 'Aryan Mehta', at: 'Jun 14, 09:42' },
-    { id: 'a2', action: 'Viewed', doc: 'FinFlow Executive Summary', by: 'Aryan Mehta', at: 'Jun 13, 14:18' },
-    { id: 'a3', action: 'Requested', doc: 'Cap Table & Dilution Model', by: 'Aryan Mehta', at: 'Jun 12, 16:05' },
-    { id: 'a4', action: 'Viewed', doc: 'Technical Deep Dive Deck', by: 'Aryan Mehta', at: 'Jun 12, 11:05' },
-    { id: 'a5', action: 'Requested', doc: 'Market Research Report', by: 'Aryan Mehta', at: 'Jun 11, 09:30' },
+    { id: 'd1', startup: 'NeuralKit', name: 'NeuralKit Pitch Deck v4.1', type: 'Deck', date: 'Jun 12', access: true, viewed: true, viewedAt: 'Jun 14 09:42', size: '4.2 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
+    { id: 'd2', startup: 'NeuralKit', name: 'Financial Projections FY27', type: 'Sheet', date: 'Jun 10', access: true, viewed: false, viewedAt: null, size: '1.1 MB', corporate: false, deck_type: 'brand', file_url: '', status: 'Final' },
+    { id: 'd3', startup: 'FinFlow', name: 'FinFlow Series A Pitch Deck', type: 'Deck', date: 'Jun 11', access: true, viewed: false, viewedAt: null, size: '5.6 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
+    { id: 'd4', startup: 'FinFlow', name: 'FinFlow Executive Summary', type: 'Doc', date: 'Jun 10', access: true, viewed: true, viewedAt: 'Jun 13 14:18', size: '0.8 MB', corporate: false, deck_type: 'brand', file_url: '', status: 'Final' },
+    { id: 'd5', startup: 'QuantumGrid', name: 'Technical Deep Dive Deck', type: 'Deck', date: 'May 30', access: true, viewed: true, viewedAt: 'Jun 12 11:05', size: '8.4 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
+    { id: 'd6', startup: 'ClimateOS', name: 'ClimateOS Investor Pitch Deck', type: 'Deck', date: 'Jun 5', access: true, viewed: false, viewedAt: null, size: '3.7 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Review' },
+    { id: 'd7', startup: 'EduSphere', name: 'EduSphere Seed Pitch Deck', type: 'Deck', date: 'Jun 2', access: true, viewed: false, viewedAt: null, size: '2.9 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
+    { id: 'd8', startup: 'BioWeave', name: 'BioWeave Pre-Seed Pitch Deck', type: 'Deck', date: 'May 28', access: true, viewed: false, viewedAt: null, size: '3.1 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Draft' },
 ];
 
 const NETWORK_CONTACTS = [
@@ -90,10 +86,54 @@ const SECTOR_DATA = [
     { sector: 'Other', pct: 5, deployed: 29_000_000, deals: 2, color: '#6b7280', growth: '+5%' },
 ];
 
+// Seed directory of verified funds — shown to everyone; merged with live /api/vc/list data
+const VC_SEED = [
+    { firm_name: 'Nexus Ventures', partner_name: 'Aryan Mehta', sectors: 'SaaS, FinTech, DeepTech', stage_pref: 'Seed, Series A', check_min: 5_000_000, check_max: 50_000_000, investment_thesis: 'Backing technical founders building category-defining infrastructure & fintech across India.', status: 'approved' },
+    { firm_name: 'Sequoia India', partner_name: 'Ishaan Kapoor', sectors: 'Consumer, SaaS', stage_pref: 'Series A, Series B', check_min: 20_000_000, check_max: 200_000_000, investment_thesis: 'Partnering with daring founders from idea to IPO.', status: 'approved' },
+    { firm_name: 'Kalaari Capital', partner_name: 'Vani Reddy', sectors: 'FinTech, HealthTech', stage_pref: 'Seed', check_min: 3_000_000, check_max: 30_000_000, investment_thesis: 'Early-stage technology investing with a India-first lens.', status: 'approved' },
+    { firm_name: 'Accel India', partner_name: 'Rohan Das', sectors: 'DeepTech, SaaS', stage_pref: 'Series A', check_min: 10_000_000, check_max: 100_000_000, investment_thesis: 'Backing exceptional teams building global products from India.', status: 'approved' },
+    { firm_name: 'Blume Ventures', partner_name: 'Sana Qureshi', sectors: 'ClimateTech, AgriTech', stage_pref: 'Pre-seed, Seed', check_min: 2_000_000, check_max: 25_000_000, investment_thesis: 'Conviction-led early bets on India’s most ambitious founders.', status: 'approved' },
+];
+
 const ROI_DATA = [{ m: 'Jan', v: 12 }, { m: 'Feb', v: 19 }, { m: 'Mar', v: 28 }, { m: 'Apr', v: 35 }, { m: 'May', v: 41 }, { m: 'Jun', v: 52 }];
 const PIPELINE_DATA = [{ m: 'Jan', v: 3 }, { m: 'Feb', v: 5 }, { m: 'Mar', v: 7 }, { m: 'Apr', v: 9 }, { m: 'May', v: 11 }, { m: 'Jun', v: 14 }];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+// Map a Supabase `startups` row → the shape the Scout UI expects
+const mapStartupRow = (s: any) => ({
+    id: s.id, name: s.name, tagline: s.tagline, industry: s.industry,
+    founder: s.founder, stage: s.stage,
+    fundingGoal: s.funding_goal, raised: s.raised,
+    score: s.pitch_score ?? 80,
+    mrr: s.mrr ?? 0, users: s.users ?? 0, growth: s.growth ?? 0,
+});
+
+// Map a Supabase `documents` row (deck_type='investor') → a diligence-vault doc
+const mapInvestorDoc = (row: any) => ({
+    id: `db-${row.id}`,
+    startup: row.startup_name,
+    name: row.name,
+    type: row.type || 'Deck',
+    date: row.date || '—',
+    access: true,            // verified investors in the portal get access to corporate decks
+    viewed: false,
+    viewedAt: null,
+    size: row.size || '—',
+    corporate: true,
+    deck_type: 'investor',
+    status: row.status || 'Final',
+    file_url: row.file_url || '',
+});
+
+// Format an ISO timestamp → "Jun 14, 09:42" for the diligence audit log
+const fmtAuditTime = (iso: string) => {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return `${d.toLocaleString('en', { month: 'short' })} ${d.getDate()}, ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+// Map a `diligence_audit` row → the shape the Audit Log timeline renders
+const mapAuditRow = (r: any) => ({ id: r.id, action: r.action, doc: r.doc_name, at: fmtAuditTime(r.created_at), by: r.actor || '' });
+
 const fmt = (n: number) =>
     n >= 1e9 ? `₹${(n / 1e9).toFixed(1)}B`
         : n >= 1e7 ? `₹${(n / 1e7).toFixed(1)}Cr`
@@ -625,39 +665,320 @@ function ScoutPage() {
         return () => window.removeEventListener('resize', check);
     }, []);
     const [scoutSearch, setScoutSearch] = useState('');
+    const [searchOpen, setSearchOpen] = useState(false);
+    // Result picked from global search → surface (and highlight) that item in its tab
+    const [focus, setFocus] = useState<{ kind: string; key: string } | null>(null);
     const [dealSector, setDealSector] = useState('All');
     const [eventType, setEventType] = useState('All');
-    const [selectedStartup, setSelectedStartup] = useState('NeuralKit');
+    const [selectedStartupId, setSelectedStartupId] = useState('st-6');
     const [shortlisted, setShortlisted] = useState<string[]>(['st-2', 'st-3', 'st-6']);
+    const [revokeTarget, setRevokeTarget] = useState<any | null>(null);
+    const [revokeReason, setRevokeReason] = useState('');
     const [watchedEvents, setWatchedEvents] = useState<string[]>([]);
+    const [registeredEvents, setRegisteredEvents] = useState<string[]>([]);
+    const [regEvent, setRegEvent] = useState<typeof ALL_EVENTS[0] | null>(null);
+    const [regName, setRegName] = useState('');
+    const [events, setEvents] = useState(ALL_EVENTS);
+    // ── Add Event (organiser submission → admin approval) ──
+    const [addEventOpen, setAddEventOpen] = useState(false);
+    const [addEventStep, setAddEventStep] = useState<1 | 2>(1);
+    const [addEventSubmitting, setAddEventSubmitting] = useState(false);
+    const [addEventDone, setAddEventDone] = useState(false);
+    const [addEventErrors, setAddEventErrors] = useState<Record<string, string>>({});
+    const [addEventForm, setAddEventForm] = useState({
+        title: '', type: 'Demo Day', date: '', time: '', locationMode: 'physical',
+        location: '', description: '', maxCapacity: '', prize: '', registrationDeadline: '',
+        applicationRequired: false, organiserName: '', organiserEmail: '', organiserOrg: '',
+    });
+    const resetAddEvent = () => {
+        setAddEventOpen(false); setAddEventStep(1); setAddEventDone(false); setAddEventErrors({});
+        setAddEventForm({ title: '', type: 'Demo Day', date: '', time: '', locationMode: 'physical', location: '', description: '', maxCapacity: '', prize: '', registrationDeadline: '', applicationRequired: false, organiserName: '', organiserEmail: '', organiserOrg: '' });
+    };
     const [msgOpen, setMsgOpen] = useState<typeof NETWORK_CONTACTS[0] | null>(null);
+    const [msgText, setMsgText] = useState('');
+    const [scheduleOpen, setScheduleOpen] = useState<typeof NETWORK_CONTACTS[0] | null>(null);
+    const [scheduleForm, setScheduleForm] = useState({ date: '', time: '', topic: '' });
     const [registerOpen, setRegisterOpen] = useState(false);
+    const [mandate, setMandate] = useState<Record<string, string>>({});
+    const [mandateSubmitting, setMandateSubmitting] = useState(false);
+    const [mandateErr, setMandateErr] = useState<Record<string, string>>({});
+    const [vcList, setVcList] = useState<any[]>(VC_SEED);
     const [insightSector, setInsightSector] = useState('All');
     const [startups, setStartups] = useState(ALL_STARTUPS);
+    const [accessRequests, setAccessRequests] = useState<string[]>([]);
+    const [viewedDocs, setViewedDocs] = useState<string[]>([]);
+    // Diligence vault docs — seeded with demo corporate decks, then merged with live
+    // `investor` (corporate pitch) documents uploaded from the Explore Hub Brand Vault.
+    const [diligenceDocs, setDiligenceDocs] = useState<any[]>(DILIGENCE_DOCS);
+    // Diligence audit log — populated by real investor actions (view / request / download),
+    // persisted to Supabase and reloaded on mount. Not hardcoded.
+    const [auditLog, setAuditLog] = useState<any[]>([]);
+    const [docOpen, setDocOpen] = useState<any | null>(null);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const [toast, setToast] = useState<{ msg: string; color: string } | null>(null);
+    const showToast = (msg: string, color = '#06b6d4') => setToast({ msg, color });
+    const notifRef = useRef<HTMLDivElement>(null);
+    const searchRef = useRef<HTMLDivElement>(null);
+
+    // Shortlisting → notify the admin (and on revoke, send the stated reason)
+    const postShortlistEvent = async (action: 'shortlisted' | 'revoked', s: any, reason?: string) => {
+        try {
+            await fetch('/api/vc/shortlist', {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, startup_id: s.id, startup_name: s.name, reason: reason ?? null, vc_firm: VC_PROFILE.firm }),
+            });
+        } catch { /* best-effort notification */ }
+    };
+    const shortlistStartup = (s: any) => {
+        setShortlisted(prev => prev.includes(s.id) ? prev : [...prev, s.id]);
+        postShortlistEvent('shortlisted', s);
+        showToast(`Shortlisted ${s.name} — admin notified`, '#10b981');
+    };
+    const confirmRevoke = () => {
+        const s = revokeTarget;
+        const reason = revokeReason.trim();
+        if (!s || !reason) return;
+        setShortlisted(prev => prev.filter(x => x !== s.id));
+        postShortlistEvent('revoked', s, reason);
+        setRevokeTarget(null); setRevokeReason('');
+        showToast(`Removed ${s.name} from shortlist — admin notified`, '#f59e0b');
+    };
+
+    // Record a live diligence action → optimistic prepend, then persist to Supabase
+    const logAudit = async (action: 'Viewed' | 'Requested' | 'Downloaded', doc: any) => {
+        if (!doc) return;
+        const tmpId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const optimistic = { id: tmpId, action, doc: doc.name, at: fmtAuditTime(new Date().toISOString()), by: VC_PROFILE.name };
+        setAuditLog(prev => [optimistic, ...prev].slice(0, 50));
+        try {
+            const res = await fetch('/api/vc/audit', {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, doc_id: doc.id, doc_name: doc.name, startup: doc.startup, actor: VC_PROFILE.name }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (data?.event) {
+                // swap the optimistic row for the persisted one (real id + server timestamp)
+                setAuditLog(prev => [mapAuditRow(data.event), ...prev.filter(e => e.id !== tmpId)].slice(0, 50));
+            }
+        } catch { /* keep optimistic entry */ }
+    };
+
+    // Load the persisted audit trail for this fund on mount
+    useEffect(() => {
+        let alive = true;
+        (async () => {
+            try {
+                const res = await fetch('/api/vc/audit', { credentials: 'include' });
+                const data = await res.json().catch(() => ({}));
+                if (alive && Array.isArray(data?.events) && data.events.length) {
+                    setAuditLog(data.events.map(mapAuditRow));
+                }
+            } catch { /* no persisted events yet */ }
+        })();
+        return () => { alive = false; };
+    }, []);
+
+    // auto-dismiss toast
+    useEffect(() => {
+        if (!toast) return;
+        const t = setTimeout(() => setToast(null), 2600);
+        return () => clearTimeout(t);
+    }, [toast]);
+
+    // clear the search-focus highlight after it has played
+    useEffect(() => {
+        if (!focus) return;
+        const t = setTimeout(() => setFocus(null), 4500);
+        return () => clearTimeout(t);
+    }, [focus]);
+
+    // Load the public VC directory (merge live verified VCs over the seed)
+    const loadVCs = async () => {
+        try {
+            const res = await fetch('/api/vc/list', { credentials: 'include' });
+            const data = await res.json().catch(() => ({}));
+            if (Array.isArray(data?.vcs) && data.vcs.length) {
+                const seen = new Set<string>();
+                const merged = [...data.vcs, ...VC_SEED].filter(v => {
+                    const k = (v.firm_name || '').toLowerCase();
+                    if (seen.has(k)) return false; seen.add(k); return true;
+                });
+                setVcList(merged);
+            }
+        } catch { /* keep seed */ }
+    };
+    useEffect(() => { loadVCs(); }, []);
+
+    // Load startups uploaded in the Explore Hub so they appear in the Scout selector / diligence room
+    useEffect(() => {
+        let alive = true;
+        (async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('startups')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                if (!alive || error || !data?.length) return;
+                const loaded = data.map(mapStartupRow);
+                // Live startups first, then the demo seed (dedupe by name)
+                setStartups(prev => {
+                    const seen = new Set(loaded.map(s => s.name.toLowerCase()));
+                    return [...loaded, ...prev.filter(s => !seen.has(s.name.toLowerCase()))];
+                });
+            } catch { /* keep seed */ }
+        })();
+        return () => { alive = false; };
+    }, []);
+
+    // Load live Corporate Pitch Decks (deck_type = 'investor') from the shared documents table.
+    // Founders upload these via the Explore Hub Brand Vault → they surface in this diligence room.
+    useEffect(() => {
+        let alive = true;
+        (async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('documents')
+                    .select('*')
+                    .eq('deck_type', 'investor')
+                    .order('created_at', { ascending: false });
+                if (!alive || error || !data?.length) return;
+                const liveDocs = data
+                    .filter((row: any) => row.startup_name) // must be linked to a startup to show under it
+                    .map(mapInvestorDoc);
+                if (!liveDocs.length) return;
+                setDiligenceDocs(prev => {
+                    const liveNames = new Set(liveDocs.map(d => d.name.toLowerCase()));
+                    // live uploads first, drop any demo seed with the same name
+                    return [...liveDocs, ...prev.filter(d => !liveNames.has(d.name.toLowerCase()))];
+                });
+            } catch { /* keep seed */ }
+        })();
+        return () => { alive = false; };
+    }, []);
+
+    // close popovers on outside click (reliable across transform/backdrop-filter ancestors)
+    useEffect(() => {
+        if (!notifOpen && !searchOpen) return;
+        const onDown = (e: MouseEvent) => {
+            const t = e.target as Node;
+            if (notifOpen && notifRef.current && !notifRef.current.contains(t)) setNotifOpen(false);
+            if (searchOpen && searchRef.current && !searchRef.current.contains(t)) setSearchOpen(false);
+        };
+        document.addEventListener('mousedown', onDown);
+        return () => document.removeEventListener('mousedown', onDown);
+    }, [notifOpen, searchOpen]);
 
     useEffect(() => {
         const channel = supabase
-            .channel('startups')
+            .channel('scout-live')
+            // Existing startup edits (stage/raise changes) update in place
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'startups' }, (payload) => {
                 setStartups(prev => prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s));
+            })
+            // A new startup added in the Explore Hub shows up live in the selector
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'startups' }, (payload) => {
+                const mapped = mapStartupRow(payload.new);
+                setStartups(prev => {
+                    const key = (mapped.name || '').toLowerCase();
+                    if (prev.some(s => s.id === mapped.id || (s.name || '').toLowerCase() === key)) return prev;
+                    return [mapped, ...prev];
+                });
+            })
+            // A new Corporate Pitch Deck (deck_type='investor') uploaded from the Brand Vault
+            // pops into the diligence room without a refresh
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'documents' }, (payload) => {
+                const row: any = payload.new;
+                if (row?.deck_type !== 'investor' || !row?.startup_name) return;
+                const mapped = mapInvestorDoc(row);
+                setDiligenceDocs(prev => {
+                    const key = (mapped.name || '').toLowerCase();
+                    const next = prev.filter(d => d.id !== mapped.id && (d.name || '').toLowerCase() !== key);
+                    return [mapped, ...next];
+                });
+                showToast(`New corporate deck — ${row.name}`, '#06b6d4');
+            })
+            // Edited corporate decks (e.g. re-upload / status change) update in place
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'documents' }, (payload) => {
+                const row: any = payload.new;
+                if (row?.deck_type !== 'investor' || !row?.startup_name) return;
+                const mapped = mapInvestorDoc(row);
+                setDiligenceDocs(prev => prev.map(d => d.id === mapped.id ? { ...d, ...mapped } : d));
             })
             .subscribe();
         return () => { supabase.removeChannel(channel); };
     }, []);
 
+    // ── Global search across all 5 domains — each result routes to its own tab ──
+    const searchGroups = useMemo(() => {
+        const q = scoutSearch.trim().toLowerCase();
+        if (!q) return [] as any[];
+        const startupHits = startups.filter(s =>
+            s.name.toLowerCase().includes(q) || (s.tagline || '').toLowerCase().includes(q) || s.industry.toLowerCase().includes(q)
+        ).slice(0, 6);
+        const founderHits = NETWORK_CONTACTS.filter(c =>
+            c.name.toLowerCase().includes(q) || c.role.toLowerCase().includes(q) || c.company.toLowerCase().includes(q)
+        ).slice(0, 6);
+        const deckHits = diligenceDocs.filter(d =>
+            (d.name || '').toLowerCase().includes(q) || (d.type || '').toLowerCase().includes(q) || (d.startup || '').toLowerCase().includes(q)
+        ).slice(0, 6);
+        const investorHits = vcList.filter(v =>
+            (v.firm_name || '').toLowerCase().includes(q) || (v.partner_name || '').toLowerCase().includes(q) || (v.sectors || '').toLowerCase().includes(q)
+        ).slice(0, 6);
+        const eventHits = events.filter(e =>
+            (e.title || '').toLowerCase().includes(q) || (e.type || '').toLowerCase().includes(q) || (e.location || '').toLowerCase().includes(q)
+        ).slice(0, 6);
+        return [
+            { kind: 'startup', label: 'Startups', dest: 'Deal Flow', color: '#8b5cf6', items: startupHits },
+            { kind: 'deck', label: 'Documents', dest: 'Diligence Room', color: '#10b981', items: deckHits },
+            { kind: 'founder', label: 'Founders', dest: 'Startup Network', color: '#06b6d4', items: founderHits },
+            { kind: 'investor', label: 'Investors', dest: 'Investor Network', color: '#f59e0b', items: investorHits },
+            { kind: 'event', label: 'Demo Days', dest: 'Demo Days', color: '#f472b6', items: eventHits },
+        ].filter(g => g.items.length);
+    }, [scoutSearch, startups, diligenceDocs, vcList, events]);
+    const searchTotal = useMemo(() => searchGroups.reduce((a, g) => a + g.items.length, 0), [searchGroups]);
+
+    // Route a chosen result to its tab and flag it to be surfaced/highlighted there
+    const handleSearchPick = (kind: string, item: any) => {
+        setSearchOpen(false); setScoutSearch('');
+        if (kind === 'startup') { setDealSector('All'); setFocus({ kind, key: item.id }); setTab('dealflow'); }
+        else if (kind === 'founder') { setFocus({ kind, key: item.id }); setTab('network'); }
+        else if (kind === 'deck') {
+            const st = startups.find(s => s.name === item.startup);
+            if (st) setSelectedStartupId(st.id);
+            setFocus({ kind, key: item.id }); setTab('diligence');
+        }
+        else if (kind === 'investor') { setFocus({ kind, key: (item.firm_name || '').toLowerCase() }); setTab('vcnetwork'); }
+        else if (kind === 'event') { setEventType('All'); setFocus({ kind, key: item.id }); setTab('demodays'); }
+    };
+
+    // Move a focused item to the front of its list so it shows first in the target tab
+    const bringToFront = (arr: any[], matchFn: (x: any) => boolean) => {
+        const i = arr.findIndex(matchFn);
+        if (i <= 0) return arr;
+        const copy = arr.slice();
+        copy.unshift(copy.splice(i, 1)[0]);
+        return copy;
+    };
+
+    // ── Derived (id-based, reads live `startups` state so realtime updates render) ──
+    const selectedStartupObj = startups.find(s => s.id === selectedStartupId) ?? startups[0];
+    const selectedStartupName = selectedStartupObj?.name ?? '';
+
     const filteredDeals = useMemo(() =>
-        ALL_STARTUPS.filter(s =>
+        startups.filter(s =>
             (dealSector === 'All' || s.industry === dealSector) &&
             (scoutSearch === '' || s.name.toLowerCase().includes(scoutSearch.toLowerCase()))
-        ), [dealSector, scoutSearch]);
+        ), [startups, dealSector, scoutSearch]);
 
     const filteredEvents = useMemo(() =>
-        ALL_EVENTS.filter(e => eventType === 'All' || e.type === eventType),
-        [eventType]);
+        events.filter(e => eventType === 'All' || e.type === eventType),
+        [events, eventType]);
 
     const totalDeployed = DEPLOYMENTS.reduce((a, c) => a + c.amount, 0);
     const dryPowder = VC_PROFILE.dryPowder;
-    const activePipeline = ALL_STARTUPS.filter(s => shortlisted.includes(s.id)).reduce((a, c) => a + c.fundingGoal, 0);
+    const activePipeline = startups.filter(s => shortlisted.includes(s.id)).reduce((a, c) => a + c.fundingGoal, 0);
     const deployedPct = totalDeployed / (totalDeployed + dryPowder);
 
     const actionFeed = useMemo(() => [
@@ -674,6 +995,7 @@ function ScoutPage() {
         { id: 'dealflow', label: 'Deal Flow', icon: GitBranch },
         { id: 'diligence', label: 'Diligence Room', icon: FolderKey },
         { id: 'network', label: 'Startup Network', icon: Users },
+        { id: 'vcnetwork', label: 'Investor Network', icon: UserPlus },
         { id: 'demodays', label: 'Demo Days', icon: CalendarDays },
         { id: 'insights', label: 'Market Insights', icon: BarChart3 },
         { id: 'deployment', label: 'Deployment Tracker', icon: DollarSign },
@@ -698,6 +1020,8 @@ function ScoutPage() {
         .sc-btn:hover{transform:translateY(-1px)}
         .sc-card{transition:box-shadow .22s,border-color .22s,transform .18s}
         .sc-card:hover{transform:translateY(-2px)}
+        @keyframes sc-search-focus{0%{box-shadow:0 0 0 0 rgba(6,182,212,.55),0 0 26px rgba(6,182,212,.45)}50%{box-shadow:0 0 0 2px rgba(6,182,212,.9),0 0 34px rgba(6,182,212,.6)}100%{box-shadow:0 0 0 0 rgba(6,182,212,0),0 0 0 rgba(6,182,212,0)}}
+        .search-focus{animation:sc-search-focus 1.6s ease-in-out 2;position:relative;z-index:3}
         @keyframes sc-pulse2{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
         @keyframes sc-glow{0%,100%{box-shadow:0 0 8px rgba(139,92,246,.3)}50%{box-shadow:0 0 22px rgba(139,92,246,.7)}}
         @keyframes sc-drift{0%,100%{transform:translate(0,0) rotate(0deg)}33%{transform:translate(12px,-10px) rotate(2deg)}66%{transform:translate(-8px,8px) rotate(-1.5deg)}}
@@ -708,6 +1032,12 @@ function ScoutPage() {
         @keyframes sc-flow{0%{background-position:-80% 0}100%{background-position:180% 0}}
         @keyframes sc-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
         @keyframes sc-scan{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+        @keyframes sc-toast-in{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+        .notif-scroll{scrollbar-width:thin;scrollbar-color:#1e3a8a transparent}
+        .notif-scroll::-webkit-scrollbar{width:5px}
+        .notif-scroll::-webkit-scrollbar-track{background:transparent}
+        .notif-scroll::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#1e40af,#172554);border-radius:999px}
+        .notif-scroll::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#2563eb,#1e3a8a)}
         .sc-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
         .sc-active-tab{background:rgba(139,92,246,.22)!important;border-color:rgba(139,92,246,.45)!important;color:#a78bfa!important}
         .sc-stat-val{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1}
@@ -826,18 +1156,91 @@ function ScoutPage() {
                         <span style={{ fontSize: isMobile ? 13 : 12, fontWeight: 700, color: 'rgba(255,255,255,.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? 150 : undefined }}>{TABS.find(t => t.id === tab)?.label}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div className="scout-topbar-search" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 13px', borderRadius: 10, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
-                            <Search style={{ width: 11, height: 11, color: 'rgba(255,255,255,.3)' }} />
-                            <input
-                                value={scoutSearch} onChange={e => setScoutSearch(e.target.value)}
-                                placeholder="Search deals, founders…"
-                                style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 11, color: 'white', width: 160 }}
-                            />
+                        <div ref={searchRef} style={{ position: 'relative' }}>
+                            <div className="scout-topbar-search" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 13px', borderRadius: 10, background: 'rgba(255,255,255,.04)', border: `1px solid ${searchOpen && scoutSearch.trim() ? 'rgba(6,182,212,.4)' : 'rgba(255,255,255,.07)'}` }}>
+                                <Search style={{ width: 11, height: 11, color: 'rgba(255,255,255,.3)' }} />
+                                <input
+                                    value={scoutSearch}
+                                    onChange={e => { setScoutSearch(e.target.value); setSearchOpen(true); }}
+                                    onFocus={() => setSearchOpen(true)}
+                                    aria-label="Search startups, decks, founders, investors, events"
+                                    placeholder="Search anything…"
+                                    style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 11, color: 'white', width: 160 }}
+                                />
+                                {scoutSearch && (
+                                    <button onClick={() => { setScoutSearch(''); setSearchOpen(false); }} aria-label="Clear search" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.4)', display: 'flex', padding: 0 }}>
+                                        <X style={{ width: 11, height: 11 }} />
+                                    </button>
+                                )}
+                            </div>
+                            {/* Global results dropdown — spans all 5 domains, routes to the matching tab */}
+                            {searchOpen && scoutSearch.trim() && (
+                                    <div className="notif-scroll" style={{ position: 'absolute', top: 40, right: 0, width: 300, maxHeight: 400, overflowY: 'auto', zIndex: 41, background: 'rgba(8,8,16,.97)', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(6,182,212,.55)', borderRadius: 14, boxShadow: '0 24px 70px rgba(0,0,0,.7)', backdropFilter: 'blur(14px)', padding: 8 }}>
+                                        <div style={{ padding: '4px 8px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                                            <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.55)' }}>Results</span>
+                                            <span style={{ fontSize: 9, fontWeight: 700, color: '#06b6d4', background: 'rgba(6,182,212,.15)', padding: '2px 7px', borderRadius: 999, border: '1px solid rgba(6,182,212,.3)' }}>{searchTotal}</span>
+                                        </div>
+                                        {searchTotal === 0 && (
+                                            <div style={{ padding: '18px 10px', textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,.3)' }}>Nothing matches "{scoutSearch}"</div>
+                                        )}
+                                        {searchGroups.map(g => (
+                                            <div key={g.kind} style={{ marginTop: 8 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 4px 6px' }}>
+                                                    <span style={{ fontSize: 9, fontWeight: 800, color: g.color, textTransform: 'uppercase', letterSpacing: '.07em' }}>{g.label}</span>
+                                                    <span style={{ fontSize: 8, fontWeight: 700, color: g.color, background: `${g.color}18`, padding: '1px 6px', borderRadius: 999, border: `1px solid ${g.color}33` }}>{g.items.length}</span>
+                                                    <span style={{ marginLeft: 'auto', fontSize: 8.5, color: 'rgba(255,255,255,.28)' }}>→ {g.dest}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                                    {g.items.map((item: any, ii: number) => {
+                                                        const sc = g.kind === 'startup' ? (STAGE_COLORS[item.stage] || g.color) : g.color;
+                                                        let lead = '?', primary = '', secondary = '', trailing: any = null;
+                                                        if (g.kind === 'startup') { lead = (item.name || '?')[0]; primary = item.name; secondary = `${item.stage} · ${item.industry} · ${item.founder}`; trailing = item.score; }
+                                                        else if (g.kind === 'deck') { lead = (item.name || '?')[0]; primary = item.name; secondary = `${item.type || 'Deck'} · ${item.startup || '—'}`; trailing = item.corporate ? 'VC' : null; }
+                                                        else if (g.kind === 'founder') { lead = item.avatar || (item.name || '?')[0]; primary = item.name; secondary = `${item.role} · ${item.company}`; }
+                                                        else if (g.kind === 'investor') { lead = (item.firm_name || '?').split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase(); primary = item.firm_name; secondary = [item.partner_name, item.sectors].filter(Boolean).join(' · '); }
+                                                        else if (g.kind === 'event') { lead = (item.title || '?')[0]; primary = item.title; secondary = `${item.type || 'Event'} · ${item.date || ''}`; }
+                                                        return (
+                                                            <button key={(item.id || item.firm_name || primary) + ii} onClick={() => handleSearchPick(g.kind, item)} className="dr-btn" style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, background: `${sc}0c`, border: `1px solid ${sc}22`, borderLeft: `2px solid ${sc}70`, cursor: 'pointer' }}>
+                                                                <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: `radial-gradient(circle at 32% 28%, ${sc}, ${sc}66 60%, ${sc}18)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'white', boxShadow: `0 2px 8px ${sc}40` }}>{lead}</div>
+                                                                <div style={{ minWidth: 0, flex: 1 }}>
+                                                                    <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{primary}</p>
+                                                                    <p style={{ fontSize: 9.5, color: 'rgba(255,255,255,.4)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{secondary}</p>
+                                                                </div>
+                                                                {trailing != null && <span style={{ fontSize: trailing === 'VC' ? 8 : 12, fontWeight: 800, color: sc, flexShrink: 0, ...(trailing === 'VC' ? { background: `${sc}18`, border: `1px solid ${sc}38`, padding: '2px 6px', borderRadius: 999, letterSpacing: '.05em' } : {}) }}>{trailing}</span>}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                            )}
                         </div>
-                        <button style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
-                            <Bell style={{ width: 13, height: 13, color: 'rgba(255,255,255,.5)' }} />
-                            <div style={{ position: 'absolute', top: 6, right: 7, width: 6, height: 6, borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 6px #ef4444', border: '1.5px solid #050509' }} />
-                        </button>
+                        <div ref={notifRef} style={{ position: 'relative' }}>
+                            <button onClick={() => setNotifOpen(o => !o)} aria-label="Notifications" style={{ width: 32, height: 32, borderRadius: 10, background: notifOpen ? 'rgba(139,92,246,.18)' : 'rgba(255,255,255,.05)', border: `1px solid ${notifOpen ? 'rgba(139,92,246,.4)' : 'rgba(255,255,255,.08)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
+                                <Bell style={{ width: 13, height: 13, color: notifOpen ? '#a78bfa' : 'rgba(255,255,255,.5)' }} />
+                                {!notifOpen && <div style={{ position: 'absolute', top: 6, right: 7, width: 6, height: 6, borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 6px #ef4444', border: '1.5px solid #050509' }} />}
+                            </button>
+                            {notifOpen && (
+                                    <div className="notif-scroll" style={{ position: 'absolute', top: 40, right: 0, width: 300, maxHeight: 360, overflowY: 'auto', zIndex: 41, background: 'rgba(8,8,16,.97)', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(139,92,246,.55)', borderRadius: 14, boxShadow: '0 24px 70px rgba(0,0,0,.7)', backdropFilter: 'blur(14px)', padding: 8 }}>
+                                        <div style={{ padding: '6px 10px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                                            <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Notifications</span>
+                                            <span style={{ fontSize: 9, fontWeight: 700, color: '#a78bfa', background: 'rgba(139,92,246,.15)', padding: '2px 7px', borderRadius: 999, border: '1px solid rgba(139,92,246,.3)' }}>{actionFeed.length}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                                            {actionFeed.map(f => (
+                                                <div key={f.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, padding: '9px 10px', borderRadius: 10, background: `${f.color}0c`, border: `1px solid ${f.color}22`, borderLeft: `2px solid ${f.color}70` }}>
+                                                    <span style={{ fontSize: 14, flexShrink: 0, lineHeight: 1.2 }}>{f.icon}</span>
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,.72)', margin: 0, lineHeight: 1.4 }}>{f.msg}</p>
+                                                        <p style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', margin: '3px 0 0' }}>{f.time}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                            )}
+                        </div>
                         <button onClick={() => setRegisterOpen(true)} className="sc-btn" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '6px 10px' : '7px 14px', borderRadius: 10, background: 'linear-gradient(90deg,rgba(124,58,237,.8),rgba(14,165,233,.7))', border: 'none', cursor: 'pointer', fontSize: isMobile ? 10 : 11, fontWeight: 700, color: 'white', boxShadow: '0 4px 16px rgba(124,58,237,.35)', whiteSpace: 'nowrap' }}>
                             <Plus style={{ width: 12, height: 12 }} />{isMobile ? 'Add' : 'Add Mandate'}
                         </button>
@@ -848,7 +1251,7 @@ function ScoutPage() {
 
                     {/* ══ 1. INVESTMENT COCKPIT ══ */}
                     {tab === 'cockpit' && (() => {
-                        const topDeals = ALL_STARTUPS.filter(s => shortlisted.includes(s.id)).sort((a, b) => b.score - a.score);
+                        const topDeals = startups.filter(s => shortlisted.includes(s.id)).sort((a, b) => b.score - a.score);
                         return (
                             <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 12, position: 'relative' }}>
 
@@ -965,7 +1368,7 @@ function ScoutPage() {
                                                 <Target style={{ width: 13, height: 13, color: '#06b6d4' }} />
                                                 <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Deal Radar</span>
                                             </div>
-                                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{shortlisted.length} shortlisted · {ALL_STARTUPS.length} tracked</span>
+                                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{shortlisted.length} shortlisted · {startups.length} tracked</span>
                                         </div>
                                         <div className="sc-cockpit-center-row" style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
                                             {/* Radar orb — hidden on mobile via CSS */}
@@ -1190,7 +1593,8 @@ function ScoutPage() {
                             <div className="hub-pipeline-kanban" style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
                                 {STAGE_ORDER.map(stage => {
                                     const sc = STAGE_COLORS[stage];
-                                    const cards = filteredDeals.filter(s => s.stage === stage);
+                                    const stageCards = filteredDeals.filter(s => s.stage === stage);
+                                    const cards = focus?.kind === 'startup' ? bringToFront(stageCards, s => s.id === focus.key) : stageCards;
                                     return (
                                         <div key={stage} style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', borderRadius: 18, border: `1px solid ${sc}28`, background: `linear-gradient(170deg,${sc}0a,rgba(5,5,9,.95) 62%)`, overflow: 'hidden', position: 'relative' }}>
                                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${sc}90,transparent)` }} />
@@ -1206,7 +1610,7 @@ function ScoutPage() {
                                                     const sl = shortlisted.includes(s.id);
                                                     const scoreCol = s.score >= 90 ? '#10b981' : s.score >= 80 ? '#06b6d4' : '#f59e0b';
                                                     return (
-                                                        <div key={s.id} className="df-card" style={{ height: 196, flexShrink: 0, borderRadius: 14, border: `1px solid ${sc}22`, background: `linear-gradient(148deg,${sc}0d,rgba(0,0,0,.62))`, padding: '11px 12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', animationDelay: `${ci * 0.05}s` }}>
+                                                        <div key={s.id} className={`df-card${focus?.kind === 'startup' && focus.key === s.id ? ' search-focus' : ''}`} style={{ height: 196, flexShrink: 0, borderRadius: 14, border: `1px solid ${sc}22`, background: `linear-gradient(148deg,${sc}0d,rgba(0,0,0,.62))`, padding: '11px 12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', animationDelay: `${ci * 0.05}s` }}>
                                                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${sc}70,transparent)` }} />
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, flexShrink: 0 }}>
                                                                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1227,10 +1631,10 @@ function ScoutPage() {
                                                                 ))}
                                                             </div>
                                                             <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
-                                                                <button onClick={() => setShortlisted(prev => sl ? prev.filter(x => x !== s.id) : [...prev, s.id])} className="sc-btn" style={{ flex: 1, padding: '5px 0', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', background: sl ? 'rgba(16,185,129,.15)' : 'rgba(139,92,246,.15)', color: sl ? '#10b981' : '#a78bfa', border: `1px solid ${sl ? 'rgba(16,185,129,.35)' : 'rgba(139,92,246,.35)'}` }}>
+                                                                <button onClick={() => { if (sl) { setRevokeReason(''); setRevokeTarget(s); } else { shortlistStartup(s); } }} className="sc-btn" style={{ flex: 1, padding: '5px 0', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', background: sl ? 'rgba(16,185,129,.15)' : 'rgba(139,92,246,.15)', color: sl ? '#10b981' : '#a78bfa', border: `1px solid ${sl ? 'rgba(16,185,129,.35)' : 'rgba(139,92,246,.35)'}` }}>
                                                                     {sl ? '✓ Listed' : 'Shortlist'}
                                                                 </button>
-                                                                <button onClick={() => setTab('diligence')} className="sc-btn" style={{ flex: 1, padding: '5px 0', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', background: `${sc}18`, color: sc, border: `1px solid ${sc}42` }}>
+                                                                <button onClick={() => { setSelectedStartupId(s.id); setTab('diligence'); }} className="sc-btn" style={{ flex: 1, padding: '5px 0', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', background: `${sc}18`, color: sc, border: `1px solid ${sc}42` }}>
                                                                     Diligence →
                                                                 </button>
                                                             </div>
@@ -1252,8 +1656,9 @@ function ScoutPage() {
                             Deck: '#8b5cf6', Sheet: '#10b981', Doc: '#06b6d4',
                             Bundle: '#f59e0b', Video: '#f472b6',
                         };
-                        const selectedDocs = DILIGENCE_DOCS.filter(d => d.startup === selectedStartup);
-                        const viewedCount = selectedDocs.filter(d => d.viewed).length;
+                        const selectedDocsRaw = diligenceDocs.filter(d => d.startup === selectedStartupName);
+                        const selectedDocs = focus?.kind === 'deck' ? bringToFront(selectedDocsRaw, d => d.id === focus.key) : selectedDocsRaw;
+                        const viewedCount = selectedDocs.filter(d => d.viewed || viewedDocs.includes(d.id)).length;
                         const grantedCount = selectedDocs.filter(d => d.access).length;
                         const pendingCount = selectedDocs.filter(d => !d.access).length;
 
@@ -1327,10 +1732,10 @@ function ScoutPage() {
                                 {/* ── KPI strip ── */}
                                 <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                                     {[
-                                        { label: 'Total Documents', val: DILIGENCE_DOCS.length, sub: 'Across all startups', color: '#8b5cf6', Icon: FolderKey },
-                                        { label: 'Viewed', val: DILIGENCE_DOCS.filter(d => d.viewed).length, sub: 'Documents opened', color: '#10b981', Icon: Eye },
-                                        { label: 'Access Pending', val: DILIGENCE_DOCS.filter(d => !d.access).length, sub: 'Awaiting approval', color: '#f59e0b', Icon: Lock },
-                                        { label: 'Audit Events', val: AUDIT_LOG.length, sub: 'Actions logged', color: '#06b6d4', Icon: Shield },
+                                        { label: 'Corporate Decks', val: diligenceDocs.filter(d => d.corporate).length, sub: 'Investor pitch decks', color: '#8b5cf6', Icon: FolderKey },
+                                        { label: 'Viewed', val: diligenceDocs.filter(d => d.viewed || viewedDocs.includes(d.id)).length, sub: 'Documents opened', color: '#10b981', Icon: Eye },
+                                        { label: 'Access Pending', val: diligenceDocs.filter(d => !d.access).length, sub: 'Awaiting approval', color: '#f59e0b', Icon: Lock },
+                                        { label: 'Audit Events', val: auditLog.length, sub: 'Actions logged', color: '#06b6d4', Icon: Shield },
                                     ].map(k => (
                                         <div key={k.label} className="dr-kpi-card" style={{ borderRadius: 16, border: `1px solid ${k.color}25`, background: `linear-gradient(135deg,${k.color}10 0%,rgba(5,5,9,.9) 70%)`, padding: '13px 16px', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
                                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${k.color}80,transparent)` }} />
@@ -1351,12 +1756,14 @@ function ScoutPage() {
                                 <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
                                         <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.08em', padding: '0 6px' }}>Viewing</span>
-                                        {ALL_STARTUPS.filter(s => shortlisted.includes(s.id)).map(s => {
-                                            const active = selectedStartup === s.name;
+                                        {startups.map(s => {
+                                            const active = selectedStartupId === s.id;
                                             const sc = STAGE_COLORS[s.stage];
+                                            const sl = shortlisted.includes(s.id);
                                             return (
-                                                <button key={s.id} onClick={() => setSelectedStartup(s.name)} className="dr-btn" style={{ padding: '6px 14px', borderRadius: 9, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: active ? `${sc}22` : 'transparent', color: active ? sc : 'rgba(255,255,255,.38)', border: `1px solid ${active ? sc + '55' : 'transparent'}`, boxShadow: active ? `0 0 12px ${sc}28` : 'none', position: 'relative', overflow: 'hidden' }}>
+                                                <button key={s.id} onClick={() => setSelectedStartupId(s.id)} className="dr-btn" style={{ padding: '6px 14px', borderRadius: 9, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: active ? `${sc}22` : 'transparent', color: active ? sc : 'rgba(255,255,255,.38)', border: `1px solid ${active ? sc + '55' : 'transparent'}`, boxShadow: active ? `0 0 12px ${sc}28` : 'none', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 5 }}>
                                                     {active && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${sc}90,transparent)` }} />}
+                                                    {sl && <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 5px #10b981', flexShrink: 0 }} />}
                                                     {s.name}
                                                 </button>
                                             );
@@ -1390,7 +1797,7 @@ function ScoutPage() {
                                             </div>
                                             <div>
                                                 <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0 }}>Secure Document Vault</p>
-                                                <p style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', margin: 0 }}>{selectedStartup} · {selectedDocs.length} documents</p>
+                                                <p style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', margin: 0 }}>{selectedStartupName} · {selectedDocs.filter(d => d.corporate).length} corporate {selectedDocs.filter(d => d.corporate).length === 1 ? 'deck' : 'decks'} · {selectedDocs.length} docs</p>
                                             </div>
                                             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 999, background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.28)' }}>
                                                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981', animation: 'sc-pulse2 2.2s ease-in-out infinite' }} />
@@ -1403,13 +1810,15 @@ function ScoutPage() {
                                             {selectedDocs.length === 0 && (
                                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, opacity: .3, minHeight: 160 }}>
                                                     <FolderKey style={{ width: 38, height: 38 }} />
-                                                    <p style={{ fontSize: 13, color: 'white', margin: 0 }}>No documents for {selectedStartup}</p>
+                                                    <p style={{ fontSize: 13, color: 'white', margin: 0 }}>No documents for {selectedStartupName}</p>
                                                 </div>
                                             )}
                                             {selectedDocs.map((doc, idx) => {
                                                 const tc = docTypeColor[doc.type] || '#8b5cf6';
+                                                const isViewed = doc.viewed || viewedDocs.includes(doc.id);
+                                                const requested = accessRequests.includes(doc.id);
                                                 return (
-                                                    <div key={doc.id} className="dr-doc-card" style={{ borderRadius: 16, border: `1px solid ${tc}28`, background: `linear-gradient(145deg,${tc}0c 0%,rgba(5,5,9,.85) 100%)`, padding: '16px 18px', cursor: 'pointer', position: 'relative', overflow: 'hidden', animationDelay: `${idx * 0.06}s` }}>
+                                                    <div key={doc.id} className={`dr-doc-card${focus?.kind === 'deck' && focus.key === doc.id ? ' search-focus' : ''}`} style={{ borderRadius: 16, border: `1px solid ${tc}28`, background: `linear-gradient(145deg,${tc}0c 0%,rgba(5,5,9,.85) 100%)`, padding: '16px 18px', cursor: 'pointer', position: 'relative', overflow: 'hidden', animationDelay: `${idx * 0.06}s` }}>
                                                         {/* top accent line */}
                                                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, background: `linear-gradient(90deg,transparent,${tc}75,transparent)` }} />
                                                         {/* corner glow */}
@@ -1423,7 +1832,13 @@ function ScoutPage() {
                                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
                                                                     <span style={{ fontSize: 13, fontWeight: 700, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
-                                                                    {doc.viewed && (
+                                                                    {doc.corporate && (
+                                                                        <div title="Corporate pitch deck — verified investors only" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 999, background: 'rgba(6,182,212,.12)', border: '1px solid rgba(6,182,212,.32)', flexShrink: 0 }}>
+                                                                            <Shield style={{ width: 9, height: 9, color: '#06b6d4' }} />
+                                                                            <span style={{ fontSize: 9, fontWeight: 800, color: '#06b6d4', letterSpacing: '.05em' }}>CORPORATE · VC ONLY</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {isViewed && (
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 999, background: 'rgba(16,185,129,.14)', border: '1px solid rgba(16,185,129,.32)', flexShrink: 0 }}>
                                                                             <Eye style={{ width: 9, height: 9, color: '#10b981' }} />
                                                                             <span style={{ fontSize: 9, fontWeight: 700, color: '#10b981' }}>Viewed</span>
@@ -1446,16 +1861,21 @@ function ScoutPage() {
                                                             <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                                                                 {doc.access ? (
                                                                     <>
-                                                                        <button className="dr-btn" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, background: `${tc}20`, border: `1px solid ${tc}45`, color: tc, fontSize: 11, fontWeight: 700, cursor: 'pointer', boxShadow: `0 0 10px ${tc}25` }}>
+                                                                        <button onClick={() => { const firstView = !viewedDocs.includes(doc.id); setViewedDocs(prev => prev.includes(doc.id) ? prev : [...prev, doc.id]); setDocOpen(doc); if (firstView) logAudit('Viewed', doc); }} className="dr-btn" aria-label={`View ${doc.name}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, background: `${tc}20`, border: `1px solid ${tc}45`, color: tc, fontSize: 11, fontWeight: 700, cursor: 'pointer', boxShadow: `0 0 10px ${tc}25` }}>
                                                                             <Eye style={{ width: 11, height: 11 }} />View
                                                                         </button>
-                                                                        <button className="dr-btn" style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.45)', cursor: 'pointer' }}>
+                                                                        <button onClick={() => { if (doc.file_url) { window.open(doc.file_url, '_blank', 'noopener'); showToast(`Opening ${doc.name}…`, tc); } else { showToast(`Downloading ${doc.name}…`, tc); } logAudit('Downloaded', doc); }} className="dr-btn" aria-label={`Download ${doc.name}`} style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.45)', cursor: 'pointer' }}>
                                                                             <Download style={{ width: 12, height: 12 }} />
                                                                         </button>
                                                                     </>
                                                                 ) : (
-                                                                    <button className="dr-btn" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#f59e0b', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                                                                        <Lock style={{ width: 11, height: 11 }} />Request Access
+                                                                    <button
+                                                                        onClick={() => { if (!requested) { setAccessRequests(prev => [...prev, doc.id]); showToast(`Access requested — ${doc.name}`, '#f59e0b'); logAudit('Requested', doc); } }}
+                                                                        disabled={requested}
+                                                                        className="dr-btn"
+                                                                        aria-label={requested ? `Access requested for ${doc.name}` : `Request access to ${doc.name}`}
+                                                                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, background: requested ? 'rgba(16,185,129,.12)' : 'rgba(245,158,11,.12)', border: `1px solid ${requested ? 'rgba(16,185,129,.3)' : 'rgba(245,158,11,.3)'}`, color: requested ? '#10b981' : '#f59e0b', fontSize: 11, fontWeight: 700, cursor: requested ? 'default' : 'pointer' }}>
+                                                                        {requested ? <><Clock style={{ width: 11, height: 11 }} />Requested</> : <><Lock style={{ width: 11, height: 11 }} />Request Access</>}
                                                                     </button>
                                                                 )}
                                                             </div>
@@ -1464,12 +1884,12 @@ function ScoutPage() {
                                                         {/* access/view status bar */}
                                                         <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                                                             <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
-                                                                <div style={{ height: '100%', borderRadius: 2, width: doc.access ? '100%' : '35%', background: doc.access ? `linear-gradient(90deg,${tc},${tc}70)` : 'linear-gradient(90deg,#f59e0b,#f59e0b60)', boxShadow: `0 0 6px ${doc.access ? tc : '#f59e0b'}55`, transition: 'width .6s ease' }} />
+                                                                <div style={{ height: '100%', borderRadius: 2, width: doc.access ? '100%' : requested ? '65%' : '35%', background: doc.access ? `linear-gradient(90deg,${tc},${tc}70)` : requested ? 'linear-gradient(90deg,#10b981,#10b98160)' : 'linear-gradient(90deg,#f59e0b,#f59e0b60)', boxShadow: `0 0 6px ${doc.access ? tc : requested ? '#10b981' : '#f59e0b'}55`, transition: 'width .6s ease' }} />
                                                             </div>
-                                                            <span style={{ fontSize: 9, fontWeight: 700, color: doc.access ? tc : '#f59e0b', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                                                                {doc.access ? 'Access Granted' : 'Pending Approval'}
+                                                            <span style={{ fontSize: 9, fontWeight: 700, color: doc.access ? tc : requested ? '#10b981' : '#f59e0b', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                                                                {doc.access ? 'Access Granted' : requested ? 'Request Sent' : 'Pending Approval'}
                                                             </span>
-                                                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: doc.access ? '#10b981' : '#f59e0b', boxShadow: `0 0 6px ${doc.access ? '#10b981' : '#f59e0b'}`, flexShrink: 0, animation: doc.access ? 'none' : 'sc-pulse2 1.8s ease-in-out infinite' }} />
+                                                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: doc.access ? '#10b981' : requested ? '#10b981' : '#f59e0b', boxShadow: `0 0 6px ${doc.access ? '#10b981' : requested ? '#10b981' : '#f59e0b'}`, flexShrink: 0, animation: doc.access || requested ? 'none' : 'sc-pulse2 1.8s ease-in-out infinite' }} />
                                                         </div>
                                                     </div>
                                                 );
@@ -1489,28 +1909,32 @@ function ScoutPage() {
                                                 </div>
                                                 <div>
                                                     <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Audit Log</p>
-                                                    <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: 0 }}>{AUDIT_LOG.length} events recorded</p>
+                                                    <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: 0 }}>{auditLog.length} events recorded</p>
                                                 </div>
-                                                <div style={{ marginLeft: 'auto', width: 18, height: 18, borderRadius: '50%', background: 'rgba(16,185,129,.2)', border: '1px solid rgba(16,185,129,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: '#10b981' }}>{AUDIT_LOG.length}</div>
+                                                <div style={{ marginLeft: 'auto', width: 18, height: 18, borderRadius: '50%', background: 'rgba(16,185,129,.2)', border: '1px solid rgba(16,185,129,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: '#10b981' }}>{auditLog.length}</div>
                                             </div>
 
                                             {/* timeline */}
                                             <div className="sc-scroll" style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 0, minHeight: 0, position: 'relative' }}>
                                                 {/* vertical connecting line */}
-                                                <div style={{ position: 'absolute', left: 28, top: 14, bottom: 14, width: 1, background: 'linear-gradient(180deg,rgba(139,92,246,.4) 0%,rgba(6,182,212,.2) 50%,rgba(255,255,255,.05) 100%)' }} />
+                                                {auditLog.length > 0 && <div style={{ position: 'absolute', left: 28, top: 14, bottom: 14, width: 1, background: 'linear-gradient(180deg,rgba(139,92,246,.4) 0%,rgba(6,182,212,.2) 50%,rgba(255,255,255,.05) 100%)' }} />}
 
-                                                {AUDIT_LOG.map((entry, idx) => {
-                                                    const isViewed = entry.action === 'Viewed';
-                                                    const ec = isViewed ? '#10b981' : '#f59e0b';
+                                                {auditLog.length === 0 && (
+                                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: .4, minHeight: 140, textAlign: 'center' }}>
+                                                        <Activity style={{ width: 30, height: 30 }} />
+                                                        <p style={{ fontSize: 11, color: 'white', margin: 0, lineHeight: 1.5 }}>No activity yet.<br />Views, requests &amp; downloads are logged here in real time.</p>
+                                                    </div>
+                                                )}
+
+                                                {auditLog.map((entry, idx) => {
+                                                    const ec = entry.action === 'Viewed' ? '#10b981' : entry.action === 'Downloaded' ? '#06b6d4' : '#f59e0b';
+                                                    const ActionIcon = entry.action === 'Viewed' ? Eye : entry.action === 'Downloaded' ? Download : Lock;
                                                     return (
-                                                        <div key={entry.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: idx < AUDIT_LOG.length - 1 ? 14 : 0, position: 'relative' }}>
+                                                        <div key={entry.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: idx < auditLog.length - 1 ? 14 : 0, position: 'relative' }}>
                                                             {/* timeline dot */}
                                                             <div style={{ width: 28, height: 28, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
                                                                 <div style={{ width: 22, height: 22, borderRadius: '50%', background: `${ec}18`, border: `1.5px solid ${ec}60`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 10px ${ec}40`, animation: idx === 0 ? 'dr-timeline-pulse 2.5s ease-in-out infinite' : 'none' }}>
-                                                                    {isViewed
-                                                                        ? <Eye style={{ width: 9, height: 9, color: ec }} />
-                                                                        : <Lock style={{ width: 9, height: 9, color: ec }} />
-                                                                    }
+                                                                    <ActionIcon style={{ width: 9, height: 9, color: ec }} />
                                                                 </div>
                                                             </div>
 
@@ -1521,7 +1945,7 @@ function ScoutPage() {
                                                                     {idx === 0 && <span style={{ fontSize: 8, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,.12)', padding: '1px 6px', borderRadius: 999, border: '1px solid rgba(16,185,129,.25)' }}>Latest</span>}
                                                                 </div>
                                                                 <p style={{ fontSize: 11, color: 'rgba(255,255,255,.75)', margin: 0, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.doc}</p>
-                                                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: '3px 0 0' }}>{entry.at}</p>
+                                                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: '3px 0 0' }}>{entry.at}{entry.by ? ` · ${entry.by}` : ''}</p>
                                                             </div>
                                                         </div>
                                                     );
@@ -1537,7 +1961,7 @@ function ScoutPage() {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                                                 <Shield style={{ width: 12, height: 12, color: '#a78bfa' }} />
                                                 <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Access Status</p>
-                                                <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{selectedStartup}</span>
+                                                <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{selectedStartupName}</span>
                                             </div>
 
                                             {/* 3 SVG ring gauges in a row */}
@@ -1741,13 +2165,13 @@ function ScoutPage() {
                                 {/* LEFT: PREMIUM contact cards grid */}
                                 <div className="sc-scroll" style={{ flex:'1 1 0',minWidth:0,overflowY:'auto' }}>
                                     <div style={{ display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:14 }}>
-                                        {NETWORK_CONTACTS.map((c,idx)=>{
+                                        {(focus?.kind === 'founder' ? bringToFront(NETWORK_CONTACTS, c => c.id === focus.key) : NETWORK_CONTACTS).map((c,idx)=>{
                                             const col = TAG_COL[c.tag] || '#a78bfa';
                                             const h = health(c);
-                                            const startup = ALL_STARTUPS.find(s=>s.name===c.company);
+                                            const startup = startups.find(s=>s.name===c.company);
                                             const engPct = Math.min(Math.round((c.meetings*8+c.msgs)/1.2),100);
                                             return (
-                                                <div key={c.id} className="nw-card" style={{ background:'linear-gradient(145deg,rgba(11,11,24,.97),rgba(6,6,17,.99))',border:`1px solid ${col}28`,borderRadius:18,padding:0,display:'flex',flexDirection:'column',cursor:'pointer',position:'relative',overflow:'hidden',boxShadow:`0 14px 44px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.03),0 0 40px ${col}08`,animationDelay:`${idx*.06}s` }}>
+                                                <div key={c.id} className={`nw-card${focus?.kind === 'founder' && focus.key === c.id ? ' search-focus' : ''}`} style={{ background:'linear-gradient(145deg,rgba(11,11,24,.97),rgba(6,6,17,.99))',border:`1px solid ${col}28`,borderRadius:18,padding:0,display:'flex',flexDirection:'column',cursor:'pointer',position:'relative',overflow:'hidden',boxShadow:`0 14px 44px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.03),0 0 40px ${col}08`,animationDelay:`${idx*.06}s` }}>
                                                     {/* holographic shimmer sweep */}
                                                     <div className="nw-shimmer" style={{ position:'absolute',top:0,left:0,bottom:0,width:'45%',background:'linear-gradient(105deg,transparent,rgba(255,255,255,.055),transparent)',pointerEvents:'none',zIndex:10,transform:'translateX(-120%) skewX(-12deg)' }} />
                                                     {/* chromatic top stripe */}
@@ -1841,7 +2265,7 @@ function ScoutPage() {
                                                         <button onClick={()=>setMsgOpen(c)} className="nw-action sc-btn" style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'11px 0',fontSize:11,fontWeight:800,cursor:'pointer',background:`linear-gradient(135deg,${col}16,${col}09)`,color:col,border:'none',borderRight:'1px solid rgba(255,255,255,.05)',borderRadius:0,letterSpacing:'.02em' }}>
                                                             <MessageSquare style={{ width:11,height:11 }} />Message
                                                         </button>
-                                                        <button className="nw-action sc-btn" style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'11px 0',fontSize:11,fontWeight:800,cursor:'pointer',background:'rgba(255,255,255,.03)',color:'rgba(255,255,255,.42)',border:'none',borderRadius:0,letterSpacing:'.02em' }}>
+                                                        <button onClick={()=>{ setScheduleForm({ date:'', time:'', topic:'' }); setScheduleOpen(c); }} className="nw-action sc-btn" style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'11px 0',fontSize:11,fontWeight:800,cursor:'pointer',background:'rgba(255,255,255,.03)',color:'rgba(255,255,255,.42)',border:'none',borderRadius:0,letterSpacing:'.02em' }}>
                                                             <CalendarDays style={{ width:11,height:11 }} />Schedule
                                                         </button>
                                                     </div>
@@ -2084,10 +2508,10 @@ function ScoutPage() {
                                 <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
                                     {/* KPI pills */}
                                     {[
-                                        { val: ALL_EVENTS.length, label: 'Events', col: '#8b5cf6' },
+                                        { val: events.length, label: 'Events', col: '#8b5cf6' },
                                         { val: watchedEvents.length, label: 'Bookmarked', col: '#10b981' },
                                         { val: '₹5L', label: 'Prize Pool', col: '#f59e0b' },
-                                        { val: '47', label: 'RSVPs', col: '#06b6d4' },
+                                        { val: 47 + registeredEvents.length, label: 'RSVPs', col: '#06b6d4' },
                                     ].map(p => (
                                         <div key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 10, background: `${p.col}0d`, border: `1px solid ${p.col}22` }}>
                                             <span style={{ fontSize: 14, fontWeight: 900, color: p.col, textShadow: `0 0 8px ${p.col}60` }}>{p.val}</span>
@@ -2115,7 +2539,7 @@ function ScoutPage() {
                                     </div>
 
                                     {/* add event */}
-                                    <button className="dd-btn" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(124,58,237,.4)' }}>
+                                    <button onClick={() => setAddEventOpen(true)} className="dd-btn" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(124,58,237,.4)' }}>
                                         <Plus style={{ width: 12, height: 12 }} />Add Event
                                     </button>
                                 </div>
@@ -2147,14 +2571,16 @@ function ScoutPage() {
                                                 </div>
                                             )}
                                             <div className="sc-demodays-event-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                                {filteredEvents.map((ev, idx) => {
+                                                {(focus?.kind === 'event' ? bringToFront(filteredEvents, ev => ev.id === focus.key) : filteredEvents).map((ev, idx) => {
                                                     const pd = parseDate(ev.date);
                                                     const watched = watchedEvents.includes(ev.id);
+                                                    const registered = registeredEvents.includes(ev.id);
+                                                    const pending = (ev as any).pending;
                                                     const meta = TYPE_META[ev.type] || { color: '#a78bfa', icon: '📅', label: ev.type };
                                                     const tc = meta.color;
 
                                                     return (
-                                                        <div key={ev.id} className="dd-card" style={{ borderRadius: 16, border: `1px solid ${tc}28`, background: `linear-gradient(145deg,${tc}0c 0%,rgba(5,5,9,.9) 100%)`, padding: '0', cursor: 'pointer', position: 'relative', overflow: 'hidden', animationDelay: `${idx * 0.055}s`, display: 'flex', flexDirection: 'column' }}>
+                                                        <div key={ev.id} className={`dd-card${focus?.kind === 'event' && focus.key === ev.id ? ' search-focus' : ''}`} style={{ borderRadius: 16, border: `1px solid ${tc}28`, background: `linear-gradient(145deg,${tc}0c 0%,rgba(5,5,9,.9) 100%)`, padding: '0', cursor: 'pointer', position: 'relative', overflow: 'hidden', animationDelay: `${idx * 0.055}s`, display: 'flex', flexDirection: 'column' }}>
                                                             {/* top accent */}
                                                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${tc}85,transparent)` }} />
                                                             {/* corner radial */}
@@ -2213,12 +2639,22 @@ function ScoutPage() {
                                                             {/* footer with register button */}
                                                             <div style={{ padding: '10px 16px', borderTop: `1px solid ${tc}16`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: `${tc}05` }}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                                                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 5px #10b981' }} />
-                                                                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,.28)' }}>Open for registration</span>
+                                                                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: pending ? '#f59e0b' : '#10b981', boxShadow: `0 0 5px ${pending ? '#f59e0b' : '#10b981'}` }} />
+                                                                    <span style={{ fontSize: 9, color: pending ? '#f59e0b' : registered ? '#10b981' : 'rgba(255,255,255,.28)' }}>{pending ? 'Awaiting admin approval' : registered ? "Seat reserved" : 'Open for registration'}</span>
                                                                 </div>
-                                                                <button className="dd-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, background: `${tc}20`, border: `1px solid ${tc}45`, color: tc, fontSize: 11, fontWeight: 700, cursor: 'pointer', boxShadow: `0 0 10px ${tc}25` }}>
-                                                                    Register <ArrowRight style={{ width: 10, height: 10 }} />
-                                                                </button>
+                                                                {pending ? (
+                                                                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, background: 'rgba(245,158,11,.14)', border: '1px solid rgba(245,158,11,.4)', color: '#f59e0b', fontSize: 11, fontWeight: 700 }}>
+                                                                        <Clock style={{ width: 11, height: 11 }} />Pending Review
+                                                                    </span>
+                                                                ) : registered ? (
+                                                                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, background: 'rgba(16,185,129,.16)', border: '1px solid rgba(16,185,129,.4)', color: '#10b981', fontSize: 11, fontWeight: 700 }}>
+                                                                        <CheckCircle style={{ width: 11, height: 11 }} />Registered
+                                                                    </span>
+                                                                ) : (
+                                                                    <button onClick={e => { e.stopPropagation(); setRegName(VC_PROFILE.name); setRegEvent(ev); }} className="dd-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, background: `${tc}20`, border: `1px solid ${tc}45`, color: tc, fontSize: 11, fontWeight: 700, cursor: 'pointer', boxShadow: `0 0 10px ${tc}25` }}>
+                                                                        Register <ArrowRight style={{ width: 10, height: 10 }} />
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     );
@@ -2265,9 +2701,15 @@ function ScoutPage() {
                                                         </div>
                                                     </div>
 
-                                                    <button className="dd-btn" onClick={() => setWatchedEvents(prev => prev.includes(next.id) ? prev : [...prev, next.id])} style={{ width: '100%', padding: '9px 0', borderRadius: 11, fontSize: 12, fontWeight: 700, background: `linear-gradient(90deg,${tc},${tc}80)`, color: 'white', border: 'none', cursor: 'pointer', boxShadow: `0 4px 18px ${tc}45`, letterSpacing: '.02em' }}>
-                                                        Reserve My Spot →
-                                                    </button>
+                                                    {registeredEvents.includes(next.id) ? (
+                                                        <div style={{ width: '100%', padding: '9px 0', borderRadius: 11, fontSize: 12, fontWeight: 700, background: 'rgba(16,185,129,.14)', color: '#10b981', border: '1px solid rgba(16,185,129,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, letterSpacing: '.02em' }}>
+                                                            <CheckCircle style={{ width: 13, height: 13 }} />Seat Reserved
+                                                        </div>
+                                                    ) : (
+                                                        <button className="dd-btn" onClick={() => { setRegName(VC_PROFILE.name); setRegEvent(next); }} style={{ width: '100%', padding: '9px 0', borderRadius: 11, fontSize: 12, fontWeight: 700, background: `linear-gradient(90deg,${tc},${tc}80)`, color: 'white', border: 'none', cursor: 'pointer', boxShadow: `0 4px 18px ${tc}45`, letterSpacing: '.02em' }}>
+                                                            Reserve My Spot →
+                                                        </button>
+                                                    )}
                                                 </div>
                                             );
                                         })()}
@@ -2286,8 +2728,8 @@ function ScoutPage() {
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                                                 {(['Demo Day', 'Workshop', 'Hackathon', 'Mentorship'] as const).map(t => {
                                                     const tc = TYPE_META[t]?.color || '#8b5cf6';
-                                                    const count = ALL_EVENTS.filter(e => e.type === t).length;
-                                                    const pct = Math.round((count / ALL_EVENTS.length) * 100);
+                                                    const count = events.filter(e => e.type === t).length;
+                                                    const pct = Math.round((count / events.length) * 100);
                                                     return (
                                                         <div key={t}>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -2314,38 +2756,35 @@ function ScoutPage() {
                                             <div style={{ marginTop: 12, display: 'flex', height: 6, borderRadius: 4, overflow: 'hidden', gap: 1 }}>
                                                 {(['Demo Day', 'Workshop', 'Hackathon', 'Mentorship'] as const).map(t => {
                                                     const tc = TYPE_META[t]?.color || '#8b5cf6';
-                                                    const count = ALL_EVENTS.filter(e => e.type === t).length;
-                                                    const pct = (count / ALL_EVENTS.length) * 100;
+                                                    const count = events.filter(e => e.type === t).length;
+                                                    const pct = (count / events.length) * 100;
                                                     return <div key={t} style={{ flex: `0 0 ${pct}%`, background: tc, boxShadow: `0 0 6px ${tc}60` }} />;
                                                 })}
                                             </div>
                                         </div>
 
-                                        {/* Your RSVPs / Bookmarks */}
-                                        <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.024)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,.65),transparent)' }} />
+                                        {/* Your Registrations — seats the VC has reserved */}
+                                        <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(6,182,212,.18)', background: 'rgba(255,255,255,.024)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(6,182,212,.7),transparent)' }} />
                                             <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                                                <Bookmark style={{ width: 12, height: 12, color: '#10b981' }} />
-                                                <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Your Bookmarks</p>
-                                                {watchedEvents.length > 0 && (
-                                                    <div style={{ marginLeft: 'auto', width: 20, height: 20, borderRadius: '50%', background: 'rgba(16,185,129,.2)', border: '1px solid rgba(16,185,129,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#10b981' }}>{watchedEvents.length}</div>
+                                                <CalendarDays style={{ width: 12, height: 12, color: '#06b6d4' }} />
+                                                <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Your Registrations</p>
+                                                {registeredEvents.length > 0 && (
+                                                    <div style={{ marginLeft: 'auto', width: 20, height: 20, borderRadius: '50%', background: 'rgba(6,182,212,.2)', border: '1px solid rgba(6,182,212,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#06b6d4' }}>{registeredEvents.length}</div>
                                                 )}
                                             </div>
-
                                             <div className="sc-scroll" style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
-                                                {watchedEvents.length === 0 ? (
+                                                {registeredEvents.length === 0 ? (
                                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: .25, minHeight: 80 }}>
-                                                        <Bookmark style={{ width: 26, height: 26, color: 'white' }} />
-                                                        <p style={{ fontSize: 11, color: 'white', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>No bookmarks yet —<br />save events to track them</p>
+                                                        <CalendarDays style={{ width: 26, height: 26, color: 'white' }} />
+                                                        <p style={{ fontSize: 11, color: 'white', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>No registrations yet —<br />reserve a seat at an event</p>
                                                     </div>
                                                 ) : (
-                                                    ALL_EVENTS.filter(e => watchedEvents.includes(e.id)).map(ev => {
+                                                    events.filter(e => registeredEvents.includes(e.id)).map(ev => {
                                                         const pd = parseDate(ev.date);
-                                                        const meta = TYPE_META[ev.type] || { color: '#a78bfa' };
-                                                        const tc = meta.color;
+                                                        const tc = ({ 'Demo Day': '#8b5cf6', Pitching: '#a78bfa', Workshop: '#06b6d4', Hackathon: '#f59e0b', Mentorship: '#10b981' } as Record<string, string>)[ev.type] || '#06b6d4';
                                                         return (
                                                             <div key={ev.id} style={{ padding: '10px 12px', borderRadius: 12, background: `${tc}0a`, border: `1px solid ${tc}25`, borderLeft: `2.5px solid ${tc}75`, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                                                                {/* mini date */}
                                                                 <div style={{ width: 34, height: 38, borderRadius: 8, background: `${tc}14`, border: `1px solid ${tc}35`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                                                     <span style={{ fontSize: 7, fontWeight: 800, color: tc, textTransform: 'uppercase', letterSpacing: '.06em', lineHeight: 1 }}>{pd.month}</span>
                                                                     <span style={{ fontSize: 14, fontWeight: 900, color: 'white', lineHeight: 1 }}>{pd.day}</span>
@@ -2353,19 +2792,20 @@ function ScoutPage() {
                                                                 <div style={{ flex: 1, minWidth: 0 }}>
                                                                     <p style={{ fontSize: 11, fontWeight: 600, color: 'white', margin: 0, lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</p>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
-                                                                        <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 999, color: tc, background: `${tc}18`, border: `1px solid ${tc}35` }}>{ev.type}</span>
+                                                                        <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 999, color: '#10b981', background: 'rgba(16,185,129,.14)', border: '1px solid rgba(16,185,129,.32)' }}>✓ Reserved</span>
                                                                         <span style={{ fontSize: 9, color: 'rgba(255,255,255,.28)' }}>{ev.time}</span>
                                                                     </div>
                                                                 </div>
-                                                                <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(16,185,129,.18)', border: '1px solid rgba(16,185,129,.38)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
-                                                                    <CheckCircle style={{ width: 10, height: 10, color: '#10b981' }} />
-                                                                </div>
+                                                                <button onClick={() => { setRegisteredEvents(prev => prev.filter(id => id !== ev.id)); showToast(`Registration cancelled — ${ev.title}`, '#ef4444'); }} aria-label={`Cancel registration for ${ev.title}`} title="Cancel registration" style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2, cursor: 'pointer', color: 'rgba(255,255,255,.4)' }}>
+                                                                    <X style={{ width: 10, height: 10 }} />
+                                                                </button>
                                                             </div>
                                                         );
                                                     })
                                                 )}
                                             </div>
                                         </div>
+
                                     </div>
                                 </div>
                             </div>
@@ -2373,7 +2813,22 @@ function ScoutPage() {
                     })()}
 
                     {/* ══ 6. MARKET INSIGHTS ══ */}
-                    {tab === 'insights' && (() => (
+                    {tab === 'insights' && (() => {
+                        // ── Sector filter (All / SaaS / FinTech / DeepTech) drives every panel below ──
+                        const sectorObj = SECTOR_DATA.find(s => s.sector === insightSector);
+                        const isAll = insightSector === 'All' || !sectorObj;
+                        const visibleSectors = isAll ? SECTOR_DATA : [sectorObj];
+                        const insightStartups = isAll ? startups : startups.filter(s => s.industry === insightSector);
+                        const scoreDenom = insightStartups.length || 1;
+                        // headline figures
+                        const deployedVal = isAll ? totalDeployed : sectorObj.deployed;
+                        const roiPct = isAll ? 52 : (parseInt(String(sectorObj.growth).replace(/[^\d-]/g, ''), 10) || 0);
+                        const dealsVal = isAll ? 14 : sectorObj.deals;
+                        const avgScore = insightStartups.length ? Math.round(insightStartups.reduce((a, s) => a + s.score, 0) / insightStartups.length) : 0;
+                        // chart series scaled so the final point matches the sector headline
+                        const roiSeries = isAll ? ROI_DATA : ROI_DATA.map(d => ({ ...d, v: Math.max(0, Math.round(d.v * (roiPct / 52))) }));
+                        const pipeSeries = isAll ? PIPELINE_DATA : PIPELINE_DATA.map(d => ({ ...d, v: Math.max(0, Math.round(d.v * (dealsVal / 14))) }));
+                        return (
                         <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 14, position: 'relative' }}>
                             <InsightsNebula />
 
@@ -2451,10 +2906,10 @@ function ScoutPage() {
                             {/* ── KPI strip ── */}
                             <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                                 {[
-                                    { label: 'Total Deployed', val: fmt(totalDeployed), sub: 'Across all sectors', color: '#8b5cf6', Icon: TrendingUp },
-                                    { label: 'Portfolio ROI', val: '+52%', sub: 'H1 2026 average', color: '#10b981', Icon: BarChart3 },
-                                    { label: 'Active Deals', val: '14', sub: 'In pipeline', color: '#06b6d4', Icon: Target },
-                                    { label: 'Avg Score', val: `${Math.round(ALL_STARTUPS.reduce((a, s) => a + s.score, 0) / ALL_STARTUPS.length)}`, sub: 'Portfolio quality', color: '#f59e0b', Icon: Star },
+                                    { label: 'Total Deployed', val: fmt(deployedVal), sub: isAll ? 'Across all sectors' : `${insightSector} sector`, color: '#8b5cf6', Icon: TrendingUp },
+                                    { label: 'Portfolio ROI', val: `+${roiPct}%`, sub: isAll ? 'H1 2026 average' : `${insightSector} growth`, color: '#10b981', Icon: BarChart3 },
+                                    { label: 'Active Deals', val: `${dealsVal}`, sub: 'In pipeline', color: '#06b6d4', Icon: Target },
+                                    { label: 'Avg Score', val: `${avgScore}`, sub: isAll ? 'Portfolio quality' : `${insightStartups.length} ${insightStartups.length === 1 ? 'company' : 'companies'}`, color: '#f59e0b', Icon: Star },
                                 ].map(k => (
                                     <div key={k.label} className="sc-card" style={{ borderRadius: 16, border: `1px solid ${k.color}25`, background: `linear-gradient(135deg,${k.color}10 0%,rgba(5,5,9,.9) 70%)`, padding: '14px 16px', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
                                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${k.color}80,transparent)` }} />
@@ -2480,7 +2935,7 @@ function ScoutPage() {
                                     <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                                         <PieChart style={{ width: 13, height: 13, color: '#a78bfa' }} />
                                         <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Sector Breakdown</span>
-                                        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{SECTOR_DATA.length} sectors</span>
+                                        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{isAll ? `${visibleSectors.length} sectors` : insightSector}</span>
                                     </div>
 
                                     {/* SVG Donut + legend */}
@@ -2492,7 +2947,7 @@ function ScoutPage() {
                                             return (
                                                 <svg width={104} height={104} viewBox="0 0 104 104" style={{ flexShrink: 0 }}>
                                                     <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth="12" />
-                                                    {SECTOR_DATA.map(s => {
+                                                    {visibleSectors.map(s => {
                                                         const dash = (s.pct / 100) * circ;
                                                         const off = cum; cum += dash;
                                                         return (
@@ -2502,13 +2957,13 @@ function ScoutPage() {
                                                                 style={{ filter: `drop-shadow(0 0 6px ${s.color}80)` }} />
                                                         );
                                                     })}
-                                                    <text x={cx} y={cy - 6} textAnchor="middle" fontSize="18" fontWeight="900" fill="white">{SECTOR_DATA.length}</text>
-                                                    <text x={cx} y={cx + 10} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,.28)" letterSpacing="1">SECTORS</text>
+                                                    <text x={cx} y={cy - 6} textAnchor="middle" fontSize="18" fontWeight="900" fill="white">{isAll ? visibleSectors.length : `${visibleSectors[0].pct}%`}</text>
+                                                    <text x={cx} y={cx + 10} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,.28)" letterSpacing="1">{isAll ? 'SECTORS' : 'OF AUM'}</text>
                                                 </svg>
                                             );
                                         })()}
                                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                            {SECTOR_DATA.map(s => (
+                                            {visibleSectors.map(s => (
                                                 <div key={s.sector} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                                     <div style={{ width: 7, height: 7, borderRadius: '50%', background: s.color, flexShrink: 0, boxShadow: `0 0 6px ${s.color}` }} />
                                                     <span style={{ fontSize: 10, color: 'rgba(255,255,255,.5)', flex: 1 }}>{s.sector}</span>
@@ -2520,7 +2975,7 @@ function ScoutPage() {
 
                                     {/* Sector cards */}
                                     <div className="sc-scroll" style={{ flex: 1, overflowY: 'auto', padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                        {SECTOR_DATA.map(s => (
+                                        {visibleSectors.map(s => (
                                             <div key={s.sector} className="sc-card" style={{ borderRadius: 14, border: `1px solid ${s.color}22`, background: `linear-gradient(135deg,${s.color}0d 0%,rgba(0,0,0,.55) 100%)`, padding: '12px 13px', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
                                                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${s.color}60,transparent)` }} />
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -2554,14 +3009,14 @@ function ScoutPage() {
                                             <p style={{ fontSize: 10, color: 'rgba(255,255,255,.28)', margin: '2px 0 0' }}>Jan – Jun 2026</p>
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
-                                            <p style={{ fontSize: 22, fontWeight: 900, color: '#10b981', margin: 0, textShadow: '0 0 14px rgba(16,185,129,.6)', lineHeight: 1 }}>+52%</p>
+                                            <p style={{ fontSize: 22, fontWeight: 900, color: '#10b981', margin: 0, textShadow: '0 0 14px rgba(16,185,129,.6)', lineHeight: 1 }}>+{roiPct}%</p>
                                             <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '.06em' }}>6-month gain</p>
                                         </div>
                                     </div>
-                                    <AreaChart data={ROI_DATA} color="#10b981" h={isMobile ? 160 : 100} />
+                                    <AreaChart data={roiSeries} color="#10b981" h={isMobile ? 160 : 100} />
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 4, marginTop: 8, flexShrink: 0 }}>
-                                        {ROI_DATA.map((d, i) => (
-                                            <div key={d.m} style={{ textAlign: 'center', padding: '5px 0', borderRadius: 8, background: i === ROI_DATA.length - 1 ? 'rgba(16,185,129,.1)' : 'rgba(255,255,255,.03)', border: `1px solid ${i === ROI_DATA.length - 1 ? 'rgba(16,185,129,.3)' : 'rgba(255,255,255,.06)'}` }}>
+                                        {roiSeries.map((d, i) => (
+                                            <div key={d.m} style={{ textAlign: 'center', padding: '5px 0', borderRadius: 8, background: i === roiSeries.length - 1 ? 'rgba(16,185,129,.1)' : 'rgba(255,255,255,.03)', border: `1px solid ${i === roiSeries.length - 1 ? 'rgba(16,185,129,.3)' : 'rgba(255,255,255,.06)'}` }}>
                                                 <p style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', margin: 0 }}>{d.m}</p>
                                                 <p style={{ fontSize: 11, fontWeight: 700, color: '#10b981', margin: 0 }}>+{d.v}%</p>
                                             </div>
@@ -2578,14 +3033,14 @@ function ScoutPage() {
                                             <p style={{ fontSize: 10, color: 'rgba(255,255,255,.28)', margin: '2px 0 0' }}>Jan – Jun 2026</p>
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
-                                            <p style={{ fontSize: 22, fontWeight: 900, color: '#8b5cf6', margin: 0, textShadow: '0 0 14px rgba(139,92,246,.6)', lineHeight: 1 }}>14</p>
+                                            <p style={{ fontSize: 22, fontWeight: 900, color: '#8b5cf6', margin: 0, textShadow: '0 0 14px rgba(139,92,246,.6)', lineHeight: 1 }}>{dealsVal}</p>
                                             <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '.06em' }}>active deals</p>
                                         </div>
                                     </div>
-                                    <AreaChart data={PIPELINE_DATA} color="#8b5cf6" h={100} />
+                                    <AreaChart data={pipeSeries} color="#8b5cf6" h={100} />
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 4, marginTop: 8, flexShrink: 0 }}>
-                                        {PIPELINE_DATA.map((d, i) => (
-                                            <div key={d.m} style={{ textAlign: 'center', padding: '5px 0', borderRadius: 8, background: i === PIPELINE_DATA.length - 1 ? 'rgba(139,92,246,.1)' : 'rgba(255,255,255,.03)', border: `1px solid ${i === PIPELINE_DATA.length - 1 ? 'rgba(139,92,246,.3)' : 'rgba(255,255,255,.06)'}` }}>
+                                        {pipeSeries.map((d, i) => (
+                                            <div key={d.m} style={{ textAlign: 'center', padding: '5px 0', borderRadius: 8, background: i === pipeSeries.length - 1 ? 'rgba(139,92,246,.1)' : 'rgba(255,255,255,.03)', border: `1px solid ${i === pipeSeries.length - 1 ? 'rgba(139,92,246,.3)' : 'rgba(255,255,255,.06)'}` }}>
                                                 <p style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', margin: 0 }}>{d.m}</p>
                                                 <p style={{ fontSize: 11, fontWeight: 700, color: '#8b5cf6', margin: 0 }}>{d.v}</p>
                                             </div>
@@ -2599,16 +3054,16 @@ function ScoutPage() {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexShrink: 0 }}>
                                         <Shield style={{ width: 13, height: 13, color: '#06b6d4' }} />
                                         <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Score Distribution</p>
-                                        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{ALL_STARTUPS.length} companies</span>
+                                        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{insightStartups.length} companies</span>
                                     </div>
                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
                                         {[
-                                            { label: '≥ 90', badge: 'Elite', count: ALL_STARTUPS.filter(s => s.score >= 90).length, color: '#10b981' },
-                                            { label: '80–89', badge: 'Strong', count: ALL_STARTUPS.filter(s => s.score >= 80 && s.score < 90).length, color: '#06b6d4' },
-                                            { label: '70–79', badge: 'Good', count: ALL_STARTUPS.filter(s => s.score >= 70 && s.score < 80).length, color: '#f59e0b' },
-                                            { label: '< 70', badge: 'Watch', count: ALL_STARTUPS.filter(s => s.score < 70).length, color: '#ef4444' },
+                                            { label: '≥ 90', badge: 'Elite', count: insightStartups.filter(s => s.score >= 90).length, color: '#10b981' },
+                                            { label: '80–89', badge: 'Strong', count: insightStartups.filter(s => s.score >= 80 && s.score < 90).length, color: '#06b6d4' },
+                                            { label: '70–79', badge: 'Good', count: insightStartups.filter(s => s.score >= 70 && s.score < 80).length, color: '#f59e0b' },
+                                            { label: '< 70', badge: 'Watch', count: insightStartups.filter(s => s.score < 70).length, color: '#ef4444' },
                                         ].map(row => {
-                                            const barW = (row.count / ALL_STARTUPS.length) * 100;
+                                            const barW = (row.count / scoreDenom) * 100;
                                             return (
                                                 <div key={row.label} style={{ padding: '10px 12px', borderRadius: 12, background: `${row.color}09`, border: `1px solid ${row.color}22`, position: 'relative', overflow: 'hidden' }}>
                                                     <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${barW}%`, background: `${row.color}12`, borderRadius: 12, transition: 'width .6s ease', pointerEvents: 'none' }} />
@@ -2673,7 +3128,8 @@ function ScoutPage() {
                                 </div>
                             </div>
                         </div>
-                    ))()}
+                        );
+                    })()}
 
                     {/* ══ 7. DEPLOYMENT TRACKER ══ */}
 {tab === 'deployment' && (() => {
@@ -3091,6 +3547,162 @@ function ScoutPage() {
         </div>
     );
 })()}
+
+                    {/* ══ 8. INVESTOR NETWORK (public VC directory) ══ */}
+                    {tab === 'vcnetwork' && (
+                        <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 14 }}>
+
+                            {/* ── keyframes ── */}
+                            <style>{`
+              @keyframes iv-spin   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+              @keyframes iv-rspin  { from{transform:rotate(0deg)} to{transform:rotate(-360deg)} }
+              @keyframes iv-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+              @keyframes iv-drift  { 0%,100%{transform:translate(0,0)} 45%{transform:translate(15px,-12px)} 70%{transform:translate(-10px,10px)} }
+              @keyframes iv-morph  { 0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%} 50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%} }
+              @keyframes iv-flow   { 0%{background-position:-80% 0} 100%{background-position:180% 0} }
+              @keyframes iv-pulse  { 0%,100%{opacity:.45;transform:scale(1)} 50%{opacity:1;transform:scale(1.1)} }
+              @keyframes iv-rise   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+              @keyframes iv-twinkle{ 0%,100%{opacity:.2} 50%{opacity:.9} }
+              @keyframes iv-shine  { 0%{background-position:-120% 0} 100%{background-position:220% 0} }
+              .iv-card { animation:iv-rise .42s cubic-bezier(.2,.7,.3,1) both; transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+              .iv-card:hover { transform:translateY(-5px); box-shadow:0 22px 50px rgba(0,0,0,.55); }
+              .iv-card:hover .iv-orb { transform:scale(1.06); }
+              .iv-orb { transition:transform .25s ease; }
+              .iv-card:hover .iv-accent { animation:iv-shine 1.3s ease forwards; }
+              .iv-btn { transition:all .18s ease; }
+              .iv-btn:hover { transform:translateY(-2px); filter:brightness(1.12); box-shadow:0 8px 26px rgba(124,58,237,.55); }
+            `}</style>
+
+                            {/* ── CSS ambient observatory backdrop ── */}
+                            <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+                                {/* nebula blobs */}
+                                <div style={{ position: 'absolute', top: '4%', left: '10%', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,.08),transparent 70%)', animation: 'iv-drift 13s ease-in-out infinite' }} />
+                                <div style={{ position: 'absolute', bottom: '8%', right: '6%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle,rgba(6,182,212,.07),transparent 70%)', animation: 'iv-drift 16s ease-in-out infinite reverse' }} />
+                                <div style={{ position: 'absolute', top: '40%', left: '46%', width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle,rgba(16,185,129,.05),transparent 70%)', animation: 'iv-drift 10s ease-in-out infinite 2s' }} />
+                                {/* orrery top-right */}
+                                <div style={{ position: 'absolute', top: -44, right: -44, width: 230, height: 230 }}>
+                                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: 17, height: 17, marginLeft: -8, marginTop: -8, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%,#c4b5fd,#6d28d9)', boxShadow: '0 0 20px rgba(139,92,246,.9)', animation: 'iv-pulse 2.8s ease-in-out infinite' }} />
+                                    {[{ w: 62, c: '#8b5cf6', sp: '3.4s' }, { w: 106, c: '#06b6d4', sp: '6s', rev: true }, { w: 162, c: '#10b981', sp: '9.5s' }, { w: 220, c: '#f59e0b', sp: '14s', rev: true }].map((o, i) => (
+                                        <div key={i} style={{ position: 'absolute', top: '50%', left: '50%', width: o.w, height: o.w, marginLeft: -o.w / 2, marginTop: -o.w / 2, borderRadius: '50%', border: `1px solid ${o.c}${i < 2 ? '38' : '20'}` }}>
+                                            <div style={{ position: 'absolute', top: i % 2 === 0 ? -4 : 'auto', bottom: i % 2 === 1 ? -4 : 'auto', left: '50%', width: 9, height: 9, marginLeft: -4, borderRadius: '50%', background: o.c, boxShadow: `0 0 9px ${o.c}`, animation: `iv-spin ${o.sp} linear infinite ${o.rev ? 'reverse' : ''}`, transformOrigin: `4px ${o.w / 2 + 4}px` }} />
+                                        </div>
+                                    ))}
+                                </div>
+                                {/* morphing blob bottom-left */}
+                                <div style={{ position: 'absolute', bottom: 26, left: 14, width: 110, height: 110, background: 'linear-gradient(135deg,rgba(139,92,246,.12),rgba(6,182,212,.07))', animation: 'iv-morph 8s ease-in-out infinite', border: '1px solid rgba(139,92,246,.16)' }} />
+                                {/* constellation SVG */}
+                                <div style={{ position: 'absolute', top: '24%', left: '4%', opacity: .4, animation: 'iv-float 7s ease-in-out infinite' }}>
+                                    <svg width="150" height="110">
+                                        <polyline points="8,80 42,30 80,52 118,16 140,60" fill="none" stroke="rgba(167,139,250,.4)" strokeWidth="1" />
+                                        {[[8, 80], [42, 30], [80, 52], [118, 16], [140, 60]].map(([x, y], i) => (
+                                            <circle key={i} cx={x} cy={y} r={i % 2 ? 1.8 : 2.6} fill="#c4b5fd" style={{ animation: `iv-twinkle ${2.2 + i * 0.4}s ease-in-out infinite` }} />
+                                        ))}
+                                    </svg>
+                                </div>
+                                {/* spinning diamond */}
+                                <div style={{ position: 'absolute', bottom: '24%', left: '40%', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 52, height: 52 }}>
+                                    <div style={{ position: 'absolute', width: 38, height: 38, border: '2px solid rgba(6,182,212,.3)', borderRadius: 4, animation: 'iv-spin 11s linear infinite', transform: 'rotate(45deg)' }} />
+                                    <div style={{ position: 'absolute', width: 18, height: 18, background: 'rgba(6,182,212,.06)', borderRadius: 2, animation: 'iv-rspin 6.5s linear infinite', transform: 'rotate(45deg)' }} />
+                                </div>
+                                {/* floating star particles */}
+                                {[{ x: '7%', y: '40%', s: 4, c: '#8b5cf6', d: '0s' }, { x: '34%', y: '84%', s: 3, c: '#06b6d4', d: '.8s' }, { x: '60%', y: '12%', s: 5, c: '#10b981', d: '2.5s' }, { x: '86%', y: '52%', s: 3, c: '#f59e0b', d: '.4s' }, { x: '50%', y: '70%', s: 3, c: '#f472b6', d: '1.7s' }, { x: '72%', y: '86%', s: 4, c: '#a78bfa', d: '3s' }].map((p, i) => (
+                                    <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, width: p.s, height: p.s, borderRadius: '50%', background: p.c, boxShadow: `0 0 ${p.s * 2.5}px ${p.c}`, opacity: .42, animation: `iv-float ${3.6 + i * .5}s ease-in-out ${p.d} infinite` }} />
+                                ))}
+                                {/* flow lines */}
+                                {[{ t: '30%', c: '#8b5cf6' }, { t: '62%', c: '#06b6d4' }, { t: '84%', c: '#10b981' }].map((l, i) => (
+                                    <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: l.t, height: 1, background: `linear-gradient(90deg,transparent,${l.c}14,transparent)`, backgroundSize: '40% 100%', animation: `iv-flow 8s linear ${i * 2}s infinite` }} />
+                                ))}
+                            </div>
+
+                            {/* ── Header ── */}
+                            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+                                    <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: 'linear-gradient(135deg,rgba(139,92,246,.22),rgba(6,182,212,.16))', border: '1px solid rgba(139,92,246,.32)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 18px rgba(139,92,246,.4)' }}>
+                                        <Globe style={{ width: 18, height: 18, color: '#c4b5fd', filter: 'drop-shadow(0 0 5px #8b5cf6)' }} />
+                                    </div>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                                            <p style={{ fontSize: 17, fontWeight: 900, color: 'white', margin: 0, letterSpacing: '-.02em', textShadow: '0 0 18px rgba(139,92,246,.4)' }}>Investor Network</p>
+                                            <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 999, color: '#a78bfa', background: 'rgba(139,92,246,.15)', border: '1px solid rgba(139,92,246,.3)' }}>{vcList.length} funds</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 999, background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.28)' }}>
+                                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981', animation: 'iv-pulse 2.2s ease-in-out infinite' }} />
+                                                <span style={{ fontSize: 9, fontWeight: 800, color: '#10b981', letterSpacing: '.08em' }}>VERIFIED</span>
+                                            </div>
+                                        </div>
+                                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', margin: '4px 0 0' }}>Every verified fund on Incutrack — a constellation of capital visible to founders, investors &amp; visitors alike.</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setRegisterOpen(true)} className="iv-btn" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 17px', borderRadius: 11, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, boxShadow: '0 4px 16px rgba(124,58,237,.4)' }}>
+                                    <UserPlus style={{ width: 13, height: 13 }} />Register Your Fund
+                                </button>
+                            </div>
+
+                            <div className="sc-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
+                                {vcList.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,.25)', fontSize: 13 }}>No funds listed yet — be the first to register.</div>
+                                ) : (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16, paddingBottom: 4 }}>
+                                        {(focus?.kind === 'investor' ? bringToFront(vcList, v => (v.firm_name || '').toLowerCase() === focus.key) : vcList).map((vc, i) => {
+                                            const initials = (vc.firm_name || '?').split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
+                                            const col = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#f472b6'][i % 5];
+                                            const sectors = (vc.sectors || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+                                            const vcFocused = focus?.kind === 'investor' && focus.key === (vc.firm_name || '').toLowerCase();
+                                            return (
+                                                <div key={(vc.firm_name || '') + i} className={`iv-card${vcFocused ? ' search-focus' : ''}`} style={{ borderRadius: 18, border: `1px solid ${col}2e`, background: `linear-gradient(150deg,${col}12 0%,rgba(7,7,13,.94) 62%)`, padding: '17px 17px 15px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 12, animationDelay: `${i * 0.07}s`, cursor: 'default', backdropFilter: 'blur(2px)' }}>
+                                                    {/* animated top accent */}
+                                                    <div className="iv-accent" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${col},transparent)`, backgroundSize: '60% 100%', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }} />
+                                                    {/* corner radial glow */}
+                                                    <div style={{ position: 'absolute', top: -34, right: -34, width: 130, height: 130, borderRadius: '50%', background: `radial-gradient(circle,${col}20,transparent 70%)`, pointerEvents: 'none' }} />
+                                                    {/* faint constellation in card */}
+                                                    <svg width="90" height="70" style={{ position: 'absolute', bottom: 6, right: 8, opacity: .18, pointerEvents: 'none' }}>
+                                                        <polyline points="6,54 30,22 56,40 84,12" fill="none" stroke={col} strokeWidth="1" />
+                                                        {[[6, 54], [30, 22], [56, 40], [84, 12]].map(([x, y], k) => <circle key={k} cx={x} cy={y} r="1.8" fill={col} />)}
+                                                    </svg>
+
+                                                    {/* header row: orb + identity */}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 13, position: 'relative', zIndex: 1 }}>
+                                                        <div className="iv-orb" style={{ position: 'relative', width: 52, height: 52, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            {isMobile ? (
+                                                                <div style={{ width: 46, height: 46, borderRadius: '50%', background: `radial-gradient(circle at 32% 28%, ${col}, ${col}66 60%, ${col}1e)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: 'white', boxShadow: `0 4px 16px ${col}55` }}>{initials}</div>
+                                                            ) : (
+                                                                <>
+                                                                    <SectorPlanet color={col} size={52} />
+                                                                    <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900, color: 'white', textShadow: `0 1px 6px rgba(0,0,0,.9), 0 0 10px ${col}`, pointerEvents: 'none' }}>{initials}</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ minWidth: 0, flex: 1 }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                                <p style={{ fontSize: 14, fontWeight: 800, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-.01em' }}>{vc.firm_name}</p>
+                                                                <CheckCircle style={{ width: 13, height: 13, color: '#10b981', flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(16,185,129,.7))' }} />
+                                                            </div>
+                                                            <p style={{ fontSize: 11, color: 'rgba(255,255,255,.42)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{vc.partner_name}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {vc.investment_thesis && <p style={{ fontSize: 11.5, color: 'rgba(255,255,255,.55)', margin: 0, lineHeight: 1.55, fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', position: 'relative', zIndex: 1, minHeight: 36 }}>“{vc.investment_thesis}”</p>}
+
+                                                    {sectors.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, position: 'relative', zIndex: 1 }}>{sectors.slice(0, 4).map((s: string) => <span key={s} style={{ fontSize: 9, fontWeight: 700, padding: '3px 9px', borderRadius: 999, color: col, background: `${col}16`, border: `1px solid ${col}32`, letterSpacing: '.02em' }}>{s}</span>)}</div>}
+
+                                                    <div style={{ display: 'flex', gap: 8, marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,.07)', paddingTop: 11, position: 'relative', zIndex: 1 }}>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <p style={{ fontSize: 8, color: 'rgba(255,255,255,.32)', margin: 0, textTransform: 'uppercase', letterSpacing: '.07em', fontWeight: 700 }}>Stage</p>
+                                                            <p style={{ fontSize: 11.5, fontWeight: 700, color: 'white', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{vc.stage_pref || '—'}</p>
+                                                        </div>
+                                                        <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,.07)' }} />
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <p style={{ fontSize: 8, color: 'rgba(255,255,255,.32)', margin: 0, textTransform: 'uppercase', letterSpacing: '.07em', fontWeight: 700 }}>Cheque</p>
+                                                            <p style={{ fontSize: 11.5, fontWeight: 800, color: col, margin: '3px 0 0', textShadow: `0 0 10px ${col}40` }}>{vc.check_min ? `${fmt(vc.check_min)}${vc.check_max ? ` – ${fmt(vc.check_max)}` : '+'}` : '—'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </main>
             </div >
 
@@ -3110,11 +3722,106 @@ function ScoutPage() {
                                 <button onClick={() => setMsgOpen(null)} style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,.5)', padding: 6, display: 'flex' }}><X style={{ width: 14, height: 14 }} /></button>
                             </div>
                             <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                <textarea placeholder="Type your message…" style={{ width: '100%', minHeight: 110, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 13, color: 'white', fontSize: 16, padding: '10px 13px', resize: 'vertical', outline: 'none', fontFamily: 'Inter,sans-serif', lineHeight: 1.55, boxSizing: 'border-box' }} />
+                                <textarea value={msgText} onChange={e => setMsgText(e.target.value)} placeholder="Type your message…" style={{ width: '100%', minHeight: 110, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 13, color: 'white', fontSize: 16, padding: '10px 13px', resize: 'vertical', outline: 'none', fontFamily: 'Inter,sans-serif', lineHeight: 1.55, boxSizing: 'border-box' }} />
                                 <div style={{ display: 'flex', gap: 10 }}>
-                                    <button onClick={() => setMsgOpen(null)} style={{ flex: 1, padding: '10px', borderRadius: 12, background: 'rgba(255,255,255,.05)', color: 'rgba(255,255,255,.45)', border: '1px solid rgba(255,255,255,.08)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Cancel</button>
-                                    <button onClick={() => setMsgOpen(null)} className="sc-btn" style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px', borderRadius: 12, background: 'linear-gradient(90deg,#0e7490,#06b6d4)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, boxShadow: '0 4px 18px rgba(6,182,212,.4)' }}>
+                                    <button onClick={() => { setMsgOpen(null); setMsgText(''); }} style={{ flex: 1, padding: '10px', borderRadius: 12, background: 'rgba(255,255,255,.05)', color: 'rgba(255,255,255,.45)', border: '1px solid rgba(255,255,255,.08)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Cancel</button>
+                                    <button
+                                        onClick={() => { const to = msgOpen?.name; setMsgOpen(null); setMsgText(''); showToast(`Message sent to ${to}`, '#06b6d4'); }}
+                                        disabled={!msgText.trim()}
+                                        className="sc-btn"
+                                        style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px', borderRadius: 12, background: 'linear-gradient(90deg,#0e7490,#06b6d4)', color: 'white', border: 'none', cursor: msgText.trim() ? 'pointer' : 'not-allowed', opacity: msgText.trim() ? 1 : 0.5, fontSize: 13, fontWeight: 700, boxShadow: '0 4px 18px rgba(6,182,212,.4)' }}>
                                         <Send style={{ width: 13, height: 13 }} />Send Message
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* ══ MODAL: Schedule Meeting ══ */}
+            {
+                scheduleOpen && (
+                    <div onClick={() => setScheduleOpen(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+                        <div onClick={e => e.stopPropagation()} className="hub-modal-wrap" style={{ background: '#07070f', border: '1px solid rgba(139,92,246,.22)', borderTop: '2px solid rgba(139,92,246,.6)', borderRadius: 22, width: '100%', maxWidth: 420, boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
+                            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg,#6d28d9,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(139,92,246,.35)' }}><CalendarDays style={{ width: 16, height: 16, color: 'white' }} /></div>
+                                    <div>
+                                        <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0 }}>Schedule with {scheduleOpen.name}</p>
+                                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,.35)', margin: 0 }}>{scheduleOpen.role} · {scheduleOpen.company}</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setScheduleOpen(null)} aria-label="Close" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,.5)', padding: 6, display: 'flex' }}><X style={{ width: 14, height: 14 }} /></button>
+                            </div>
+                            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <div>
+                                        <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>Date</label>
+                                        <input type="date" value={scheduleForm.date} onChange={e => setScheduleForm(p => ({ ...p, date: e.target.value }))} style={{ width: '100%', padding: '10px 12px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: 'white', fontSize: 13, outline: 'none', boxSizing: 'border-box', colorScheme: 'dark' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>Time</label>
+                                        <input type="time" value={scheduleForm.time} onChange={e => setScheduleForm(p => ({ ...p, time: e.target.value }))} style={{ width: '100%', padding: '10px 12px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: 'white', fontSize: 13, outline: 'none', boxSizing: 'border-box', colorScheme: 'dark' }} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>Agenda</label>
+                                    <textarea value={scheduleForm.topic} onChange={e => setScheduleForm(p => ({ ...p, topic: e.target.value }))} placeholder="What's this meeting about?" style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 13, color: 'white', fontSize: 14, padding: '10px 13px', resize: 'vertical', outline: 'none', fontFamily: 'Inter,sans-serif', lineHeight: 1.55, boxSizing: 'border-box' }} />
+                                </div>
+                                <div style={{ display: 'flex', gap: 10 }}>
+                                    <button onClick={() => setScheduleOpen(null)} style={{ flex: 1, padding: '10px', borderRadius: 12, background: 'rgba(255,255,255,.05)', color: 'rgba(255,255,255,.45)', border: '1px solid rgba(255,255,255,.08)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Cancel</button>
+                                    <button
+                                        onClick={() => {
+                                            const to = scheduleOpen?.name;
+                                            const when = new Date(`${scheduleForm.date}T${scheduleForm.time || '00:00'}`);
+                                            const whenLabel = !isNaN(when.getTime())
+                                                ? when.toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                                : '';
+                                            setScheduleOpen(null);
+                                            showToast(`Meeting scheduled with ${to}${whenLabel ? ` · ${whenLabel}` : ''}`, '#8b5cf6');
+                                        }}
+                                        disabled={!scheduleForm.date || !scheduleForm.time}
+                                        className="sc-btn"
+                                        style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px', borderRadius: 12, background: 'linear-gradient(90deg,#6d28d9,#8b5cf6)', color: 'white', border: 'none', cursor: (scheduleForm.date && scheduleForm.time) ? 'pointer' : 'not-allowed', opacity: (scheduleForm.date && scheduleForm.time) ? 1 : 0.5, fontSize: 13, fontWeight: 700, boxShadow: '0 4px 18px rgba(139,92,246,.4)' }}>
+                                        <CalendarDays style={{ width: 13, height: 13 }} />Confirm Meeting
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* ══ MODAL: Revoke Shortlist (reason required → admin notified) ══ */}
+            {
+                revokeTarget && (
+                    <div onClick={() => { setRevokeTarget(null); setRevokeReason(''); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+                        <div onClick={e => e.stopPropagation()} className="hub-modal-wrap" style={{ background: '#07070f', border: '1px solid rgba(245,158,11,.25)', borderTop: '2px solid rgba(245,158,11,.6)', borderRadius: 22, width: '100%', maxWidth: 420, boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
+                            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg,#b45309,#f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(245,158,11,.35)' }}><X style={{ width: 16, height: 16, color: 'white' }} /></div>
+                                    <div>
+                                        <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0 }}>Remove from Shortlist</p>
+                                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,.35)', margin: 0 }}>{revokeTarget.name} · {revokeTarget.industry}</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => { setRevokeTarget(null); setRevokeReason(''); }} aria-label="Close" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,.5)', padding: 6, display: 'flex' }}><X style={{ width: 14, height: 14 }} /></button>
+                            </div>
+                            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                <div>
+                                    <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>Reason for revoking *</label>
+                                    <textarea autoFocus value={revokeReason} onChange={e => setRevokeReason(e.target.value)} placeholder="Why are you removing this startup from your shortlist?" style={{ width: '100%', minHeight: 96, background: 'rgba(255,255,255,.04)', border: `1px solid ${revokeReason.trim() ? 'rgba(255,255,255,.1)' : 'rgba(245,158,11,.3)'}`, borderRadius: 13, color: 'white', fontSize: 14, padding: '10px 13px', resize: 'vertical', outline: 'none', fontFamily: 'Inter,sans-serif', lineHeight: 1.55, boxSizing: 'border-box' }} />
+                                </div>
+                                <p style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', margin: 0, lineHeight: 1.5 }}>This reason is sent to the <strong style={{ color: 'rgba(255,255,255,.55)' }}>Incutrack admin</strong> along with the removal.</p>
+                                <div style={{ display: 'flex', gap: 10 }}>
+                                    <button onClick={() => { setRevokeTarget(null); setRevokeReason(''); }} style={{ flex: 1, padding: '10px', borderRadius: 12, background: 'rgba(255,255,255,.05)', color: 'rgba(255,255,255,.45)', border: '1px solid rgba(255,255,255,.08)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Cancel</button>
+                                    <button
+                                        onClick={confirmRevoke}
+                                        disabled={!revokeReason.trim()}
+                                        className="sc-btn"
+                                        style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px', borderRadius: 12, background: 'linear-gradient(90deg,#b45309,#f59e0b)', color: 'white', border: 'none', cursor: revokeReason.trim() ? 'pointer' : 'not-allowed', opacity: revokeReason.trim() ? 1 : 0.5, fontSize: 13, fontWeight: 700, boxShadow: '0 4px 18px rgba(245,158,11,.4)' }}>
+                                        <X style={{ width: 13, height: 13 }} />Confirm Removal
                                     </button>
                                 </div>
                             </div>
@@ -3126,38 +3833,482 @@ function ScoutPage() {
             {/* ══ MODAL: VC Registration ══ */}
             {
                 registerOpen && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
-                        <div className="hub-modal-wrap" style={{ background: '#07070f', border: '1px solid rgba(139,92,246,.22)', borderTop: '2px solid rgba(139,92,246,.6)', borderRadius: 22, width: '100%', maxWidth: 460, boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
-                            <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(255,255,255,.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div onClick={() => setRegisterOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+                        <div onClick={e => e.stopPropagation()} className="notif-scroll hub-modal-wrap" style={{ background: '#07070f', border: '1px solid rgba(139,92,246,.22)', borderTop: '2px solid rgba(139,92,246,.6)', borderRadius: 22, width: '100%', maxWidth: 480, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
+                            <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(255,255,255,.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: '#07070f', zIndex: 2 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     <div style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(139,92,246,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 14px rgba(139,92,246,.5)' }}>
                                         <Telescope style={{ width: 13, height: 13, color: '#a78bfa' }} />
                                     </div>
-                                    <p style={{ fontSize: 14, fontWeight: 700, color: 'white', margin: 0 }}>VC Onboarding — Investment Thesis</p>
+                                    <div>
+                                        <p style={{ fontSize: 14, fontWeight: 700, color: 'white', margin: 0 }}>Register Your Fund</p>
+                                        <p style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', margin: '1px 0 0' }}>Set up your investor profile &amp; mandate password</p>
+                                    </div>
                                 </div>
-                                <button onClick={() => setRegisterOpen(false)} style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,.5)', padding: 6, display: 'flex' }}><X style={{ width: 14, height: 14 }} /></button>
+                                <button onClick={() => setRegisterOpen(false)} aria-label="Close" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,.5)', padding: 6, display: 'flex' }}><X style={{ width: 14, height: 14 }} /></button>
                             </div>
-                            <div style={{ padding: '22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                                {[
-                                    ['Firm Name', 'e.g. Nexus Ventures'],
-                                    ['Partner Name', 'e.g. Aryan Mehta'],
-                                    ['Target Sectors', 'e.g. SaaS, FinTech, DeepTech'],
-                                    ['Stage Preference', 'e.g. Seed, Series A'],
-                                    ['Check Size Range', 'e.g. ₹5M – ₹50M'],
-                                ].map(([label, ph]) => (
-                                    <div key={label}>
+                            <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                {user?.email && (
+                                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', padding: '8px 12px', borderRadius: 10, background: 'rgba(139,92,246,.07)', border: '1px solid rgba(139,92,246,.18)' }}>
+                                        Registering under <span style={{ color: '#c4b5fd', fontWeight: 700 }}>{user.email}</span>
+                                    </div>
+                                )}
+                                {([
+                                    ['firm_name', 'Firm Name *', 'e.g. Nexus Ventures', 'text'],
+                                    ['partner_name', 'Partner / Your Name *', 'e.g. Aryan Mehta', 'text'],
+                                    ['investment_thesis', 'Investment Thesis', 'One line on what you back & why', 'area'],
+                                    ['sectors', 'Target Sectors', 'e.g. SaaS, FinTech, DeepTech', 'text'],
+                                    ['stage_pref', 'Stage Preference', 'e.g. Seed, Series A', 'text'],
+                                ] as [string, string, string, string][]).map(([key, label, ph, kind]) => (
+                                    <div key={key}>
                                         <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>{label}</label>
-                                        <input placeholder={ph} style={{ width: '100%', padding: '10px 13px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: 'white', fontSize: 12, outline: 'none', boxSizing: 'border-box', transition: 'border-color .18s' }}
-                                            onFocus={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(139,92,246,.5)'}
-                                            onBlur={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(255,255,255,.1)'}
-                                        />
+                                        {kind === 'area' ? (
+                                            <textarea value={mandate[key] ?? ''} onChange={e => setMandate(p => ({ ...p, [key]: e.target.value }))} rows={2} placeholder={ph} style={{ width: '100%', padding: '10px 13px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: `1px solid ${mandateErr[key] ? '#f87171' : 'rgba(255,255,255,.1)'}`, color: 'white', fontSize: 12, outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }} />
+                                        ) : (
+                                            <input value={mandate[key] ?? ''} onChange={e => setMandate(p => ({ ...p, [key]: e.target.value }))} placeholder={ph} style={{ width: '100%', padding: '10px 13px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: `1px solid ${mandateErr[key] ? '#f87171' : 'rgba(255,255,255,.1)'}`, color: 'white', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+                                        )}
                                     </div>
                                 ))}
-                                <button onClick={() => setRegisterOpen(false)} className="sc-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 13, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, boxShadow: '0 6px 24px rgba(124,58,237,.45)', marginTop: 4 }}>
-                                    <Telescope style={{ width: 14, height: 14 }} />Create Scout Profile →
+                                {/* Check size range */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <div>
+                                        <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>Min Cheque (₹)</label>
+                                        <input type="number" value={mandate.check_min ?? ''} onChange={e => setMandate(p => ({ ...p, check_min: e.target.value }))} placeholder="5000000" style={{ width: '100%', padding: '10px 13px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: 'white', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>Max Cheque (₹)</label>
+                                        <input type="number" value={mandate.check_max ?? ''} onChange={e => setMandate(p => ({ ...p, check_max: e.target.value }))} placeholder="50000000" style={{ width: '100%', padding: '10px 13px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: 'white', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+                                    </div>
+                                </div>
+                                {/* Password */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <div>
+                                        <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>Mandate Password *</label>
+                                        <input type="password" value={mandate.password ?? ''} onChange={e => setMandate(p => ({ ...p, password: e.target.value }))} placeholder="6+ characters" style={{ width: '100%', padding: '10px 13px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: `1px solid ${mandateErr.password ? '#f87171' : 'rgba(255,255,255,.1)'}`, color: 'white', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>Confirm Password *</label>
+                                        <input type="password" value={mandate.password2 ?? ''} onChange={e => setMandate(p => ({ ...p, password2: e.target.value }))} placeholder="Repeat password" style={{ width: '100%', padding: '10px 13px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: `1px solid ${mandateErr.password2 ? '#f87171' : 'rgba(255,255,255,.1)'}`, color: 'white', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+                                    </div>
+                                </div>
+                                {(mandateErr.firm_name || mandateErr.partner_name || mandateErr.password || mandateErr.password2 || mandateErr.submit) && (
+                                    <div style={{ padding: '9px 12px', borderRadius: 10, background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.32)' }}>
+                                        <span style={{ fontSize: 11, color: '#f87171', fontWeight: 600 }}>{mandateErr.firm_name || mandateErr.partner_name || mandateErr.password || mandateErr.password2 || mandateErr.submit}</span>
+                                    </div>
+                                )}
+                                <p style={{ fontSize: 10, color: 'rgba(255,255,255,.28)', margin: 0, lineHeight: 1.5 }}>Your profile is submitted for verification. Once the Incutrack team approves it, your fund goes live in the public <strong style={{ color: 'rgba(255,255,255,.55)' }}>Investor Network</strong>.</p>
+                                <button
+                                    disabled={mandateSubmitting}
+                                    onClick={async () => {
+                                        const errs: Record<string, string> = {};
+                                        if (!(mandate.firm_name || '').trim()) errs.firm_name = 'Firm name is required';
+                                        else if (!(mandate.partner_name || '').trim()) errs.partner_name = 'Partner name is required';
+                                        else if ((mandate.password || '').length < 6) errs.password = 'Password must be at least 6 characters';
+                                        else if (mandate.password !== mandate.password2) errs.password2 = 'Passwords do not match';
+                                        setMandateErr(errs);
+                                        if (Object.keys(errs).length > 0) return;
+                                        setMandateSubmitting(true);
+                                        try {
+                                            const res = await fetch('/api/vc/mandate', {
+                                                method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                                                body: JSON.stringify({
+                                                    firm_name: mandate.firm_name, partner_name: mandate.partner_name,
+                                                    investment_thesis: mandate.investment_thesis || null,
+                                                    sectors: mandate.sectors || null, stage_pref: mandate.stage_pref || null,
+                                                    check_min: mandate.check_min ? Number(mandate.check_min) : null,
+                                                    check_max: mandate.check_max ? Number(mandate.check_max) : null,
+                                                    password: mandate.password,
+                                                }),
+                                            });
+                                            const data = await res.json().catch(() => ({} as any));
+                                            if (!res.ok) { setMandateSubmitting(false); setMandateErr({ submit: (data as any)?.error || 'Could not save your mandate. Please try again.' }); return; }
+                                        } catch { setMandateSubmitting(false); setMandateErr({ submit: 'Network error — please try again.' }); return; }
+                                        setMandateSubmitting(false);
+                                        const firm = mandate.firm_name;
+                                        setRegisterOpen(false); setMandate({}); setMandateErr({});
+                                        showToast(`Mandate submitted — ${firm} is pending verification`, '#a78bfa');
+                                        loadVCs();
+                                    }}
+                                    className="sc-btn"
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 13, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: mandateSubmitting ? 'wait' : 'pointer', fontSize: 13, fontWeight: 700, boxShadow: '0 6px 24px rgba(124,58,237,.45)', marginTop: 2 }}>
+                                    <Telescope style={{ width: 14, height: 14 }} />{mandateSubmitting ? 'Submitting…' : 'Register My Fund →'}
                                 </button>
                             </div>
                         </div>
+                    </div>
+                )
+            }
+
+            {/* ══ MODAL: Document Viewer ══ */}
+            {
+                docOpen && (() => {
+                    const docTypeColor: Record<string, string> = { Deck: '#8b5cf6', Sheet: '#10b981', Doc: '#06b6d4', Bundle: '#f59e0b', Video: '#f472b6' };
+                    const tc = docTypeColor[docOpen.type] || '#8b5cf6';
+                    const url: string = docOpen.file_url || '';
+                    const ext = url.split('?')[0].split('.').pop()?.toLowerCase() || '';
+                    const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext);
+                    const isVideo = ['mp4', 'webm', 'mov'].includes(ext) || docOpen.type === 'Video';
+                    const isPdf = ext === 'pdf' || (!isImage && !isVideo);
+                    const founder = startups.find(s => s.name === docOpen.startup)?.founder || '—';
+                    // Demo slides for seed corporate decks that have no uploaded file yet
+                    const demoSlides = [
+                        { t: 'Problem', b: `The market lacks a reliable way to solve ${docOpen.startup}'s core customer pain at scale.` },
+                        { t: 'Solution', b: `${docOpen.startup} delivers a focused, defensible product that wins on speed and trust.` },
+                        { t: 'Traction', b: 'Strong early adoption with accelerating month-over-month growth and healthy retention.' },
+                        { t: 'The Ask', b: 'Raising this round to expand GTM, deepen the moat, and capture the category.' },
+                    ];
+                    return (
+                        <div onClick={() => setDocOpen(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+                            <div onClick={e => e.stopPropagation()} className="hub-modal-wrap" style={{ background: '#07070f', border: '1px solid rgba(255,255,255,.1)', borderTop: `2px solid ${tc}`, borderRadius: 22, width: '100%', maxWidth: 620, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
+                                <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, position: 'sticky', top: 0, background: '#07070f', zIndex: 2 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                                        <div style={{ width: 36, height: 36, borderRadius: 11, background: `${tc}22`, border: `1px solid ${tc}45`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <FileText style={{ width: 16, height: 16, color: tc }} />
+                                        </div>
+                                        <div style={{ minWidth: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                                <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{docOpen.name}</p>
+                                                {docOpen.corporate && (
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 999, background: 'rgba(6,182,212,.12)', border: '1px solid rgba(6,182,212,.3)', flexShrink: 0 }}>
+                                                        <Shield style={{ width: 8, height: 8, color: '#06b6d4' }} />
+                                                        <span style={{ fontSize: 8, fontWeight: 800, color: '#06b6d4', letterSpacing: '.05em' }}>VC ONLY</span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p style={{ fontSize: 11, color: 'rgba(255,255,255,.35)', margin: 0 }}>{docOpen.type} · {docOpen.size} · {docOpen.startup}</p>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                        {url && (
+                                            <a href={url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, background: `${tc}18`, border: `1px solid ${tc}40`, color: tc, fontSize: 11, fontWeight: 700, textDecoration: 'none' }}>
+                                                <Globe style={{ width: 12, height: 12 }} />Open
+                                            </a>
+                                        )}
+                                        <button onClick={() => setDocOpen(null)} aria-label="Close" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,.5)', padding: 6, display: 'flex' }}><X style={{ width: 14, height: 14 }} /></button>
+                                    </div>
+                                </div>
+                                <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                    {/* ── document credentials ── */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
+                                        {[
+                                            { label: 'Startup', val: docOpen.startup, col: '#8b5cf6' },
+                                            { label: 'Founder', val: founder, col: '#06b6d4' },
+                                            { label: 'Access', val: docOpen.corporate ? 'Verified investors' : 'Public', col: '#06b6d4' },
+                                            { label: 'Status', val: docOpen.status || 'Final', col: '#10b981' },
+                                        ].map(c => (
+                                            <div key={c.label} style={{ padding: '8px 11px', borderRadius: 10, background: `${c.col}0d`, border: `1px solid ${c.col}22` }}>
+                                                <p style={{ fontSize: 8, color: 'rgba(255,255,255,.32)', margin: 0, textTransform: 'uppercase', letterSpacing: '.07em', fontWeight: 700 }}>{c.label}</p>
+                                                <p style={{ fontSize: 11.5, fontWeight: 700, color: 'white', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.val}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* ── live file preview, or demo deck preview ── */}
+                                    {url ? (
+                                        <div style={{ height: 420, borderRadius: 14, border: `1px solid ${tc}28`, overflow: 'hidden', background: '#05050d' }}>
+                                            {isImage ? (
+                                                <img src={url} alt={docOpen.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            ) : isVideo ? (
+                                                <video src={url} controls style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
+                                            ) : (
+                                                <iframe title={docOpen.name} src={`${url}#toolbar=1&navpanes=0`} style={{ width: '100%', height: '100%', border: 'none', display: 'block' }} />
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div style={{ borderRadius: 14, border: `1px solid ${tc}28`, background: `linear-gradient(160deg,${tc}10,rgba(5,5,9,.92))`, padding: 18 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                                                <FileText style={{ width: 14, height: 14, color: tc }} />
+                                                <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.6)', margin: 0 }}>Deck preview · added {docOpen.date}</p>
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
+                                                {demoSlides.map((s, i) => (
+                                                    <div key={i} style={{ borderRadius: 12, border: `1px solid ${tc}22`, background: 'rgba(255,255,255,.025)', padding: 13, minHeight: 96, position: 'relative', overflow: 'hidden' }}>
+                                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${tc}70,transparent)` }} />
+                                                        <span style={{ fontSize: 8, fontWeight: 800, color: tc, background: `${tc}18`, border: `1px solid ${tc}33`, padding: '2px 7px', borderRadius: 999 }}>Slide {i + 1}</span>
+                                                        <p style={{ fontSize: 12, fontWeight: 800, color: 'white', margin: '8px 0 4px' }}>{s.t}</p>
+                                                        <p style={{ fontSize: 10, color: 'rgba(255,255,255,.5)', margin: 0, lineHeight: 1.45 }}>{s.b}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <p style={{ fontSize: 9.5, color: 'rgba(255,255,255,.3)', margin: '13px 0 0', textAlign: 'center' }}>Demo preview — the live deck renders here once the founder uploads it from the Brand Vault.</p>
+                                        </div>
+                                    )}
+
+                                    <button onClick={() => { if (url) { window.open(url, '_blank', 'noopener'); } else { showToast(`Downloading ${docOpen.name}…`, tc); } logAudit('Downloaded', docOpen); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, background: `${tc}20`, border: `1px solid ${tc}45`, color: tc, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                                        <Download style={{ width: 12, height: 12 }} />{url ? 'Download / Open' : 'Download'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()
+            }
+
+            {/* ══ MODAL: Event Registration (VC reserves a seat) ══ */}
+            {
+                regEvent && (() => {
+                    const typeColors: Record<string, string> = { 'Demo Day': '#8b5cf6', Pitching: '#a78bfa', Workshop: '#06b6d4', Hackathon: '#f59e0b', Mentorship: '#10b981' };
+                    const tc = typeColors[regEvent.type] || '#06b6d4';
+                    return (
+                        <div onClick={() => setRegEvent(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+                            <div onClick={e => e.stopPropagation()} className="hub-modal-wrap" style={{ background: '#07070f', border: '1px solid rgba(255,255,255,.1)', borderTop: `2px solid ${tc}`, borderRadius: 22, width: '100%', maxWidth: 420, boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
+                                <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <div style={{ width: 30, height: 30, borderRadius: 9, background: `${tc}22`, border: `1px solid ${tc}45`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <CalendarDays style={{ width: 14, height: 14, color: tc }} />
+                                        </div>
+                                        <p style={{ fontSize: 14, fontWeight: 700, color: 'white', margin: 0 }}>Reserve Your Seat</p>
+                                    </div>
+                                    <button onClick={() => setRegEvent(null)} aria-label="Close" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,.5)', padding: 6, display: 'flex' }}><X style={{ width: 14, height: 14 }} /></button>
+                                </div>
+                                <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                    {/* event details */}
+                                    <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 13, padding: 14 }}>
+                                        <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0 }}>{regEvent.title}</p>
+                                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', margin: '5px 0 0' }}>{regEvent.date} · {regEvent.time}</p>
+                                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,.3)', margin: '2px 0 0' }}>{regEvent.location}</p>
+                                    </div>
+                                    {/* attending as */}
+                                    <div style={{ background: `${tc}0d`, border: `1px solid ${tc}28`, borderRadius: 13, padding: 14, display: 'flex', flexDirection: 'column', gap: 9 }}>
+                                        <p style={{ fontSize: 10, color: tc, textTransform: 'uppercase', letterSpacing: '.09em', fontWeight: 800, margin: 0 }}>Attending as</p>
+                                        <input
+                                            value={regName}
+                                            onChange={e => setRegName(e.target.value)}
+                                            placeholder={VC_PROFILE.name}
+                                            style={{ width: '100%', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '9px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }}
+                                        />
+                                        <p style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', margin: 0 }}>Representing <span style={{ color: 'rgba(255,255,255,.6)', fontWeight: 700 }}>{VC_PROFILE.firm}</span> · scouting on behalf of the fund</p>
+                                    </div>
+                                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,.25)', textAlign: 'center', margin: 0 }}>A calendar invite will be sent to the organiser team</p>
+                                    <button
+                                        onClick={() => { if (!regName.trim()) return; const id = regEvent.id, title = regEvent.title; setRegisteredEvents(prev => prev.includes(id) ? prev : [...prev, id]); setRegEvent(null); showToast(`Seat reserved — ${title}`, tc); }}
+                                        disabled={!regName.trim()}
+                                        className="sc-btn"
+                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '11px', borderRadius: 12, background: `linear-gradient(90deg,${tc},${tc}80)`, color: 'white', border: 'none', cursor: regName.trim() ? 'pointer' : 'not-allowed', opacity: regName.trim() ? 1 : 0.5, fontSize: 13, fontWeight: 700, boxShadow: `0 4px 18px ${tc}45` }}>
+                                        <CheckCircle style={{ width: 14, height: 14 }} />Confirm Registration →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()
+            }
+
+            {/* ══ MODAL: Add Event (organiser submission → admin approval) ══ */}
+            {
+                addEventOpen && (
+                    <div onClick={resetAddEvent} style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,.85)', backdropFilter: 'blur(16px)' }}>
+                        <div onClick={e => e.stopPropagation()} className="notif-scroll" style={{ background: '#09090f', border: '1px solid rgba(139,92,246,.3)', borderTop: '2px solid #8b5cf6', borderRadius: 22, width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 0 80px rgba(139,92,246,.18), 0 40px 80px rgba(0,0,0,.8)' }}>
+                            {/* Header */}
+                            <div style={{ padding: '22px 26px 16px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#09090f', zIndex: 2 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: 11, background: 'rgba(139,92,246,.15)', border: '1px solid rgba(139,92,246,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <CalendarDays style={{ width: 16, height: 16, color: '#a78bfa' }} />
+                                    </div>
+                                    <div>
+                                        <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>Submit an Event</p>
+                                        <p style={{ margin: '1px 0 0', fontSize: 10, color: 'rgba(255,255,255,.3)' }}>{addEventDone ? 'Submitted for review' : `Step ${addEventStep} of 2 — ${addEventStep === 1 ? 'Event Details' : 'Organiser Details'}`}</p>
+                                    </div>
+                                </div>
+                                <button onClick={resetAddEvent} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.3)', padding: 4 }}><X style={{ width: 16, height: 16 }} /></button>
+                            </div>
+
+                            {addEventDone ? (
+                                /* Success */
+                                <div style={{ padding: '48px 26px', textAlign: 'center' }}>
+                                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(16,185,129,.15)', border: '1px solid rgba(16,185,129,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+                                        <CheckCircle style={{ width: 28, height: 28, color: '#34d399' }} />
+                                    </div>
+                                    <p style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 800, color: '#fff' }}>Event Submitted!</p>
+                                    <p style={{ margin: '0 0 28px', fontSize: 12, color: 'rgba(255,255,255,.35)', lineHeight: 1.6 }}>
+                                        <strong style={{ color: '#a78bfa' }}>{addEventForm.title}</strong> has been sent to the Incutrack admin team for review. Once approved, it goes live in Demo Days for all founders &amp; investors.
+                                    </p>
+                                    <button onClick={resetAddEvent} style={{ padding: '10px 32px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer' }}>Done</button>
+                                </div>
+                            ) : addEventStep === 1 ? (
+                                /* Step 1: Event details */
+                                <div style={{ padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Event Title *</label>
+                                        <input value={addEventForm.title} onChange={e => setAddEventForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. AI Founders Roundtable 2026" style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: `1px solid ${addEventErrors.title ? '#f87171' : 'rgba(255,255,255,.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                                        {addEventErrors.title && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.title}</p>}
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Event Type *</label>
+                                            <select value={addEventForm.type} onChange={e => setAddEventForm(f => ({ ...f, type: e.target.value }))} style={{ width: '100%', background: '#12121f', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', cursor: 'pointer' }}>
+                                                {['Demo Day', 'Pitching', 'Workshop', 'Mentorship', 'Hackathon', 'Networking', 'Panel Discussion', 'Other'].map(t => <option key={t} value={t}>{t}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Event Date *</label>
+                                            <input type="date" value={addEventForm.date} onChange={e => setAddEventForm(f => ({ ...f, date: e.target.value }))} style={{ width: '100%', background: '#12121f', border: `1px solid ${addEventErrors.date ? '#f87171' : 'rgba(255,255,255,.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', colorScheme: 'dark', boxSizing: 'border-box' }} />
+                                            {addEventErrors.date && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.date}</p>}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Time (IST) *</label>
+                                            <input type="time" value={addEventForm.time} onChange={e => setAddEventForm(f => ({ ...f, time: e.target.value }))} style={{ width: '100%', background: '#12121f', border: `1px solid ${addEventErrors.time ? '#f87171' : 'rgba(255,255,255,.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', colorScheme: 'dark', boxSizing: 'border-box' }} />
+                                            {addEventErrors.time && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.time}</p>}
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Format</label>
+                                            <select value={addEventForm.locationMode} onChange={e => setAddEventForm(f => ({ ...f, locationMode: e.target.value, location: '' }))} style={{ width: '100%', background: '#12121f', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', cursor: 'pointer' }}>
+                                                <option value="physical">In-Person</option>
+                                                <option value="online">Online · Zoom</option>
+                                                <option value="virtual">Virtual</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
+                                            {addEventForm.locationMode === 'physical' ? 'Venue / Address *' : addEventForm.locationMode === 'online' ? 'Meeting Link' : 'Platform / Link'}
+                                        </label>
+                                        <input value={addEventForm.location} onChange={e => setAddEventForm(f => ({ ...f, location: e.target.value }))} placeholder={addEventForm.locationMode === 'physical' ? 'e.g. The Leela Ambience, New Delhi' : addEventForm.locationMode === 'online' ? 'https://zoom.us/j/...' : 'e.g. Hopin / Discord / Gather'} style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: `1px solid ${addEventErrors.location ? '#f87171' : 'rgba(255,255,255,.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                                        {addEventErrors.location && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.location}</p>}
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Event Description *</label>
+                                        <textarea value={addEventForm.description} onChange={e => setAddEventForm(f => ({ ...f, description: e.target.value }))} rows={4} placeholder="What is this event about? Who should attend? What will they gain?" style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: `1px solid ${addEventErrors.description ? '#f87171' : 'rgba(255,255,255,.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.6 }} />
+                                        {addEventErrors.description && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.description}</p>}
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Max Capacity</label>
+                                            <input type="number" value={addEventForm.maxCapacity} onChange={e => setAddEventForm(f => ({ ...f, maxCapacity: e.target.value }))} placeholder="e.g. 100" style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Prize / Reward</label>
+                                            <input value={addEventForm.prize} onChange={e => setAddEventForm(f => ({ ...f, prize: e.target.value }))} placeholder="e.g. ₹5L prize pool" style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Registration Deadline</label>
+                                            <input type="date" value={addEventForm.registrationDeadline} onChange={e => setAddEventForm(f => ({ ...f, registrationDeadline: e.target.value }))} style={{ width: '100%', background: '#12121f', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', colorScheme: 'dark', boxSizing: 'border-box' }} />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 14px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 10 }}>
+                                                <input type="checkbox" checked={addEventForm.applicationRequired} onChange={e => setAddEventForm(f => ({ ...f, applicationRequired: e.target.checked }))} style={{ width: 14, height: 14, accentColor: '#8b5cf6', cursor: 'pointer' }} />
+                                                <span style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', fontWeight: 600 }}>Application required</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+                                        <button onClick={resetAddEvent} style={{ flex: 1, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.4)', cursor: 'pointer' }}>Cancel</button>
+                                        <button onClick={() => {
+                                            const errs: Record<string, string> = {};
+                                            if (!addEventForm.title.trim()) errs.title = 'Title is required';
+                                            if (!addEventForm.date) errs.date = 'Date is required';
+                                            if (!addEventForm.time) errs.time = 'Time is required';
+                                            if (!addEventForm.location.trim()) errs.location = 'Location / link is required';
+                                            if (!addEventForm.description.trim()) errs.description = 'Description is required';
+                                            setAddEventErrors(errs);
+                                            if (Object.keys(errs).length === 0) setAddEventStep(2);
+                                        }} style={{ flex: 2, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                            Next — Organiser Details <ArrowRight style={{ width: 13, height: 13 }} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                /* Step 2: Organiser details */
+                                <div style={{ padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                    <p style={{ margin: '0 0 4px', fontSize: 11, color: 'rgba(255,255,255,.3)', lineHeight: 1.6 }}>Tell us who is organising this event. Used for coordination only — not shown publicly.</p>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Organiser / Point of Contact *</label>
+                                        <input value={addEventForm.organiserName} onChange={e => setAddEventForm(f => ({ ...f, organiserName: e.target.value }))} placeholder="Full name" style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: `1px solid ${addEventErrors.organiserName ? '#f87171' : 'rgba(255,255,255,.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                                        {addEventErrors.organiserName && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.organiserName}</p>}
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Contact Email *</label>
+                                        <input type="email" value={addEventForm.organiserEmail} onChange={e => setAddEventForm(f => ({ ...f, organiserEmail: e.target.value }))} placeholder="organiser@example.com" style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: `1px solid ${addEventErrors.organiserEmail ? '#f87171' : 'rgba(255,255,255,.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                                        {addEventErrors.organiserEmail && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.organiserEmail}</p>}
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Organisation / Fund / Institution *</label>
+                                        <input value={addEventForm.organiserOrg} onChange={e => setAddEventForm(f => ({ ...f, organiserOrg: e.target.value }))} placeholder="e.g. Nexus Ventures, IIT BBS E-Cell" style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: `1px solid ${addEventErrors.organiserOrg ? '#f87171' : 'rgba(255,255,255,.1)'}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+                                        {addEventErrors.organiserOrg && <p style={{ margin: '4px 0 0', fontSize: 10, color: '#f87171' }}>{addEventErrors.organiserOrg}</p>}
+                                    </div>
+                                    <div style={{ background: 'rgba(139,92,246,.06)', border: '1px solid rgba(139,92,246,.18)', borderRadius: 12, padding: '14px 16px' }}>
+                                        <p style={{ margin: '0 0 10px', fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.07em' }}>Event Summary</p>
+                                        {([
+                                            ['Title', addEventForm.title],
+                                            ['Type', addEventForm.type],
+                                            ['Date & Time', `${addEventForm.date} · ${addEventForm.time} IST`],
+                                            ['Format', addEventForm.locationMode === 'physical' ? 'In-Person' : addEventForm.locationMode === 'online' ? 'Online · Zoom' : 'Virtual'],
+                                            ['Venue / Link', addEventForm.location],
+                                            ...(addEventForm.maxCapacity ? [['Capacity', `${addEventForm.maxCapacity} attendees`]] : []),
+                                            ...(addEventForm.prize ? [['Prize', addEventForm.prize]] : []),
+                                        ] as [string, string][]).map(([k, v]) => (
+                                            <div key={k} style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                                                <span style={{ fontSize: 11, color: 'rgba(255,255,255,.28)', minWidth: 90, flexShrink: 0 }}>{k}</span>
+                                                <span style={{ fontSize: 11, color: 'rgba(255,255,255,.7)', fontWeight: 600 }}>{v}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {addEventErrors.submit && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 13px', borderRadius: 10, background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.32)' }}>
+                                            <span style={{ fontSize: 11, color: '#f87171', fontWeight: 600 }}>{addEventErrors.submit}</span>
+                                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+                                        <button onClick={() => { setAddEventStep(1); setAddEventErrors({}); }} style={{ flex: 1, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.4)', cursor: 'pointer' }}>← Back</button>
+                                        <button
+                                            disabled={addEventSubmitting}
+                                            onClick={async () => {
+                                                const errs: Record<string, string> = {};
+                                                if (!addEventForm.organiserName.trim()) errs.organiserName = 'Name is required';
+                                                if (!addEventForm.organiserEmail.trim()) errs.organiserEmail = 'Email is required';
+                                                if (!addEventForm.organiserOrg.trim()) errs.organiserOrg = 'Organisation is required';
+                                                setAddEventErrors(errs);
+                                                if (Object.keys(errs).length > 0) return;
+                                                setAddEventSubmitting(true);
+                                                // Actually send to the admin queue — only show success if it lands.
+                                                try {
+                                                    const res = await fetch('/api/events/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ ...addEventForm, submittedBy: user?.email ?? addEventForm.organiserEmail }) });
+                                                    const data = await res.json().catch(() => ({} as any));
+                                                    if (!res.ok) {
+                                                        setAddEventSubmitting(false);
+                                                        setAddEventErrors({ submit: (data as any)?.error || 'Could not submit to the admin team. Please try again.' });
+                                                        return;
+                                                    }
+                                                } catch {
+                                                    setAddEventSubmitting(false);
+                                                    setAddEventErrors({ submit: 'Network error — could not reach the server. Please try again.' });
+                                                    return;
+                                                }
+                                                setAddEventSubmitting(false);
+                                                setAddEventDone(true);
+                                                // Reflect locally, tagged pending until admin approves
+                                                setEvents(prev => [...prev, {
+                                                    id: `ev-user-${Date.now()}`,
+                                                    title: addEventForm.title,
+                                                    date: addEventForm.date,
+                                                    time: addEventForm.time,
+                                                    type: addEventForm.type,
+                                                    location: addEventForm.location || (addEventForm.locationMode === 'online' ? 'Online' : 'Virtual'),
+                                                    description: addEventForm.description || '',
+                                                    pending: true,
+                                                } as any]);
+                                            }}
+                                            style={{ flex: 2, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: addEventSubmitting ? 'rgba(139,92,246,.4)' : 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: addEventSubmitting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                            {addEventSubmitting ? 'Submitting…' : <><CheckCircle style={{ width: 13, height: 13 }} />Submit Event for Review</>}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* ══ TOAST ══ */}
+            {
+                toast && (
+                    <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 60, display: 'flex', alignItems: 'center', gap: 10, padding: '11px 18px', borderRadius: 12, background: 'rgba(8,8,16,.95)', border: `1px solid ${toast.color}55`, borderLeft: `3px solid ${toast.color}`, boxShadow: `0 12px 40px rgba(0,0,0,.6), 0 0 18px ${toast.color}30`, backdropFilter: 'blur(12px)', animation: 'sc-toast-in .3s ease' }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: toast.color, boxShadow: `0 0 8px ${toast.color}`, flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>{toast.msg}</span>
                     </div>
                 )
             }

@@ -55,20 +55,20 @@ export const initialStartups = [
 export const upcomingEvents = [
   {
     id: "ev-1",
-    title: "Campus Demo Day 2026",
+    title: "India Founder Pitch Summit 2026",
     date: "June 15, 2026",
     time: "10:00 AM IST",
     type: "Pitching",
-    location: "Main Seminar Hall",
-    description: "Top 10 incubated startups pitch live in front of a panel of regional angel networks and early-stage venture funds."
+    location: "The Leela Ambience, New Delhi",
+    description: "Top 10 portfolio startups pitch live to a panel of marquee VCs, family offices, and angel syndicates from across India."
   },
   {
     id: "ev-2",
-    title: "FinTech Mentorship Roundtable",
+    title: "FinTech Leaders Roundtable",
     date: "June 28, 2026",
     time: "03:30 PM IST",
     type: "Mentorship",
-    location: "Incubation Cell Boardroom",
-    description: "An intimate, closed-door feedback session with industry veterans covering regulatory compliances and payment gateway scaling."
+    location: "Taj Lands End, Bandra · Mumbai",
+    description: "Closed-door strategy session with senior leaders from Razorpay, NPCI, and leading NBFCs covering regulatory compliance and payment infrastructure scaling."
   }
 ];

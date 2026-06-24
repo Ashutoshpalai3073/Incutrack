@@ -46,11 +46,11 @@ const MENTOR_COLORS: Record<string, string> = {
   'm5': '#ec4899',
   'm6': '#10b981',
 };
-const ALL_EVENTS = [
+const BASE_EVENTS = [
   ...upcomingEvents,
-  { id: 'ev-3', title: 'AI Product Workshop — Build vs Buy', date: 'July 8, 2026', time: '11:00 AM IST', type: 'Workshop', location: 'Online · Zoom', description: 'Deep-dive into when to build proprietary AI vs. integrate APIs. Live case studies from NeuralKit and ClimateOS.' },
-  { id: 'ev-4', title: 'Hack-to-Scale Hackathon 2026', date: 'July 20, 2026', time: '09:00 AM IST', type: 'Hackathon', location: 'IIT BBS Campus', description: '48-hour hackathon open to all cohort teams. ₹5L prize pool. Focus: climate-tech and fintech for Tier-2 cities.' },
-  { id: 'ev-5', title: 'Sequoia India Office Hours', date: 'August 3, 2026', time: '02:00 PM IST', type: 'Mentorship', location: 'Virtual', description: 'Closed-door session with Priya Sharma. Application-only. Priority for MVP+ stage startups.' },
+  { id: 'ev-3', title: 'AI & Deep Tech Product Workshop', date: 'July 8, 2026', time: '11:00 AM IST', type: 'Workshop', location: 'Sheraton Grand · Bengaluru', description: 'Hands-on workshop on building vs. buying AI: LLM integration, proprietary model training, and cost benchmarks. Live walkthroughs from Incutrack portfolio teams.' },
+  { id: 'ev-4', title: 'Bharat Startup Hackathon 2026', date: 'July 20, 2026', time: '09:00 AM IST', type: 'Hackathon', location: 'Bombay Exhibition Centre · Mumbai', description: '48-hour national hackathon open to all registered startups. ₹5L prize pool across three tracks: ClimaTech, FinTech, and Rural Infrastructure.' },
+  { id: 'ev-5', title: 'Sequoia India Founder Office Hours', date: 'August 3, 2026', time: '02:00 PM IST', type: 'Mentorship', location: 'ITC Gardenia · Bengaluru', description: 'One-on-one sessions with Priya Sharma, Partner at Sequoia India. Application-only. Priority given to startups at MVP stage and beyond seeking Series A readiness.' },
 ];
 
 const VAULT_DOCS = [
@@ -69,7 +69,7 @@ const INVESTORS = [
   { name: 'Dev Patel', amount: 500000, status: 'Committed', type: 'Angel' },
   { name: 'Accel India', amount: 15000000, status: 'In Diligence', type: 'VC' },
   { name: 'Kalaari Capital', amount: 8000000, status: 'In Discussion', type: 'VC' },
-
+  { name: 'Blume Ventures', amount: 3000000, status: 'Committed', type: 'VC' },
 ];
 
 const ACTIVITY = [
@@ -83,7 +83,7 @@ const ACTIVITY = [
 
 const MRR_DATA = [{ m: 'Jan', v: 8 }, { m: 'Feb', v: 14 }, { m: 'Mar', v: 22 }, { m: 'Apr', v: 35 }, { m: 'May', v: 52 }, { m: 'Jun', v: 80 }];
 const USR_DATA = [{ m: 'Jan', v: 120 }, { m: 'Feb', v: 210 }, { m: 'Mar', v: 380 }, { m: 'Apr', v: 620 }, { m: 'May', v: 940 }, { m: 'Jun', v: 1580 }];
-const SECTOR_DATA = [{ label: 'SaaS', val: 38, color: '#06b6d4' }, { label: 'FinTech', val: 24, color: '#f59e0b' }, { label: 'DeepTech', val: 22, color: '#8b5cf6' }, { label: 'HealthTech', val: 10, color: '#10b981' }, { label: 'Other', val: 6, color: '#475569' }];
+const sectorData = [{ label: 'SaaS', val: 38, color: '#06b6d4' }, { label: 'FinTech', val: 24, color: '#f59e0b' }, { label: 'DeepTech', val: 22, color: '#8b5cf6' }, { label: 'HealthTech', val: 10, color: '#10b981' }, { label: 'Other', val: 6, color: '#475569' }];
 
 
 // ─── SVG Charts ───────────────────────────────────────────────────────────────
@@ -723,25 +723,41 @@ function AsteroidKPIRow({ stats }: { stats: { total: number; raised: number; fun
 
   return (
     <div style={{ flexShrink: 0 }}>
+      <style>{`
+        @keyframes kpi-cube  { from{transform:rotateX(-22deg) rotateY(0deg)} to{transform:rotateX(-22deg) rotateY(360deg)} }
+        @keyframes kpi-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+        .kpi-card { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+        .kpi-card:hover { transform: translateY(-3px); }
+      `}</style>
       <div className="hub-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
         {cards.map(c => {
           const Icon = c.icon;
           return (
-            <div key={c.label} style={{
-              background: `linear-gradient(135deg,${c.color}12 0%,transparent 65%)`,
-              border: `1px solid ${c.color}28`, borderRadius: 16, padding: '18px 20px',
+            <div key={c.label} className="kpi-card" style={{
+              background: `linear-gradient(140deg, ${c.color}28 0%, ${c.color}0e 45%, rgba(255,255,255,0.015) 100%)`,
+              border: `1px solid ${c.color}3a`, borderTop: `2px solid ${c.color}`, borderRadius: 16, padding: '18px 20px',
               position: 'relative', overflow: 'hidden',
+              boxShadow: `0 10px 30px ${c.color}14, inset 0 1px 0 rgba(255,255,255,0.06)`,
             }}>
-              <div style={{ position: 'absolute', top: 0, right: 0, width: 100, height: 100, borderRadius: '50%', background: `radial-gradient(circle,${c.color}22 0%,transparent 70%)`, transform: 'translate(35%,-35%)', pointerEvents: 'none' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase', letterSpacing: '0.09em', margin: 0 }}>{c.label}</p>
-                <div style={{ width: 32, height: 32, borderRadius: 10, background: `${c.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 18px ${c.color}40` }}>
-                  <Icon style={{ width: 15, height: 15, color: c.color, filter: `drop-shadow(0 0 5px ${c.color})` }} />
+              <div style={{ position: 'absolute', top: 0, right: 0, width: 120, height: 120, borderRadius: '50%', background: `radial-gradient(circle,${c.color}33 0%,transparent 70%)`, transform: 'translate(35%,-35%)', pointerEvents: 'none' }} />
+              {/* floating 3D wireframe cube */}
+              <div aria-hidden style={{ position: 'absolute', bottom: -8, right: 10, width: 54, height: 54, perspective: 240, pointerEvents: 'none', opacity: 0.5, animation: 'kpi-float 6s ease-in-out infinite' }}>
+                <div style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d', animation: 'kpi-cube 16s linear infinite' }}>
+                  {['rotateY(0deg)', 'rotateY(90deg)', 'rotateY(180deg)', 'rotateY(270deg)', 'rotateX(90deg)', 'rotateX(-90deg)'].map((r, i) => (
+                    <div key={i} style={{ position: 'absolute', width: 54, height: 54, border: `1px solid ${c.color}55`, background: `${c.color}0c`, transform: `${r} translateZ(27px)` }} />
+                  ))}
                 </div>
               </div>
-              <p style={{ fontSize: 28, fontWeight: 700, color: 'white', margin: 0, lineHeight: 1 }}>{c.val}</p>
-              <p style={{ fontSize: 10, fontWeight: 600, color: c.color, margin: 0, marginTop: 6 }}>{c.change}</p>
-              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.18)', margin: 0, marginTop: 2 }}>{c.sub}</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, position: 'relative', zIndex: 1 }}>
+                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.09em', margin: 0 }}>{c.label}</p>
+                {/* 3D glossy coin icon */}
+                <div style={{ width: 34, height: 34, borderRadius: 11, background: `radial-gradient(circle at 32% 28%, ${c.color}, ${c.color}77 58%, ${c.color}33)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 12px ${c.color}55, 0 0 18px ${c.color}40, inset 0 1px 2px rgba(255,255,255,0.5)`, border: `1px solid ${c.color}` }}>
+                  <Icon style={{ width: 15, height: 15, color: '#fff', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }} />
+                </div>
+              </div>
+              <p style={{ fontSize: 28, fontWeight: 700, color: 'white', margin: 0, lineHeight: 1, position: 'relative', zIndex: 1 }}>{c.val}</p>
+              <p style={{ fontSize: 10, fontWeight: 600, color: c.color, margin: 0, marginTop: 6, position: 'relative', zIndex: 1, filter: `drop-shadow(0 0 5px ${c.color}80)` }}>{c.change}</p>
+              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', margin: 0, marginTop: 2, position: 'relative', zIndex: 1 }}>{c.sub}</p>
             </div>
           );
         })}
@@ -817,10 +833,14 @@ function HubPage() {
   // Per-tab filter states — each isolated
   const [pipelineSector, setPipelineSector] = useState('All');
   const [vaultType, setVaultType] = useState('All');
+  const [vaultBrand, setVaultBrand] = useState<string | null>(null);
   const [mentorFilter, setMentorFilter] = useState('All');
   const [eventType, setEventType] = useState('All');
+  const [allEvents, setAllEvents] = useState(BASE_EVENTS);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifAllRead, setNotifAllRead] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   // Modals
   const [registerOpen, setRegisterOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -834,6 +854,7 @@ function HubPage() {
   const [signInPromptMsg, setSignInPromptMsg] = useState('');
   // ── Startup credential states ─────────────────────────────────────────────
   const [registerStep, setRegisterStep] = useState<1 | 2>(1);
+  const [registerInitialStage, setRegisterInitialStage] = useState('Ideation');
   const [ownerEmailMode, setOwnerEmailMode] = useState<'same' | 'different'>('same');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [ownerPassword, setOwnerPassword] = useState('');
@@ -874,6 +895,7 @@ function HubPage() {
   const [pendingVCProfiles, setPendingVCProfiles] = useState<any[]>([]);
   const [pendingDealInterests, setPendingDealInterests] = useState<any[]>([]);
   const [pendingDiligenceReqs, setPendingDiligenceReqs] = useState<any[]>([]);
+  const [shortlistEvents, setShortlistEvents] = useState<any[]>([]);
   const [adminVCLoading, setAdminVCLoading] = useState(false);
   const [adminVCAction, setAdminVCAction] = useState<Record<string, 'approving' | 'rejecting'>>({});
   // ── Contact Messages ───────────────────────────────────────────────────────
@@ -895,6 +917,8 @@ function HubPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState('');
   const [uploadPending, setUploadPending] = useState(false);
+  const [detectedFileType, setDetectedFileType] = useState<string | null>(null);
+  const [selectedDocType, setSelectedDocType] = useState<string>('Doc');
   const [vaultDocs, setVaultDocs] = useState<VaultDoc[]>(VAULT_DOCS as unknown as VaultDoc[]);
   const [vaultLoading, setVaultLoading] = useState(true);
 
@@ -956,26 +980,32 @@ function HubPage() {
 
 
   const handleUploadFile = (file: File) => {
-    setSelectedFile(file);
     setUploadError('');
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    const type = {
-      pdf: 'Doc', pptx: 'Deck', ppt: 'Deck', xlsx: 'Sheet', xls: 'Sheet',
-      csv: 'Sheet', mp4: 'Video', mov: 'Video', zip: 'Bundle', rar: 'Bundle', docx: 'Doc', doc: 'Doc',
-    }[ext] || 'Doc';
+
+    const EXT_TYPE_MAP: Record<string, string> = {
+      pdf: 'Doc', pptx: 'Deck', ppt: 'Deck',
+      xlsx: 'Sheet', xls: 'Sheet', csv: 'Sheet',
+      mp4: 'Video', mov: 'Video', webm: 'Video',
+      zip: 'Bundle', rar: 'Bundle',
+      docx: 'Doc', doc: 'Doc',
+    };
+
+    const detected = EXT_TYPE_MAP[ext] || null;
+
+    if (!detected) {
+      setUploadError(`".${ext || 'unknown'}" is not a supported file type. Only these 5 categories are accepted:\n• Deck — .pptx, .ppt\n• Doc — .pdf, .docx, .doc\n• Sheet — .xlsx, .xls, .csv\n• Video — .mp4, .mov, .webm\n• Bundle — .zip, .rar`);
+      setSelectedFile(null);
+      setDetectedFileType(null);
+      return;
+    }
+
+    setSelectedFile(file);
+    setDetectedFileType(detected);
+    setSelectedDocType(detected);
 
     const nameField = document.getElementById('vup-name') as HTMLInputElement | null;
-    const typeSelect = document.getElementById('vup-type') as HTMLSelectElement | null;
     if (nameField) nameField.value = file.name.replace(/\.[^.]+$/, '');
-    if (typeSelect) typeSelect.value = type;
-
-    const dropZone = document.getElementById('vup-drop');
-    if (dropZone) {
-      dropZone.innerHTML = `
-        <div style="font-size:13px;color:white;font-weight:600">${file.name}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px">${(file.size / 1024).toFixed(1)} KB</div>
-      `;
-    }
   };
 
   const handleUploadSubmit = async () => {
@@ -984,6 +1014,32 @@ function HubPage() {
     const statusEl = document.getElementById('vup-status') as HTMLSelectElement | null;
     const name = nameEl?.value?.trim();
     if (!name) return;
+
+    // Validate selected type matches actual file extension
+    if (selectedFile) {
+      const ext = selectedFile.name.split('.').pop()?.toLowerCase() || '';
+      // pdf is ambiguous (can be Doc or Deck) — skip validation for it
+      const strictTypeMap: Record<string, { type: string; allowed: string[] }> = {
+        pptx: { type: 'Deck', allowed: ['Deck'] },
+        ppt:  { type: 'Deck', allowed: ['Deck'] },
+        xlsx: { type: 'Sheet', allowed: ['Sheet'] },
+        xls:  { type: 'Sheet', allowed: ['Sheet'] },
+        csv:  { type: 'Sheet', allowed: ['Sheet'] },
+        mp4:  { type: 'Video', allowed: ['Video'] },
+        mov:  { type: 'Video', allowed: ['Video'] },
+        webm: { type: 'Video', allowed: ['Video'] },
+        zip:  { type: 'Bundle', allowed: ['Bundle'] },
+        rar:  { type: 'Bundle', allowed: ['Bundle'] },
+        docx: { type: 'Doc', allowed: ['Doc'] },
+        doc:  { type: 'Doc', allowed: ['Doc'] },
+      };
+      const rule = strictTypeMap[ext];
+      const selected = typeEl?.value;
+      if (rule && selected && !rule.allowed.includes(selected)) {
+        setUploadError(`Type mismatch — a .${ext} file must be uploaded as "${rule.type}", not "${selected}".`);
+        return;
+      }
+    }
 
     const btnEl = document.getElementById('vup-submit') as HTMLButtonElement | null;
     if (btnEl) { btnEl.textContent = 'Uploading…'; btnEl.disabled = true; }
@@ -996,6 +1052,8 @@ function HubPage() {
       formData.append('name', name);
       formData.append('type', typeEl?.value || 'Doc');
       formData.append('status', statusEl?.value || 'Draft');
+      // 'investor' = corporate pitch deck → surfaces in the Scout Hub diligence room; 'brand' = public
+      formData.append('deck_type', uploadMode);
       if (selectedFile) {
         formData.append('file', selectedFile);
       }
@@ -1137,6 +1195,7 @@ function HubPage() {
           setPendingVCProfiles(Array.isArray(d.profiles) ? d.profiles : []);
           setPendingDealInterests(Array.isArray(d.interests) ? d.interests : []);
           setPendingDiligenceReqs(Array.isArray(d.diligence) ? d.diligence : []);
+          setShortlistEvents(Array.isArray(d.shortlists) ? d.shortlists : []);
         }
         if (cmRes.ok) { const d = await cmRes.json(); setContactMessages(Array.isArray(d) ? d : []); }
       } catch { /* ignore */ }
@@ -1180,8 +1239,32 @@ function HubPage() {
   }), [startups, search, pipelineSector]);
 
   const filteredDocs = useMemo(() =>
-    vaultDocs.filter(d => vaultType === 'All' || d.type === vaultType),
-    [vaultDocs, vaultType]);
+    vaultDocs.filter(d =>
+      (vaultType === 'All' || d.type === vaultType) &&
+      (!vaultBrand || d.name.toLowerCase().includes(vaultBrand.toLowerCase()))
+    ),
+    [vaultDocs, vaultType, vaultBrand]);
+
+  // ── Global search results (works on every tab) ──
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return startups.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      (s.founder || '').toLowerCase().includes(q) ||
+      (s.industry || '').toLowerCase().includes(q)
+    );
+  }, [search, startups]);
+
+  // close the search dropdown on outside click (robust across transformed ancestors)
+  useEffect(() => {
+    if (!searchOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [searchOpen]);
 
   const filteredMentors = useMemo(() =>
     MENTORS.filter(m => {
@@ -1191,8 +1274,8 @@ function HubPage() {
     }), [mentorFilter]);
 
   const filteredEvents = useMemo(() =>
-    ALL_EVENTS.filter(ev => eventType === 'All' || ev.type === eventType),
-    [eventType]);
+    allEvents.filter(ev => eventType === 'All' || ev.type === eventType),
+    [eventType, allEvents]);
 
   // advance() — opens the stage-advance REQUEST modal. Admins advance directly; owners submit for review.
   const advance = (id: string, e: React.MouseEvent) => {
@@ -1316,7 +1399,7 @@ function HubPage() {
         ...newS,
         industry: resolvedIndustry,
         id: `st-${Date.now()}`,
-        stage: 'Ideation',
+        stage: registerInitialStage,
         raised: 0,
         fundingGoal: Number(newS.fundingGoal) || 0,
         metrics: { members: 1, pitchScore: result.total ?? 68 },
@@ -1393,7 +1476,7 @@ function HubPage() {
     { id: 'network', label: 'Mentor Network', icon: Users },
     { id: 'events', label: 'Event Arena', icon: CalendarDays },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'funding', label: 'Funding Tracker', icon: DollarSign },
+    { id: 'funding', label: 'National Capital Matrix', icon: DollarSign },
     ...(isAdmin ? [{ id: 'admin', label: 'Admin Panel', icon: Shield }] : []),
   ];
 
@@ -1523,24 +1606,51 @@ function HubPage() {
             </button>
             <div>
               <h2 className="hub-topbar-title text-base font-semibold text-white">{navItems.find(n => n.id === tab)?.label}</h2>
-              <p className="text-[11px] text-white/25 mt-0.5">Cohort 12 · IIT KGP Innovation Cell · Live</p>
+              <p className="text-[11px] text-white/25 mt-0.5">{tab === 'funding' ? 'Live Cross-Border Matchmaking & Capital Activity' : 'Cohort 12 · Incutrack National Program · Live'}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hub-topbar-search relative">
+            <div ref={searchRef} className="hub-topbar-search relative">
               <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-white/25" />
               <input
                 value={search}
-                onChange={e => {
-                  setSearch(e.target.value);
-                  if (e.target.value.trim()) setTab('pipeline');
-                }}
-                onKeyDown={e => { if (e.key === 'Escape') { setSearch(''); } }}
+                onChange={e => { setSearch(e.target.value); setSearchOpen(true); }}
+                onFocus={() => setSearchOpen(true)}
+                onKeyDown={e => { if (e.key === 'Escape') { setSearch(''); setSearchOpen(false); } }}
                 placeholder="Search startups…"
                 className="pl-9 pr-4 py-2 w-52 text-xs bg-white/[0.04] border border-white/[0.08] rounded-full focus:outline-none focus:border-violet-500/50 text-white placeholder-white/20 transition"
               />
               {search && (
-                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: 14, lineHeight: 1, padding: 0 }}>✕</button>
+                <button onClick={() => { setSearch(''); setSearchOpen(false); }} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: 14, lineHeight: 1, padding: 0 }}>✕</button>
+              )}
+              {/* Global results dropdown — surfaces matches on any tab, opens Brand Vault on click */}
+              {searchOpen && search.trim() && (
+                <div className="notif-scroll" style={{ position: 'absolute', top: 42, right: 0, width: 290, maxHeight: 340, overflowY: 'auto', zIndex: 100, background: '#000000', border: '1px solid rgba(255,255,255,0.09)', borderTop: '2px solid rgba(139,92,246,0.55)', borderRadius: 14, boxShadow: '0 16px 48px rgba(0,0,0,0.8)', padding: 8 }}>
+                  <div style={{ padding: '4px 8px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)' }}>Startups</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#a78bfa', background: 'rgba(139,92,246,0.15)', padding: '2px 7px', borderRadius: 999, border: '1px solid rgba(139,92,246,0.3)' }}>{searchResults.length}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
+                    {searchResults.length === 0 && (
+                      <div style={{ padding: '14px 10px', textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>No startups match "{search}"</div>
+                    )}
+                    {searchResults.map(s => {
+                      const sc = STAGE_COLORS[s.stage] || '#8b5cf6';
+                      const score = s.metrics?.pitchScore;
+                      return (
+                        <button key={s.id || s.name} onClick={() => { setVaultBrand(s.name); setVaultType('All'); setTab('vault'); setSearch(''); setSearchOpen(false); }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, background: `${sc}0c`, border: `1px solid ${sc}22`, borderLeft: `2px solid ${sc}70`, cursor: 'pointer' }}>
+                          <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: `radial-gradient(circle at 32% 28%, ${sc}, ${sc}66 60%, ${sc}18)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'white', boxShadow: `0 2px 8px ${sc}40` }}>{s.name[0]}</div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</p>
+                            <p style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.4)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.stage} · {s.industry}{s.founder ? ` · ${s.founder}` : ''}</p>
+                          </div>
+                          {score != null && <span style={{ fontSize: 12, fontWeight: 800, color: sc, flexShrink: 0 }}>{score}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </div>
             <div onClick={() => setNotifOpen(p => !p)} className="relative w-8 h-8 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center cursor-pointer hover:bg-white/[0.07] transition">
@@ -1596,6 +1706,14 @@ function HubPage() {
           {tab === 'overview' && (
             <div className="hub-main-content" style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 28px', boxSizing: 'border-box', overflow: 'hidden' }}>
 
+              {/* Deep colour aurora — warms the dark canvas, elegant + deep */}
+              <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '-16%', left: '-8%', width: '46%', height: '58%', background: 'radial-gradient(circle, rgba(139,92,246,0.18), transparent 70%)', filter: 'blur(44px)' }} />
+                <div style={{ position: 'absolute', top: '-12%', right: '-8%', width: '42%', height: '52%', background: 'radial-gradient(circle, rgba(6,182,212,0.14), transparent 70%)', filter: 'blur(44px)' }} />
+                <div style={{ position: 'absolute', bottom: '-20%', left: '22%', width: '58%', height: '58%', background: 'radial-gradient(circle, rgba(16,185,129,0.13), transparent 70%)', filter: 'blur(52px)' }} />
+                <div style={{ position: 'absolute', top: '30%', right: '24%', width: '30%', height: '40%', background: 'radial-gradient(circle, rgba(245,158,11,0.07), transparent 70%)', filter: 'blur(48px)' }} />
+              </div>
+
               {/* Constellation bg */}
               <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0, opacity: 0.35 }}>
                 <ConstellationBg />
@@ -1621,8 +1739,8 @@ function HubPage() {
                     </button>
                   </div>
 
-                  {/* Column headers */}
-                  <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: '36px 1fr 120px 148px 90px 56px 100px', padding: '8px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  {/* Column headers — padding matches row: margin 12px + padding 16px = 28px each side */}
+                  <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: '36px 1fr 110px 148px 90px 52px 110px', padding: '8px 28px', borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'center' }}>
                     {['#', 'COMPANY', 'FOUNDER', 'STAGE', 'INDUSTRY', 'SCORE', 'RAISED'].map(h => (
                       <span key={h} style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>{h}</span>
                     ))}
@@ -1747,9 +1865,9 @@ function HubPage() {
                       {ACTIVITY.map((a, i) => {
                         const Icon = a.icon;
                         return (
-                          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                            <div style={{ width: 28, height: 28, borderRadius: 8, background: `${a.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 0 10px ${a.color}40` }}>
-                              <Icon style={{ width: 13, height: 13, color: a.color }} />
+                          <div key={i} className="la-row" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, background: `linear-gradient(120deg, ${a.color}12, rgba(255,255,255,0.012) 78%)`, border: `1px solid ${a.color}22`, borderLeft: `2px solid ${a.color}70` }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 9, background: `radial-gradient(circle at 32% 28%, ${a.color}, ${a.color}77 58%, ${a.color}2e)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 3px 8px ${a.color}55, 0 0 12px ${a.color}40, inset 0 1px 2px rgba(255,255,255,0.45)`, border: `1px solid ${a.color}` }}>
+                              <Icon style={{ width: 13, height: 13, color: '#fff', filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.5))' }} />
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', margin: 0, lineHeight: 1.45 }}>{a.text}</p>
@@ -1813,20 +1931,30 @@ function HubPage() {
                               }} />
                             </>}
 
-                            {/* Core orb */}
+                            {/* Core orb — 3D sphere */}
                             <div style={{
                               width: 52, height: 52, borderRadius: '50%',
-                              background: `radial-gradient(circle at 38% 32%, ${col}55 0%, ${col}25 45%, ${col}0a 100%)`,
-                              border: `1.5px solid ${col}80`,
-                              boxShadow: count > 0 ? `0 0 22px ${col}50, 0 0 8px ${col}30, inset 0 0 14px ${col}20` : `0 0 6px ${col}15`,
+                              background: `radial-gradient(circle at 34% 28%, ${col} 0%, ${col}66 48%, ${col}10 100%)`,
+                              border: `1px solid ${col}90`,
+                              boxShadow: count > 0 ? `0 6px 18px ${col}45, 0 0 26px ${col}55, inset 0 -4px 8px rgba(0,0,0,0.5), inset 0 3px 6px ${col}cc` : `inset 0 -2px 5px rgba(0,0,0,0.45), 0 0 6px ${col}15`,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               position: 'relative', zIndex: 1,
                             }}>
                               <span style={{
                                 fontSize: count >= 10 ? 15 : 18,
-                                fontWeight: 800, color: col,
-                                filter: count > 0 ? `drop-shadow(0 0 10px ${col})` : 'none',
+                                fontWeight: 800, color: '#fff',
+                                filter: count > 0 ? `drop-shadow(0 0 8px ${col})` : 'none',
+                                position: 'relative', zIndex: 2,
                               }}>{count}</span>
+                              {/* specular highlight */}
+                              <div style={{ position: 'absolute', top: 9, left: 13, width: 14, height: 9, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.8), transparent 70%)', zIndex: 2 }} />
+                              {/* orbiting electron (populated stages) */}
+                              {count > 0 && (<>
+                                <div style={{ position: 'absolute', inset: -6, borderRadius: '50%', border: `1px solid ${col}30`, transform: 'rotateX(70deg)', zIndex: 0 }} />
+                                <div style={{ position: 'absolute', inset: -6, transformStyle: 'preserve-3d', animation: `ph-orbit ${3.5 + idx * 0.5}s linear infinite`, zIndex: 0 }}>
+                                  <div style={{ position: 'absolute', top: -3, left: '50%', width: 6, height: 6, marginLeft: -3, borderRadius: '50%', background: col, boxShadow: `0 0 8px ${col}, 0 0 4px #fff` }} />
+                                </div>
+                              </>)}
                             </div>
                           </div>
 
@@ -1880,6 +2008,12 @@ function HubPage() {
       0%   { background-position: -60% 0; }
       100% { background-position: 160% 0; }
     }
+    @keyframes ph-orbit {
+      from { transform: rotateX(70deg) rotateZ(0deg); }
+      to   { transform: rotateX(70deg) rotateZ(360deg); }
+    }
+    .la-row { transition: transform .16s ease, box-shadow .16s ease; }
+    .la-row:hover { transform: translateX(3px); box-shadow: 0 6px 18px rgba(0,0,0,0.4); }
   `}</style>
               </div>
 
@@ -1969,7 +2103,7 @@ function HubPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 5 }}><Filter style={{ width: 11, height: 11 }} />Sector</span>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      {['All', 'SaaS', 'FinTech', 'DeepTech'].map(s => {
+                      {['All', ...Array.from(new Set(startups.map(s => s.industry).filter(Boolean))).sort()].map(s => {
                         const active = pipelineSector === s;
                         return <button key={s} onClick={() => setPipelineSector(s)} style={{ padding: '5px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .18s', background: active ? 'rgba(139,92,246,0.28)' : 'rgba(255,255,255,0.04)', color: active ? '#a78bfa' : 'rgba(255,255,255,0.35)', border: `1px solid ${active ? 'rgba(139,92,246,0.55)' : 'rgba(255,255,255,0.08)'}`, boxShadow: active ? '0 0 16px rgba(139,92,246,0.4)' : 'none' }}>{s}</button>;
                       })}
@@ -2128,9 +2262,11 @@ function HubPage() {
 
                         {/* Add — pinned bottom */}
                         <div style={{ padding: '6px 8px', flexShrink: 0, borderTop: `1px solid ${sc}12` }}>
-                          <button style={{ width: '100%', padding: '6px', borderRadius: 10, border: `1px dashed ${sc}28`, background: `${sc}05`, color: `${sc}75`, fontSize: 10, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, transition: 'all .18s' }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = sc; (e.currentTarget as HTMLButtonElement).style.color = sc; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = `${sc}28`; (e.currentTarget as HTMLButtonElement).style.color = `${sc}75`; }}>
+                          <button
+                            onClick={() => requireAuth('Sign in to register your startup on Incutrack.', () => { setRegisterInitialStage(stage); setRegisterStep(1); setRegisterOpen(true); })}
+                            style={{ width: '100%', padding: '6px', borderRadius: 10, border: `1px dashed ${sc}28`, background: `${sc}05`, color: `${sc}75`, fontSize: 10, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, transition: 'all .18s' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = sc; (e.currentTarget as HTMLButtonElement).style.color = sc; (e.currentTarget as HTMLButtonElement).style.background = `${sc}10`; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = `${sc}28`; (e.currentTarget as HTMLButtonElement).style.color = `${sc}75`; (e.currentTarget as HTMLButtonElement).style.background = `${sc}05`; }}>
                             <Plus style={{ width: 11, height: 11 }} /> Add
                           </button>
                         </div>
@@ -2154,11 +2290,19 @@ function HubPage() {
 
               {/* ── Filter row ── */}
               <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, position: 'relative', zIndex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Filter style={{ width: 12, height: 12 }} />Type:
                   </span>
                   <FilterPills options={['All', 'Deck', 'Doc', 'Sheet', 'Video', 'Bundle']} value={vaultType} onChange={setVaultType} />
+                  {vaultBrand && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 10px 5px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700, color: '#a78bfa', background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(139,92,246,0.35)' }}>
+                      <FolderKey style={{ width: 11, height: 11 }} />Viewing: {vaultBrand}
+                      <button onClick={() => setVaultBrand(null)} aria-label="Clear brand filter" style={{ display: 'flex', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 16, height: 16, alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.6)' }}>
+                        <X style={{ width: 9, height: 9 }} />
+                      </button>
+                    </span>
+                  )}
                 </div>
                 <button onClick={() => requireAuth('Sign in to upload your deck to the Brand Vault.', () => hasUserStartup ? setUploadChoiceOpen(true) : setUploadGuardOpen(true))}
                   style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 18px', borderRadius: 999, fontSize: 12, fontWeight: 600, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -2194,7 +2338,7 @@ function HubPage() {
 
               {/* ── Card grid ── */}
               {filteredDocs.length === 0 && (
-                <div style={{ textAlign: 'center', paddingTop: 60, color: 'rgba(255,255,255,0.2)', fontSize: 14, position: 'relative', zIndex: 1 }}>No documents of this type</div>
+                <div style={{ textAlign: 'center', paddingTop: 60, color: 'rgba(255,255,255,0.2)', fontSize: 14, position: 'relative', zIndex: 1 }}>{vaultBrand ? `No Brand Vault documents for ${vaultBrand} yet` : 'No documents of this type'}</div>
               )}
               <div className="analytics-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
                 <div className="hub-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
@@ -2720,7 +2864,7 @@ function HubPage() {
               Mentorship: { color: '#f59e0b', icon: '🌟' },
               Hackathon:  { color: '#10b981', icon: '🚀' },
             };
-            const TYPES = ['All', 'Pitching', 'Workshop', 'Mentorship', 'Hackathon'];
+            const TYPES = ['All', ...Array.from(new Set(allEvents.map(e => e.type).filter(Boolean))).sort()];
             return (
               <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 14 }}>
 
@@ -2769,7 +2913,7 @@ function HubPage() {
 
                   {/* Stats + CTA */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {([['5', 'Events', '#8b5cf6'], [String(rsvpedIds.length), 'RSVPd', '#10b981'], ['₹5L', 'Prize', '#f59e0b']] as [string,string,string][]).map(([val, lbl, col]) => (
+                    {([[String(allEvents.length), 'Events', '#8b5cf6'], [String(rsvpedIds.length), 'RSVPd', '#10b981'], ['₹5L', 'Prize', '#f59e0b']] as [string,string,string][]).map(([val, lbl, col]) => (
                       <div key={lbl} style={{ padding: '5px 13px', borderRadius: 10, background: `${col}0d`, border: `1px solid ${col}22`, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${col}80,transparent)` }} />
                         <p style={{ fontSize: 14, fontWeight: 800, color: col, margin: 0, lineHeight: 1 }}>{val}</p>
@@ -2913,8 +3057,8 @@ function HubPage() {
 
                     {/* Category Split — SVG donut */}
                     {(() => {
-                      const cats = ['Pitching', 'Workshop', 'Mentorship', 'Hackathon'] as const;
-                      const counts = cats.map(t => ALL_EVENTS.filter(e => e.type === t).length);
+                      const cats = Array.from(new Set(allEvents.map(e => e.type).filter(Boolean))).sort();
+                      const counts = cats.map(t => allEvents.filter(e => e.type === t).length);
                       const total = counts.reduce((a, b) => a + b, 0);
                       const R = 26, sw = 6, circ = 2 * Math.PI * R;
                       let cum = 0;
@@ -2978,7 +3122,7 @@ function HubPage() {
                             <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)', textAlign: 'center', lineHeight: 1.6, margin: 0 }}>No RSVPs yet —<br/>register for events</p>
                           </div>
                         ) : (
-                          ALL_EVENTS.filter(e => rsvpedIds.includes(e.id)).map(ev => {
+                          allEvents.filter(e => rsvpedIds.includes(e.id)).map(ev => {
                             const ec = EVENT_COLOR[ev.type] || '#8b5cf6';
                             const dp = parseDate(ev.date);
                             return (
@@ -3002,7 +3146,48 @@ function HubPage() {
           })()}
 
           {/* ── ANALYTICS ────────────────────────────────────────────────── */}
-          {tab === 'analytics' && (
+          {tab === 'analytics' && (() => {
+            // ── Derive all analytics metrics from live startups state ──
+            const totalMRR = startups.reduce((a, s) => a + (s.metrics.mrr || 0), 0);
+            const totalUsers = startups.reduce((a, s) => a + (s.metrics.users || 0), 0);
+            const totalRaised = startups.reduce((a, s) => a + s.raised, 0);
+
+            // Sector breakdown — group by industry, compute percentages
+            const sectorMap: Record<string, number> = {};
+            startups.forEach(s => { const k = s.industry || 'Other'; sectorMap[k] = (sectorMap[k] || 0) + 1; });
+            const SECTOR_COLORS = ['#06b6d4','#f59e0b','#8b5cf6','#10b981','#f472b6','#34d399','#a78bfa','#fb923c'];
+            const sectorEntries = Object.entries(sectorMap).sort((a, b) => b[1] - a[1]);
+            const topSectors = sectorEntries.slice(0, 4);
+            const otherCount = sectorEntries.slice(4).reduce((a, [, v]) => a + v, 0);
+            const sectorData = [
+              ...topSectors.map(([label, count], i) => ({ label, val: Math.round((count / startups.length) * 100), color: SECTOR_COLORS[i] })),
+              ...(otherCount > 0 ? [{ label: 'Other', val: Math.round((otherCount / startups.length) * 100), color: '#475569' }] : []),
+            ];
+
+            // MRR growth curve — accumulate raised across startups as monthly proxy
+            const mrrBase = Math.max(totalRaised / 1e5, 8);
+            const MRR_DYN = ['Jan','Feb','Mar','Apr','May','Jun'].map((m, i) => ({
+              m, v: Math.round(mrrBase * (0.1 + i * 0.18)),
+            }));
+            const mrrLatest = MRR_DYN[MRR_DYN.length - 1].v;
+            const mrrPrev = MRR_DYN[MRR_DYN.length - 2].v;
+            const mrrPct = mrrPrev > 0 ? Math.round(((mrrLatest - mrrPrev) / mrrPrev) * 100) : 0;
+
+            // Users growth curve
+            const usrBase = Math.max(totalUsers, 120);
+            const USR_DYN = ['Jan','Feb','Mar','Apr','May','Jun'].map((m, i) => ({
+              m, v: Math.round(usrBase * (0.076 + i * 0.165)),
+            }));
+            const usrLatest = USR_DYN[USR_DYN.length - 1].v;
+            const usrPrev = USR_DYN[USR_DYN.length - 2].v;
+            const usrPct = usrPrev > 0 ? Math.round(((usrLatest - usrPrev) / usrPrev) * 100) : 0;
+
+            // Burn multiple — ratio of capital deployed to MRR run-rate (lower = better)
+            const burnMultiple = totalRaised > 0 && mrrLatest > 0
+              ? (totalRaised / (mrrLatest * 1e5 * 12)).toFixed(1)
+              : '—';
+
+            return (
             <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 14, padding: '20px 24px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
 
               {/* ── Accretion disk background ── */}
@@ -3011,13 +3196,13 @@ function HubPage() {
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.72) 100%)' }} />
               </div>
 
-              {/* ── Row 1: KPI strip with Armillary orbs ── */}
+              {/* ── Row 1: KPI strip ── */}
               <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, position: 'relative', zIndex: 1 }}>
                 {[
-                  { label: 'Total MRR', val: '₹80K', change: '+54%', period: 'vs last month', color: '#8b5cf6' },
-                  { label: 'Active Users', val: '1,580', change: '+68%', period: 'vs last month', color: '#06b6d4' },
-                  { label: 'Avg IncuScore™', val: '86.7', change: '+3.2', period: 'pts this cohort', color: '#10b981' },
-                  { label: 'Burn Multiple', val: '1.4×', change: '-0.3×', period: 'improving QoQ', color: '#f59e0b' },
+                  { label: 'Total MRR', val: mrrLatest >= 1000 ? `₹${(mrrLatest / 1000).toFixed(1)}M` : `₹${mrrLatest}K`, change: `+${mrrPct}%`, period: 'vs last month', color: '#8b5cf6' },
+                  { label: 'Active Users', val: usrLatest >= 1000 ? `${(usrLatest / 1000).toFixed(1)}K` : String(usrLatest), change: `+${usrPct}%`, period: 'vs last month', color: '#06b6d4' },
+                  { label: 'Avg IncuScore™', val: String(stats.avgScore), change: '+3.2', period: 'pts this cohort', color: '#10b981' },
+                  { label: 'Burn Multiple', val: burnMultiple === '—' ? '—' : `${burnMultiple}×`, change: '-0.3×', period: 'improving QoQ', color: '#f59e0b' },
                 ].map(k => (
                   <div key={k.label} style={{
                     background: `linear-gradient(135deg,${k.color}14 0%,rgba(0,0,0,0.72) 70%)`,
@@ -3043,8 +3228,8 @@ function HubPage() {
               {/* ── Row 2: Charts ── */}
               <div className="lp-two-col" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, position: 'relative', zIndex: 1 }}>
                 {[
-                  { label: 'Portfolio MRR Growth', sub: '+54% MoM', data: MRR_DATA, color: '#8b5cf6', unit: 'K' },
-                  { label: 'Active User Acquisition', sub: '+68% MoM', data: USR_DATA, color: '#06b6d4', unit: '' },
+                  { label: 'Portfolio MRR Growth', sub: `+${mrrPct}% MoM`, data: MRR_DYN, color: '#8b5cf6', unit: 'K' },
+                  { label: 'Active User Acquisition', sub: `+${usrPct}% MoM`, data: USR_DYN, color: '#06b6d4', unit: '' },
                 ].map(c => (
                   <div key={c.label} style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '18px 20px', backdropFilter: 'blur(18px)', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${c.color}65,transparent)` }} />
@@ -3069,54 +3254,67 @@ function HubPage() {
               </div>
 
               {/* ── Row 3: Three redesigned panels ── */}
+              <style>{`
+                @keyframes an-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+                @keyframes an-shimmer{ 0%{background-position:-150% 0} 100%{background-position:250% 0} }
+                @keyframes an-orbit  { from{transform:rotateX(72deg) rotateZ(0deg)} to{transform:rotateX(72deg) rotateZ(360deg)} }
+                .an-panel  { transition:border-color .2s ease, box-shadow .2s ease; }
+                .an-panel:hover { border-color:rgba(255,255,255,0.13) !important; box-shadow:0 16px 46px rgba(0,0,0,0.5); }
+                .an-rank   { transition:transform .18s ease, box-shadow .18s ease, background .18s ease; }
+                .an-rank:hover { transform:translateX(3px); box-shadow:0 8px 22px rgba(0,0,0,0.45); }
+                .an-legend { transition:transform .16s ease, background .16s ease; }
+                .an-legend:hover { transform:translateX(3px); background:rgba(255,255,255,0.05); }
+              `}</style>
               <div className="hub-card-grid" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, position: 'relative', zIndex: 1 }}>
 
-                {/* ══ Sector Distribution — Donut + Legend ══ */}
-                <div style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', overflow: 'hidden', backdropFilter: 'blur(18px)', position: 'relative' }}>
+                {/* ══ Sector Distribution — 3D Donut Coin + Legend ══ */}
+                <div className="an-panel" style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', overflow: 'hidden', backdropFilter: 'blur(18px)', position: 'relative' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(6,182,212,0.55),transparent)' }} />
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'white', margin: '0 0 10px 0', flexShrink: 0 }}>Sector Distribution</p>
 
-                  <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', gap: 14 }}>
-                    {/* SVG Donut */}
+                  <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', gap: 18 }}>
+                    {/* 3D tilted extruded donut coin */}
                     {(() => {
-                      const r = 34, cx = 52, cy = 52;
-                      const circ = 2 * Math.PI * r;
-                      let cum = 0;
+                      let acc = 0;
+                      const stops = sectorData.map(s => { const a = acc; acc += s.val; return `${s.color} ${a}% ${acc}%`; });
+                      if (acc < 100) stops.push(`rgba(255,255,255,0.06) ${acc}% 100%`);
+                      const conic = `conic-gradient(from -90deg, ${stops.join(',')})`;
+                      const ringMask = 'radial-gradient(circle, transparent 49%, #000 50%)';
+                      const D = 116;
                       return (
-                        <svg width={104} height={104} viewBox="0 0 104 104" style={{ flexShrink: 0 }}>
-                          <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="11" />
-                          {SECTOR_DATA.map(s => {
-                            const dash = (s.val / 100) * circ;
-                            const off = cum; cum += dash;
-                            return (
-                              <circle key={s.label} cx={cx} cy={cy} r={r}
-                                fill="none" stroke={s.color} strokeWidth="11"
-                                strokeDasharray={`${dash - 2} ${circ}`}
-                                strokeDashoffset={-off}
-                                transform={`rotate(-90 ${cx} ${cy})`}
-                                style={{ filter: `drop-shadow(0 0 6px ${s.color}90)` }}
-                              />
-                            );
-                          })}
-                          <text x={cx} y={cy - 5} textAnchor="middle" fontSize="20" fontWeight="800" fill="white">{SECTOR_DATA.length}</text>
-                          <text x={cx} y={cy + 10} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,0.28)" letterSpacing="1">SECTORS</text>
-                        </svg>
+                        <div style={{ position: 'relative', width: 140, height: 140, flexShrink: 0, perspective: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'an-float 5s ease-in-out infinite' }}>
+                          <div style={{ position: 'relative', width: D, height: D, transformStyle: 'preserve-3d', transform: 'rotateX(60deg)' }}>
+                            {/* extrusion depth stack */}
+                            {Array.from({ length: 8 }).map((_, i) => (
+                              <div key={i} style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: conic, transform: `translateZ(${-(i + 1) * 1.6}px)`, filter: `brightness(${0.95 - i * 0.1})`, WebkitMaskImage: ringMask, maskImage: ringMask }} />
+                            ))}
+                            {/* top face */}
+                            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: conic, WebkitMaskImage: ringMask, maskImage: ringMask, boxShadow: '0 0 24px rgba(6,182,212,0.22)' }} />
+                            {/* glossy sheen */}
+                            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(ellipse at 38% 26%, rgba(255,255,255,0.4), transparent 46%)', WebkitMaskImage: ringMask, maskImage: ringMask, mixBlendMode: 'overlay' }} />
+                          </div>
+                          {/* flat centre label over the hole */}
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                            <span style={{ fontSize: 24, fontWeight: 800, color: 'white', lineHeight: 1, textShadow: '0 2px 10px rgba(0,0,0,0.7)' }}>{sectorData.length}</span>
+                            <span style={{ fontSize: 7.5, color: 'rgba(255,255,255,0.4)', letterSpacing: '1.5px', marginTop: 3 }}>SECTORS</span>
+                          </div>
+                        </div>
                       );
                     })()}
 
                     {/* Legend */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 9 }}>
-                      {SECTOR_DATA.map(s => (
-                        <div key={s.label}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.color, flexShrink: 0, boxShadow: `0 0 7px ${s.color}` }} />
-                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.48)' }}>{s.label}</span>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, minWidth: 0 }}>
+                      {sectorData.map(s => (
+                        <div key={s.label} className="an-legend" style={{ padding: '5px 8px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                              <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0, boxShadow: `0 0 8px ${s.color}`, transform: 'rotate(45deg)' }} />
+                              <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</span>
                             </div>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: s.color }}>{s.val}%</span>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: s.color, flexShrink: 0 }}>{s.val}%</span>
                           </div>
-                          <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.05)' }}>
-                            <div style={{ height: '100%', borderRadius: 2, width: `${s.val}%`, background: `linear-gradient(90deg,${s.color},${s.color}70)`, boxShadow: `0 0 8px ${s.color}70` }} />
+                          <div style={{ height: 4, borderRadius: 3, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', borderRadius: 3, width: `${s.val}%`, background: `linear-gradient(90deg,${s.color},${s.color}70)`, boxShadow: `0 0 8px ${s.color}80` }} />
                           </div>
                         </div>
                       ))}
@@ -3124,42 +3322,52 @@ function HubPage() {
                   </div>
                 </div>
 
-                {/* ══ IncuScore Rankings — Medal Cards ══ */}
-                <div style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', overflow: 'hidden', backdropFilter: 'blur(18px)', position: 'relative' }}>
+                {/* ══ IncuScore Rankings — 3D Medal Cards ══ */}
+                <div className="an-panel" style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', overflow: 'hidden', backdropFilter: 'blur(18px)', position: 'relative' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,0.55),transparent)' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
                     <p style={{ fontSize: 13, fontWeight: 600, color: 'white', margin: 0 }}>IncuScore™ Rankings</p>
                     <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>out of 100</span>
                   </div>
 
-                  <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 7, WebkitMaskImage: 'linear-gradient(180deg,#000 93%,transparent)', maskImage: 'linear-gradient(180deg,#000 93%,transparent)' }}>
                     {[...startups].sort((a, b) => b.metrics.pitchScore - a.metrics.pitchScore).map((s, i) => {
                       const sc = s.metrics.pitchScore;
                       const col = sc >= 90 ? '#10b981' : sc >= 80 ? '#06b6d4' : sc >= 70 ? '#f59e0b' : '#8b5cf6';
-                      const rc = i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7c3a' : 'rgba(255,255,255,0.18)';
+                      const rc = i === 0 ? '#fbbf24' : i === 1 ? '#cbd5e1' : i === 2 ? '#d98a4f' : 'rgba(255,255,255,0.3)';
                       const barW = ((sc - 60) / 40) * 100;
                       const isTop = i < 3;
                       return (
-                        <div key={s.id} style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '9px 11px', borderRadius: 10,
-                          background: isTop ? `${col}0a` : 'rgba(255,255,255,0.015)',
-                          border: `1px solid ${isTop ? col + '28' : 'rgba(255,255,255,0.04)'}`,
-                          borderLeft: `3px solid ${isTop ? col + '90' : 'rgba(255,255,255,0.08)'}`,
+                        <div key={s.id} className="an-rank" style={{
+                          display: 'flex', alignItems: 'center', gap: 11,
+                          padding: '9px 11px', borderRadius: 11,
+                          background: isTop ? `linear-gradient(100deg,${col}14,rgba(255,255,255,0.012) 72%)` : 'rgba(255,255,255,0.015)',
+                          border: `1px solid ${isTop ? col + '2e' : 'rgba(255,255,255,0.05)'}`,
+                          borderLeft: `3px solid ${isTop ? col : 'rgba(255,255,255,0.1)'}`,
+                          boxShadow: isTop ? `0 2px 12px ${col}14` : 'none',
                         }}>
-                          {/* Rank badge */}
-                          <div style={{ width: 22, height: 22, borderRadius: 6, background: `${rc}20`, border: `1px solid ${rc}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <span style={{ fontSize: 9, fontWeight: 800, color: rc }}>{i + 1}</span>
+                          {/* 3D medal coin */}
+                          <div style={{ perspective: 160, flexShrink: 0 }}>
+                            <div style={{
+                              width: 25, height: 25, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transformStyle: 'preserve-3d',
+                              animation: isTop ? `an-float ${2.6 + i * 0.3}s ease-in-out infinite` : 'none',
+                              background: isTop ? `radial-gradient(circle at 34% 28%, rgba(255,255,255,0.55), ${rc} 42%, ${rc}77 75%)` : 'rgba(255,255,255,0.04)',
+                              border: `1px solid ${isTop ? rc : 'rgba(255,255,255,0.12)'}`,
+                              boxShadow: isTop ? `0 3px 8px rgba(0,0,0,0.55), 0 0 12px ${rc}66, inset 0 1px 2px rgba(255,255,255,0.5)` : 'inset 0 1px 1px rgba(255,255,255,0.06)',
+                            }}>
+                              <span style={{ fontSize: 10, fontWeight: 900, color: isTop ? '#1c1c1c' : 'rgba(255,255,255,0.45)' }}>{i + 1}</span>
+                            </div>
                           </div>
 
                           {/* Name + bar */}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                              <span style={{ fontSize: 11, color: isTop ? 'white' : 'rgba(255,255,255,0.5)', fontWeight: isTop ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 90 }}>{s.name}</span>
+                              <span style={{ fontSize: 11, color: isTop ? 'white' : 'rgba(255,255,255,0.5)', fontWeight: isTop ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100 }}>{s.name}</span>
                               <span style={{ fontSize: 14, fontWeight: 800, color: col, marginLeft: 6, flexShrink: 0, filter: `drop-shadow(0 0 6px ${col})`, lineHeight: 1 }}>{sc}</span>
                             </div>
-                            <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                            <div style={{ position: 'relative', height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
                               <div style={{ height: '100%', borderRadius: 3, width: `${barW}%`, background: `linear-gradient(90deg,${col},${col}88)`, boxShadow: `0 0 8px ${col}80` }} />
+                              <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${barW}%`, borderRadius: 3, background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.45),transparent)', backgroundSize: '55% 100%', backgroundRepeat: 'no-repeat', animation: 'an-shimmer 2.8s linear infinite' }} />
                             </div>
                           </div>
                         </div>
@@ -3168,41 +3376,47 @@ function HubPage() {
                   </div>
                 </div>
 
-                {/* ══ Stage Distribution — Pipeline Nodes ══ */}
-                <div style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', overflow: 'hidden', backdropFilter: 'blur(18px)', position: 'relative' }}>
+                {/* ══ Stage Distribution — 3D Pipeline Nodes ══ */}
+                <div className="an-panel" style={{ background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', overflow: 'hidden', backdropFilter: 'blur(18px)', position: 'relative' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,0.55),transparent)' }} />
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'white', margin: '0 0 10px 0', flexShrink: 0 }}>Stage Distribution</p>
 
                   <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
-                      {/* Vertical connector line */}
-                      <div style={{ position: 'absolute', left: 17, top: 20, bottom: 20, width: 1, background: 'linear-gradient(180deg,rgba(255,255,255,0.06) 0%,rgba(255,255,255,0.02) 100%)', zIndex: 0 }} />
+                      {/* Glowing pipeline spine */}
+                      <div style={{ position: 'absolute', left: 18, top: 24, bottom: 24, width: 2, background: 'linear-gradient(180deg,rgba(16,185,129,0.4) 0%,rgba(139,92,246,0.25) 55%,rgba(255,255,255,0.03) 100%)', borderRadius: 2, boxShadow: '0 0 8px rgba(16,185,129,0.2)', zIndex: 0 }} />
 
                       {STAGE_ORDER.map((stage, idx) => {
                         const count = startups.filter(s => s.stage === stage).length;
                         const pct = startups.length ? (count / startups.length) * 100 : 0;
                         const col = STAGE_COLORS[stage];
-                        const isLast = idx === STAGE_ORDER.length - 1;
                         return (
-                          <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', position: 'relative', zIndex: 1 }}>
+                          <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '9px 0', position: 'relative', zIndex: 1 }}>
 
-                            {/* Node orb */}
-                            <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `radial-gradient(circle at 35% 35%, ${col}55, ${col}18)`, border: `1.5px solid ${col}70`, boxShadow: count > 0 ? `0 0 16px ${col}60, 0 0 6px ${col}40` : 'none' }}>
-                              <span style={{ fontSize: 13, fontWeight: 800, color: col, filter: count > 0 ? `drop-shadow(0 0 6px ${col})` : 'none', lineHeight: 1 }}>{count}</span>
-                              {/* Pulse ring for populated stages */}
+                            {/* 3D sphere node */}
+                            <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `radial-gradient(circle at 32% 28%, ${col}, ${col}55 55%, ${col}12 100%)`, border: `1px solid ${col}80`, boxShadow: count > 0 ? `0 4px 14px ${col}40, 0 0 18px ${col}50, inset 0 -3px 6px rgba(0,0,0,0.45), inset 0 2px 4px ${col}aa` : 'inset 0 -2px 4px rgba(0,0,0,0.4)' }}>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: '#fff', filter: count > 0 ? `drop-shadow(0 0 5px ${col})` : 'none', lineHeight: 1, position: 'relative', zIndex: 2 }}>{count}</span>
+                              {/* specular highlight */}
+                              <div style={{ position: 'absolute', top: 5, left: 7, width: 9, height: 6, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.85), transparent 70%)', zIndex: 2 }} />
+                              {/* orbiting electron (populated stages) */}
                               {count > 0 && (
-                                <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', border: `1px solid ${col}35`, animation: 'ph-pulse 2s ease-out infinite' }} />
+                                <>
+                                  <div style={{ position: 'absolute', inset: -5, borderRadius: '50%', border: `1px solid ${col}30`, transform: 'rotateX(72deg)', zIndex: 0 }} />
+                                  <div style={{ position: 'absolute', inset: -5, transformStyle: 'preserve-3d', animation: `an-orbit ${3 + idx * 0.6}s linear infinite`, zIndex: 1 }}>
+                                    <div style={{ position: 'absolute', top: -2, left: '50%', width: 5, height: 5, marginLeft: -2.5, borderRadius: '50%', background: col, boxShadow: `0 0 8px ${col}, 0 0 4px #fff` }} />
+                                  </div>
+                                </>
                               )}
                             </div>
 
                             {/* Stage info */}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                                <span style={{ fontSize: 11, color: count > 0 ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.28)', fontWeight: count > 0 ? 500 : 400 }}>{stage}</span>
-                                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>{pct.toFixed(0)}%</span>
+                                <span style={{ fontSize: 11, color: count > 0 ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.28)', fontWeight: count > 0 ? 500 : 400 }}>{stage}</span>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: count > 0 ? col : 'rgba(255,255,255,0.2)' }}>{pct.toFixed(0)}%</span>
                               </div>
-                              <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-                                <div style={{ height: '100%', borderRadius: 2, width: `${pct}%`, background: `linear-gradient(90deg,${col},${col}70)`, boxShadow: `0 0 8px ${col}80`, transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)' }} />
+                              <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', borderRadius: 3, width: `${pct}%`, background: `linear-gradient(90deg,${col},${col}70)`, boxShadow: `0 0 8px ${col}80`, transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)' }} />
                               </div>
                             </div>
                           </div>
@@ -3220,13 +3434,34 @@ function HubPage() {
 
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* ── FUNDING TRACKER ──────────────────────────────────────────── */}
           {tab === 'funding' && (() => {
             const committed = INVESTORS.filter(i => i.status === 'Committed');
             const pipeline = INVESTORS.filter(i => i.status !== 'Committed');
             const pipelinePotential = pipeline.reduce((a, c) => a + c.amount, 0);
+
+            // ── Pure-CSS 3D decorations (no WebGL) — float behind table rows ──
+            const Cube3D = ({ c, size = 60, dur = 18, ...pos }: { c: string; size?: number; dur?: number } & React.CSSProperties) => (
+              <div style={{ position: 'absolute', width: size, height: size, perspective: size * 6, pointerEvents: 'none', ...pos }}>
+                <div style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d', animation: `ft-cube3d ${dur}s linear infinite` }}>
+                  {['rotateY(0deg)', 'rotateY(90deg)', 'rotateY(180deg)', 'rotateY(270deg)', 'rotateX(90deg)', 'rotateX(-90deg)'].map((r, i) => (
+                    <div key={i} style={{ position: 'absolute', width: size, height: size, border: `1px solid ${c}40`, background: `${c}0a`, boxShadow: `inset 0 0 16px ${c}1f`, transform: `${r} translateZ(${size / 2}px)` }} />
+                  ))}
+                </div>
+              </div>
+            );
+            const Disc3D = ({ c, size = 80, dur = 24, ...pos }: { c: string; size?: number; dur?: number } & React.CSSProperties) => (
+              <div style={{ position: 'absolute', width: size, height: size, perspective: size * 6, pointerEvents: 'none', ...pos }}>
+                <div style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d', animation: `ft-disc3d ${dur}s linear infinite` }}>
+                  <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `1px solid ${c}38`, boxShadow: `0 0 18px ${c}14` }} />
+                  <div style={{ position: 'absolute', inset: '22%', borderRadius: '50%', border: `1px solid ${c}24` }} />
+                  <div style={{ position: 'absolute', inset: '44%', borderRadius: '50%', background: c, boxShadow: `0 0 12px ${c}` }} />
+                </div>
+              </div>
+            );
             return (
               <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 24px', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', gap: 12 }}>
 
@@ -3240,6 +3475,8 @@ function HubPage() {
                   @keyframes ft-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
                   @keyframes ft-morph { 0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%} 50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%} }
                   @keyframes ft-bar   { from{width:0} to{width:var(--w)} }
+                  @keyframes ft-cube3d { from{transform:rotateX(-24deg) rotateY(0deg)} to{transform:rotateX(-24deg) rotateY(360deg)} }
+                  @keyframes ft-disc3d { from{transform:rotateX(66deg) rotateZ(0deg)} to{transform:rotateX(66deg) rotateZ(360deg)} }
                   .ft-inv:hover { background:rgba(255,255,255,0.06) !important; transform:translateX(3px); }
                   .ft-inv { transition:all .18s; }
                 `}</style>
@@ -3280,11 +3517,11 @@ function HubPage() {
                 ═══════════════════════════════════════════════════════════ */}
                 <div className="hub-kpi-5col" style={{ flexShrink: 0, position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10 }}>
                   {[
-                    { label: 'Total Target', val: `₹${(totalTarget / 1e6).toFixed(0)}M`, sub: 'Series A goal', col: '#8b5cf6', icon: '⌖' },
-                    { label: 'Committed', val: `₹${(totalCommitted / 1e6).toFixed(1)}M`, sub: `${committed.length} investors`, col: '#10b981', icon: '✓' },
-                    { label: 'In Pipeline', val: `₹${(pipelinePotential / 1e6).toFixed(1)}M`, sub: `${pipeline.length} prospects`, col: '#f59e0b', icon: '◷' },
-                    { label: 'Funded', val: `${Math.round(fundingProgress * 100)}%`, sub: 'of target closed', col: '#06b6d4', icon: '↗' },
-                    { label: 'Remaining', val: `₹${((totalTarget - totalCommitted) / 1e6).toFixed(1)}M`, sub: 'to close round', col: '#ef4444', icon: '◯' }
+                    { label: 'Total Live Capital Demand', val: `₹${(totalTarget / 1e6).toFixed(0)}M`, sub: 'Active fundraising goals nationwide', col: '#8b5cf6', icon: '⌖' },
+                    { label: 'Successfully Closed Matches', val: `₹${(totalCommitted / 1e6).toFixed(1)}M`, sub: `${committed.length} active deals completed`, col: '#10b981', icon: '✓' },
+                    { label: 'Live Matches In Discovery', val: `₹${(pipelinePotential / 1e6).toFixed(1)}M`, sub: `${pipeline.length} active terms under review`, col: '#f59e0b', icon: '◷' },
+                    { label: 'Ecosystem Velocity', val: `${Math.round(fundingProgress * 100)}%`, sub: 'of active demand fulfilled', col: '#06b6d4', icon: '↗' },
+                    { label: 'Available Pipeline Depth', val: `₹${((totalTarget - totalCommitted) / 1e6).toFixed(1)}M`, sub: 'open for investor matching', col: '#ef4444', icon: '◯' }
                   ].map(k => (
                     <div key={k.label} style={{ borderRadius: 14, border: `1px solid ${k.col}25`, background: `linear-gradient(135deg,${k.col}10,rgba(0,0,0,0.7))`, padding: '12px 14px', position: 'relative', overflow: 'hidden' }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${k.col}80,transparent)` }} />
@@ -3312,7 +3549,7 @@ function HubPage() {
                     {/* Header */}
                     <div style={{ padding: '16px 18px 0', flexShrink: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', margin: 0, textTransform: 'uppercase', letterSpacing: '.1em' }}>Round Progress</p>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', margin: 0, textTransform: 'uppercase', letterSpacing: '.1em' }}>Platform Liquidity Run</p>
                         <span style={{ fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 999, color: '#a78bfa', background: 'rgba(139,92,246,0.18)', border: '1px solid rgba(139,92,246,0.42)' }}>SEED</span>
                       </div>
                     </div>
@@ -3344,13 +3581,13 @@ function HubPage() {
 
                       {/* Big number */}
                       <p style={{ fontSize: 38, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1, letterSpacing: '-2px', textAlign: 'center' }}>₹{(totalCommitted / 1e6).toFixed(1)}<span style={{ fontSize: 18, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>M</span></p>
-                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', margin: '4px 0 0', textAlign: 'center' }}>of ₹{(totalTarget / 1e6).toFixed(0)}M target committed</p>
+                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', margin: '4px 0 0', textAlign: 'center' }}>of ₹{(totalTarget / 1e6).toFixed(0)}M active funding volume cleared</p>
 
                       {/* Gradient pill progress */}
                       <div style={{ width: '100%', marginTop: 14 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                           <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)' }}>Progress</span>
-                          <span style={{ fontSize: 11, fontWeight: 800, background: 'linear-gradient(90deg,#a78bfa,#34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{Math.round(fundingProgress * 100)}% funded</span>
+                          <span style={{ fontSize: 11, fontWeight: 800, background: 'linear-gradient(90deg,#a78bfa,#34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{Math.round(fundingProgress * 100)}% liquidity rate</span>
                         </div>
                         <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
                           <div style={{ height: '100%', borderRadius: 4, width: `${fundingProgress * 100}%`, background: 'linear-gradient(90deg,#7c3aed,#06b6d4,#10b981)', boxShadow: '0 0 18px rgba(139,92,246,0.7)' }} />
@@ -3372,8 +3609,8 @@ function HubPage() {
 
                     {/* Remaining tag */}
                     <div style={{ margin: '0 16px 16px', padding: '9px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>₹{((totalTarget - totalCommitted) / 1e6).toFixed(1)}M remaining · </span>
-                      <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700 }}>Close by Dec 2026</span>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>₹{((totalTarget - totalCommitted) / 1e6).toFixed(1)}M rolling open capacity · </span>
+                      <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700 }}>Active Window</span>
                     </div>
                   </div>
 
@@ -3381,72 +3618,105 @@ function HubPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0, overflow: 'hidden' }}>
 
                     {/* Committed investors */}
-                    <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(16,185,129,0.25)', background: 'linear-gradient(160deg,rgba(16,185,129,0.08) 0%,rgba(6,6,18,0.95) 60%)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                      <div style={{ padding: '13px 16px', borderBottom: '1px solid rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(16,185,129,0.25)', background: 'linear-gradient(160deg,rgba(16,185,129,0.08) 0%,rgba(6,6,18,0.95) 60%)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                      {/* 3D CSS decor floating in the empty band */}
+                      <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0, opacity: 0.85 }}>
+                        <Cube3D c="#10b981" size={64} dur={19} top="34%" left="44%" />
+                        <Disc3D c="#34d399" size={92} dur={26} bottom="12%" right="16%" />
+                        <Cube3D c="#059669" size={34} dur={14} top="58%" left="22%" />
+                      </div>
+                      <div style={{ position: 'relative', zIndex: 1, padding: '13px 16px', borderBottom: '1px solid rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.9)', display: 'inline-block' }} />
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Committed Capital</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Completed Platform Disbursals</span>
                         <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 800, color: '#10b981' }}>₹{(totalCommitted / 1e6).toFixed(1)}M</span>
                       </div>
-                      {/* Column headers */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 100px 80px', gap: 0, padding: '8px 16px 6px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        {['Investor', 'Type', 'Amount', 'Share'].map(h => <span key={h} style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{h}</span>)}
-                      </div>
-                      <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', padding: '6px 10px 10px', display: 'flex', flexDirection: 'column', gap: 5, minHeight: 0 }}>
+                      {/* Single grid — header + rows share the same column template */}
+                      <div className="analytics-scroll" style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 80px 90px 76px', alignContent: 'start' }}>
+                        {/* Header row */}
+                        {['Investor', 'Type', 'Amount', 'Share'].map(h => (
+                          <div key={h} style={{ padding: '8px 0 6px', paddingLeft: h === 'Investor' ? 16 : 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <span style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{h}</span>
+                          </div>
+                        ))}
+                        {/* Data rows */}
                         {committed.map((inv, i) => {
                           const pct = Math.round((inv.amount / totalCommitted) * 100);
-                          return (
-                            <div key={i} className="ft-inv" style={{ display: 'grid', gridTemplateColumns: '1fr 90px 100px 80px', gap: 0, alignItems: 'center', padding: '10px 12px', borderRadius: 12, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.14)', borderLeft: '3px solid rgba(16,185,129,0.7)', cursor: 'pointer' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                                <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(16,185,129,0.14)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                  <Building2 style={{ width: 14, height: 14, color: '#10b981' }} />
-                                </div>
-                                <div style={{ minWidth: 0 }}>
-                                  <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.name}</p>
-                                </div>
+                          const cols: React.ReactNode[] = [
+                            <div key="name" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, padding: '8px 0 8px 16px' }}>
+                              <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(16,185,129,0.14)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <Building2 style={{ width: 12, height: 12, color: '#10b981' }} />
                               </div>
-                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', padding: '3px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'inline-block', textAlign: 'center' }}>{inv.type}</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.name}</span>
+                            </div>,
+                            <div key="type" style={{ display: 'flex', alignItems: 'center', padding: '8px 8px 8px 0' }}>
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', padding: '3px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', whiteSpace: 'nowrap' }}>{inv.type}</span>
+                            </div>,
+                            <div key="amount" style={{ display: 'flex', alignItems: 'center', padding: '8px 8px 8px 0' }}>
                               <span style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>₹{(inv.amount / 1e6).toFixed(1)}M</span>
-                              <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
-                                  <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981' }}>{pct}%</span>
-                                  <CheckCircle style={{ width: 11, height: 11, color: '#10b981' }} />
-                                </div>
-                                <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.07)' }}>
-                                  <div style={{ height: '100%', borderRadius: 2, width: `${pct}%`, background: 'linear-gradient(90deg,#10b981,#34d399)', boxShadow: '0 0 6px rgba(16,185,129,0.6)' }} />
-                                </div>
+                            </div>,
+                            <div key="share" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '8px 12px 8px 0' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981' }}>{pct}%</span>
+                                <CheckCircle style={{ width: 10, height: 10, color: '#10b981' }} />
                               </div>
+                              <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.07)' }}>
+                                <div style={{ height: '100%', borderRadius: 2, width: `${pct}%`, background: 'linear-gradient(90deg,#10b981,#34d399)' }} />
+                              </div>
+                            </div>,
+                          ];
+                          return cols.map((cell, ci) => (
+                            <div key={ci} className="ft-inv" style={{ background: i % 2 === 0 ? 'rgba(16,185,129,0.04)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.03)', ...(ci === 0 ? { borderLeft: '3px solid rgba(16,185,129,0.6)' } : {}) }}>
+                              {cell}
                             </div>
-                          );
+                          ));
                         })}
                       </div>
                     </div>
 
                     {/* Pipeline investors */}
-                    <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(245,158,11,0.22)', background: 'linear-gradient(160deg,rgba(245,158,11,0.07) 0%,rgba(6,6,18,0.95) 60%)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                      <div style={{ padding: '13px 16px', borderBottom: '1px solid rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    <div style={{ flex: 1, minHeight: 0, borderRadius: 18, border: '1px solid rgba(245,158,11,0.22)', background: 'linear-gradient(160deg,rgba(245,158,11,0.07) 0%,rgba(6,6,18,0.95) 60%)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                      {/* 3D CSS decor floating in the empty band */}
+                      <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0, opacity: 0.85 }}>
+                        <Cube3D c="#f59e0b" size={62} dur={21} top="30%" left="46%" />
+                        <Disc3D c="#06b6d4" size={88} dur={28} bottom="14%" right="18%" />
+                        <Cube3D c="#fbbf24" size={32} dur={15} top="54%" left="24%" />
+                      </div>
+                      <div style={{ position: 'relative', zIndex: 1, padding: '13px 16px', borderBottom: '1px solid rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>In Pipeline</span>
-                        <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 800, color: '#f59e0b' }}>₹{(pipelinePotential / 1e6).toFixed(1)}M potential</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Active Cross-Border Dealflow</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 800, color: '#f59e0b' }}>₹{(pipelinePotential / 1e6).toFixed(1)}M active routing</span>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 100px 100px', gap: 0, padding: '8px 16px 6px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        {['Investor', 'Type', 'Amount', 'Status'].map(h => <span key={h} style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{h}</span>)}
-                      </div>
-                      <div className="analytics-scroll" style={{ flex: 1, overflowY: 'auto', padding: '6px 10px 10px', display: 'flex', flexDirection: 'column', gap: 5, minHeight: 0 }}>
+                      {/* Single grid — header + rows share same columns */}
+                      <div className="analytics-scroll" style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 80px 90px 100px', alignContent: 'start' }}>
+                        {['Investor', 'Type', 'Amount', 'Status'].map(h => (
+                          <div key={h} style={{ padding: '8px 0 6px', paddingLeft: h === 'Investor' ? 16 : 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <span style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{h}</span>
+                          </div>
+                        ))}
                         {pipeline.map((inv, i) => {
                           const sc = STATUS_COLOR[inv.status] || '#f59e0b';
-                          return (
-                            <div key={i} className="ft-inv" style={{ display: 'grid', gridTemplateColumns: '1fr 90px 100px 100px', gap: 0, alignItems: 'center', padding: '10px 12px', borderRadius: 12, background: `${sc}06`, border: `1px solid ${sc}18`, borderLeft: `3px solid ${sc}65`, cursor: 'pointer' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                                <div style={{ width: 32, height: 32, borderRadius: 10, background: `${sc}14`, border: `1px solid ${sc}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                  <Building2 style={{ width: 14, height: 14, color: sc }} />
-                                </div>
-                                <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.name}</p>
+                          const cols: React.ReactNode[] = [
+                            <div key="name" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, padding: '8px 0 8px 16px' }}>
+                              <div style={{ width: 28, height: 28, borderRadius: 8, background: `${sc}14`, border: `1px solid ${sc}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <Building2 style={{ width: 12, height: 12, color: sc }} />
                               </div>
-                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', padding: '3px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'inline-block', textAlign: 'center' }}>{inv.type}</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.name}</span>
+                            </div>,
+                            <div key="type" style={{ display: 'flex', alignItems: 'center', padding: '8px 8px 8px 0' }}>
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', padding: '3px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', whiteSpace: 'nowrap' }}>{inv.type}</span>
+                            </div>,
+                            <div key="amount" style={{ display: 'flex', alignItems: 'center', padding: '8px 8px 8px 0' }}>
                               <span style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>₹{(inv.amount / 1e6).toFixed(1)}M</span>
-                              <span style={{ fontSize: 9, fontWeight: 700, padding: '4px 10px', borderRadius: 999, color: sc, background: `${sc}18`, border: `1px solid ${sc}40`, display: 'inline-block', textAlign: 'center' }}>{inv.status}</span>
+                            </div>,
+                            <div key="status" style={{ display: 'flex', alignItems: 'center', padding: '8px 12px 8px 0' }}>
+                              <span style={{ fontSize: 9, fontWeight: 700, padding: '4px 10px', borderRadius: 999, color: sc, background: `${sc}18`, border: `1px solid ${sc}40`, whiteSpace: 'nowrap' }}>{inv.status}</span>
+                            </div>,
+                          ];
+                          return cols.map((cell, ci) => (
+                            <div key={ci} className="ft-inv" style={{ background: i % 2 === 0 ? `${sc}05` : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.03)', ...(ci === 0 ? { borderLeft: `3px solid ${sc}60` } : {}) }}>
+                              {cell}
                             </div>
-                          );
+                          ));
                         })}
                       </div>
                     </div>
@@ -3460,7 +3730,7 @@ function HubPage() {
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,0.85),transparent)' }} />
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexShrink: 0 }}>
                         <Clock style={{ width: 13, height: 13, color: '#a78bfa' }} />
-                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Runway</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Ecosystem Runway Benchmark</span>
                         <span style={{ marginLeft: 'auto', fontSize: 8, fontWeight: 700, padding: '2px 8px', borderRadius: 999, color: '#a78bfa', background: 'rgba(139,92,246,0.18)', border: '1px solid rgba(139,92,246,0.4)' }}>HEALTHY</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minHeight: 0 }}>
@@ -3485,7 +3755,7 @@ function HubPage() {
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(245,158,11,0.85),transparent)' }} />
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexShrink: 0 }}>
                         <Activity style={{ width: 13, height: 13, color: '#f59e0b' }} />
-                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Monthly Burn</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Median Monthly Burn Benchmark</span>
                         <span style={{ marginLeft: 'auto', fontSize: 8, fontWeight: 700, padding: '2px 8px', borderRadius: 999, color: '#f59e0b', background: 'rgba(245,158,11,0.18)', border: '1px solid rgba(245,158,11,0.4)' }}>MOD.</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexShrink: 0 }}>
@@ -3526,7 +3796,7 @@ function HubPage() {
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,0.85),transparent)' }} />
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexShrink: 0 }}>
                         <TrendingUp style={{ width: 13, height: 13, color: '#10b981' }} />
-                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Post-Money Val.</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Aggregate Nationwide Market Val.</span>
                         <span style={{ marginLeft: 'auto', fontSize: 8, fontWeight: 700, padding: '2px 8px', borderRadius: 999, color: '#10b981', background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)' }}>↑</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexShrink: 0 }}>
@@ -3910,6 +4180,43 @@ function HubPage() {
               {/* Divider */}
               <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
 
+              {/* Section: Shortlist Activity (read-only notification feed) */}
+              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <Star style={{ width: 14, height: 14, color: '#8b5cf6' }} />
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Shortlist Activity</p>
+                  {!adminVCLoading && (
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: shortlistEvents.length > 0 ? 'rgba(139,92,246,0.12)' : 'rgba(255,255,255,0.06)', color: shortlistEvents.length > 0 ? '#a78bfa' : 'rgba(255,255,255,0.3)', border: `1px solid ${shortlistEvents.length > 0 ? 'rgba(139,92,246,0.35)' : 'rgba(255,255,255,0.1)'}` }}>
+                      {shortlistEvents.length}
+                    </span>
+                  )}
+                </div>
+                {shortlistEvents.length === 0 && !adminVCLoading ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '20px 0', opacity: 0.4 }}>
+                    <Star style={{ width: 28, height: 28, color: 'rgba(255,255,255,0.15)' }} />
+                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No shortlist activity yet</p>
+                  </div>
+                ) : shortlistEvents.map((ev: any) => {
+                  const revoked = ev.action === 'revoked';
+                  const ac = revoked ? '#f59e0b' : '#10b981';
+                  return (
+                    <div key={ev.id} style={{ background: `${ac}08`, border: `1px solid ${ac}1f`, borderLeft: `2px solid ${ac}80`, borderRadius: 14, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 800, color: '#fff' }}>{ev.startup_name}</p>
+                          <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>from {ev.vc_firm || ev.vc_email} · {new Date(ev.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+                          {revoked && ev.reason && <p style={{ margin: '6px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}><span style={{ color: '#fbbf24', fontWeight: 700 }}>Reason:</span> {ev.reason}</p>}
+                        </div>
+                        <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 9px', borderRadius: 999, color: ac, background: `${ac}1f`, border: `1px solid ${ac}50`, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{revoked ? 'Revoked' : 'Shortlisted'}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+
               {/* Section: Contact Messages */}
               <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -4053,7 +4360,8 @@ function HubPage() {
                   };
                   const slides = mockSlides[vd.type] ?? mockSlides.Doc;
                   return (
-                    <div style={{ height: '100%', overflowY: 'auto', background: '#07070f' }}>
+                    <div className="vault-preview-scroll" style={{ height: '100%', overflowY: 'auto', background: '#07070f', scrollbarWidth: 'thin', scrollbarColor: `${tc}55 transparent` }}>
+                      <style>{`.vault-preview-scroll::-webkit-scrollbar{width:4px}.vault-preview-scroll::-webkit-scrollbar-track{background:transparent}.vault-preview-scroll::-webkit-scrollbar-thumb{background:${tc}55;border-radius:99px}.vault-preview-scroll::-webkit-scrollbar-thumb:hover{background:${tc}99}`}</style>
                       {/* Hero banner */}
                       <div style={{ position: 'relative', padding: '48px 56px 40px', background: `linear-gradient(135deg, ${tc}18 0%, #09090f 60%)`, borderBottom: `1px solid ${tc}25`, overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', top: -60, right: -60, width: 300, height: 300, borderRadius: '50%', background: `radial-gradient(circle, ${tc}20, transparent 70%)`, pointerEvents: 'none' }} />
@@ -4090,32 +4398,179 @@ function HubPage() {
                         </div>
                       </div>
 
-                      {/* Mock slides grid */}
+                      {/* Type-specific content area */}
                       <div style={{ padding: '32px 56px 48px' }}>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.25)', textTransform: 'uppercase', letterSpacing: '.1em', margin: '0 0 20px' }}>Document Preview — {vd.type}</p>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-                          {slides.map((slide, i) => (
-                            <div key={i} style={{ borderRadius: 14, border: `1px solid ${tc}22`, background: `linear-gradient(145deg, ${tc}0c, rgba(10,10,20,.9))`, padding: '22px 20px', position: 'relative', overflow: 'hidden' }}>
-                              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${tc}60, transparent)` }} />
-                              <div style={{ width: 28, height: 28, borderRadius: 8, background: `${tc}18`, border: `1px solid ${tc}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                                <span style={{ fontSize: 11, fontWeight: 800, color: tc }}>{i + 1}</span>
-                              </div>
-                              <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>{slide.title}</p>
-                              <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,.45)', lineHeight: 1.6 }}>{slide.body}</p>
-                            </div>
-                          ))}
-                        </div>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.25)', textTransform: 'uppercase', letterSpacing: '.1em', margin: '0 0 20px' }}>
+                          {vd.type === 'Deck' ? 'Slide Deck Preview' : vd.type === 'Sheet' ? 'Spreadsheet Preview' : vd.type === 'Video' ? 'Video Preview' : vd.type === 'Bundle' ? 'Document Bundle' : 'Document Preview'}
+                        </p>
 
-                        {/* Upload CTA */}
-                        <div style={{ marginTop: 32, padding: '20px 24px', borderRadius: 14, background: 'rgba(255,255,255,.03)', border: '1px dashed rgba(255,255,255,.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-                          <div>
-                            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,.7)' }}>This is a demo preview for <span style={{ color: tc }}>{vd.name}</span></p>
-                            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'rgba(255,255,255,.3)' }}>Upload the actual file to replace this preview with the real document.</p>
+                        {/* DECK — widescreen slide cards in 2-col */}
+                        {vd.type === 'Deck' && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                            {slides.map((slide, i) => (
+                              <div key={i} style={{ borderRadius: 12, border: `1px solid ${tc}25`, background: '#0e0e1a', overflow: 'hidden', aspectRatio: '16/9', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                                {/* slide header bar */}
+                                <div style={{ background: `${tc}18`, borderBottom: `1px solid ${tc}25`, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                  <div style={{ width: 18, height: 18, borderRadius: 5, background: `${tc}30`, border: `1px solid ${tc}50`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span style={{ fontSize: 9, fontWeight: 800, color: tc }}>{i + 1}</span>
+                                  </div>
+                                  <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.45)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{slide.title}</span>
+                                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+                                    {['#f87171','#fbbf24','#34d399'].map(c => <div key={c} style={{ width: 7, height: 7, borderRadius: '50%', background: c, opacity: .5 }} />)}
+                                  </div>
+                                </div>
+                                {/* slide body */}
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px 20px', gap: 10 }}>
+                                  <div style={{ width: 36, height: 3, borderRadius: 99, background: tc, opacity: .6 }} />
+                                  <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,.7)', lineHeight: 1.6, textAlign: 'center' }}>{slide.body}</p>
+                                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                                    {[40, 65, 50].map((w, j) => <div key={j} style={{ height: 3, width: w, borderRadius: 99, background: 'rgba(255,255,255,.1)' }} />)}
+                                  </div>
+                                </div>
+                                {/* slide number footer */}
+                                <div style={{ padding: '4px 14px', borderTop: `1px solid rgba(255,255,255,.05)`, display: 'flex', justifyContent: 'flex-end' }}>
+                                  <span style={{ fontSize: 9, color: 'rgba(255,255,255,.2)' }}>{i + 1} / {slides.length}</span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          <button onClick={() => { setViewingDoc(null); setUploadOpen(true); }} style={{ flexShrink: 0, padding: '9px 20px', borderRadius: 9, background: `${tc}18`, border: `1px solid ${tc}40`, color: tc, fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                            Upload Real File
-                          </button>
-                        </div>
+                        )}
+
+                        {/* DOC — single-column document pages */}
+                        {vd.type === 'Doc' && (
+                          <div style={{ maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 0, borderRadius: 14, border: '1px solid rgba(255,255,255,.09)', overflow: 'hidden', background: '#0d0d18' }}>
+                            {/* doc toolbar */}
+                            <div style={{ background: 'rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.07)', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                              {['B','I','U'].map(f => <button key={f} style={{ width: 22, height: 22, borderRadius: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.4)', fontSize: 10, fontWeight: 800, cursor: 'default' }}>{f}</button>)}
+                              <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,.08)', margin: '0 4px' }} />
+                              {[60, 90, 70].map((w, i) => <div key={i} style={{ height: 6, width: w, borderRadius: 3, background: 'rgba(255,255,255,.08)' }} />)}
+                            </div>
+                            {/* doc pages */}
+                            {slides.map((slide, i) => (
+                              <div key={i} style={{ padding: '28px 40px', borderBottom: i < slides.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                                  <div style={{ width: 3, height: 20, borderRadius: 99, background: tc }} />
+                                  <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>{slide.title}</p>
+                                </div>
+                                <p style={{ margin: '0 0 14px', fontSize: 12, color: 'rgba(255,255,255,.5)', lineHeight: 1.8 }}>{slide.body}</p>
+                                {/* fake text lines */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                  {[95, 88, 72, 60].map((w, j) => <div key={j} style={{ height: 6, width: `${w}%`, borderRadius: 3, background: 'rgba(255,255,255,.06)' }} />)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* SHEET — spreadsheet table */}
+                        {vd.type === 'Sheet' && (
+                          <div style={{ borderRadius: 14, border: '1px solid rgba(255,255,255,.09)', overflow: 'hidden', background: '#0d0d18' }}>
+                            {/* sheet toolbar */}
+                            <div style={{ background: 'rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.07)', padding: '7px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ padding: '3px 10px', borderRadius: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', fontSize: 10, color: 'rgba(255,255,255,.35)' }}>A1</div>
+                              <div style={{ flex: 1, height: 22, borderRadius: 4, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }} />
+                            </div>
+                            {/* column headers */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '40px repeat(5, 1fr)', borderBottom: '1px solid rgba(255,255,255,.08)', background: `${tc}0a` }}>
+                              <div style={{ padding: '6px 10px', borderRight: '1px solid rgba(255,255,255,.06)' }} />
+                              {['Metric','Q1 2026','Q2 2026','Q3 2026','FY Target'].map(h => (
+                                <div key={h} style={{ padding: '6px 10px', borderRight: '1px solid rgba(255,255,255,.06)', fontSize: 9, fontWeight: 700, color: tc, textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</div>
+                              ))}
+                            </div>
+                            {/* rows */}
+                            {[
+                              ['Revenue', '₹1.1Cr', '₹1.4Cr', '₹1.8Cr', '₹4.8Cr'],
+                              ['MRR', '₹9.2L', '₹11.6L', '₹14.8L', '₹40L'],
+                              ['Users', '3,200', '4,800', '7,100', '12,000'],
+                              ['Gross Margin', '71%', '73%', '74%', '75%'],
+                              ['CAC', '₹1,340', '₹1,210', '₹1,100', '₹980'],
+                              ['LTV', '₹24,000', '₹26,500', '₹28,000', '₹34,000'],
+                            ].map((row, ri) => (
+                              <div key={ri} style={{ display: 'grid', gridTemplateColumns: '40px repeat(5, 1fr)', borderBottom: '1px solid rgba(255,255,255,.04)', background: ri % 2 === 0 ? 'transparent' : 'rgba(255,255,255,.015)' }}>
+                                <div style={{ padding: '8px 10px', borderRight: '1px solid rgba(255,255,255,.05)', fontSize: 9, color: 'rgba(255,255,255,.2)', textAlign: 'center' }}>{ri + 1}</div>
+                                {row.map((cell, ci) => (
+                                  <div key={ci} style={{ padding: '8px 10px', borderRight: '1px solid rgba(255,255,255,.04)', fontSize: 11, fontWeight: ci === 0 ? 600 : 400, color: ci === 0 ? 'rgba(255,255,255,.7)' : ci === 4 ? tc : 'rgba(255,255,255,.45)' }}>{cell}</div>
+                                ))}
+                              </div>
+                            ))}
+                            {/* chart area hint */}
+                            <div style={{ padding: '20px 24px', display: 'flex', gap: 12, alignItems: 'flex-end', borderTop: '1px solid rgba(255,255,255,.05)' }}>
+                              {[40, 58, 72, 88, 76, 95].map((h, i) => (
+                                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                                  <div style={{ width: '100%', height: h, borderRadius: '4px 4px 0 0', background: `linear-gradient(180deg, ${tc}70, ${tc}30)` }} />
+                                  <span style={{ fontSize: 8, color: 'rgba(255,255,255,.2)' }}>Q{i + 1}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* VIDEO — player mock */}
+                        {vd.type === 'Video' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                            {/* player */}
+                            <div style={{ borderRadius: 14, border: `1px solid ${tc}30`, overflow: 'hidden', background: '#000', aspectRatio: '16/9', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${tc}18 0%, #000 70%)` }} />
+                              {/* play button */}
+                              <div style={{ position: 'relative', zIndex: 1, width: 72, height: 72, borderRadius: '50%', background: `${tc}30`, border: `2px solid ${tc}70`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 40px ${tc}50` }}>
+                                <div style={{ width: 0, height: 0, borderTop: '14px solid transparent', borderBottom: '14px solid transparent', borderLeft: `22px solid ${tc}`, marginLeft: 5 }} />
+                              </div>
+                              {/* timeline */}
+                              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 20px', background: 'linear-gradient(0deg, rgba(0,0,0,.8), transparent)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,.5)' }}>0:42</span>
+                                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,.3)' }}>2:58</span>
+                                </div>
+                                <div style={{ height: 3, borderRadius: 99, background: 'rgba(255,255,255,.15)' }}>
+                                  <div style={{ height: '100%', width: '24%', borderRadius: 99, background: tc }} />
+                                </div>
+                              </div>
+                            </div>
+                            {/* chapter list */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                              {slides.map((slide, i) => (
+                                <div key={i} style={{ padding: '14px 16px', borderRadius: 10, border: `1px solid ${tc}20`, background: `${tc}08`, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                                  <div style={{ width: 28, height: 28, borderRadius: 7, background: `${tc}20`, border: `1px solid ${tc}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <span style={{ fontSize: 9, fontWeight: 800, color: tc }}>{`${i}:${(i * 47).toString().padStart(2, '0')}`}</span>
+                                  </div>
+                                  <div>
+                                    <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#f1f5f9' }}>{slide.title}</p>
+                                    <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,.4)', lineHeight: 1.5 }}>{slide.body}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* BUNDLE — file list */}
+                        {vd.type === 'Bundle' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {[
+                              { name: `${brand} Pitch Deck v4.1`, type: 'Deck', size: '4.2 MB', color: '#8b5cf6', pages: 22 },
+                              { name: `${brand} Financial Model FY27`, type: 'Sheet', size: '1.8 MB', color: '#10b981', pages: 8 },
+                              { name: `${brand} Executive Summary`, type: 'Doc', size: '0.6 MB', color: '#06b6d4', pages: 4 },
+                              { name: `${brand} Cap Table`, type: 'Sheet', size: '0.4 MB', color: '#10b981', pages: 2 },
+                              { name: `${brand} Legal Pack`, type: 'Doc', size: '2.1 MB', color: '#06b6d4', pages: 14 },
+                              { name: `${brand} Technical Architecture`, type: 'Doc', size: '1.3 MB', color: '#06b6d4', pages: 9 },
+                            ].map((file, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 18px', borderRadius: 10, border: `1px solid ${file.color}20`, background: `${file.color}07`, cursor: 'default' }}>
+                                <div style={{ width: 38, height: 38, borderRadius: 10, background: `${file.color}18`, border: `1px solid ${file.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <span style={{ fontSize: 8, fontWeight: 800, color: file.color, textTransform: 'uppercase', letterSpacing: '.04em' }}>{file.type}</span>
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{file.name}</p>
+                                  <p style={{ margin: '2px 0 0', fontSize: 10, color: 'rgba(255,255,255,.3)' }}>{file.pages} pages · {file.size}</p>
+                                </div>
+                                <div style={{ width: 60, height: 4, borderRadius: 99, background: 'rgba(255,255,255,.07)', overflow: 'hidden', flexShrink: 0 }}>
+                                  <div style={{ height: '100%', width: '100%', borderRadius: 99, background: file.color, opacity: .5 }} />
+                                </div>
+                                <span style={{ fontSize: 9, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,.1)', padding: '3px 8px', borderRadius: 5, border: '1px solid rgba(16,185,129,.2)', flexShrink: 0 }}>Ready</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                       </div>
                     </div>
                   );
@@ -4315,10 +4770,20 @@ function HubPage() {
                     )}
                   </div>
                 </div>
+                <div className="hub-modal-grid grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Current Stage</label>
+                    <select value={registerInitialStage} onChange={e => setRegisterInitialStage(e.target.value)} className={input + " bg-black/40"}>
+                      {STAGE_ORDER.map(s => <option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Funding Goal (INR)</label>
+                    <input type="number" required placeholder="e.g. 20000000" value={newS.fundingGoal} onChange={e => setNewS({ ...newS, fundingGoal: e.target.value })} className={input} />
+                  </div>
+                </div>
                 <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Tagline</label>
                   <input type="text" required placeholder="One-line value prop…" value={newS.tagline} onChange={e => setNewS({ ...newS, tagline: e.target.value })} className={input} /></div>
-                <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Funding Goal (INR)</label>
-                  <input type="number" required placeholder="e.g. 20000000" value={newS.fundingGoal} onChange={e => setNewS({ ...newS, fundingGoal: e.target.value })} className={input} /></div>
                 <div><label className="block text-[10px] text-white/35 mb-1.5 uppercase tracking-wider">Description</label>
                   <textarea rows={3} required placeholder="Company overview…" value={newS.description} onChange={e => setNewS({ ...newS, description: e.target.value })} className={input + " resize-none"} /></div>
                 <button type="submit" className="w-full py-2.5 rounded-full text-sm font-semibold bg-gradient-to-r from-violet-600 to-sky-500 text-white hover:opacity-90 transition">
@@ -4695,6 +5160,12 @@ function HubPage() {
                   ))}
                 </div>
 
+                {addEventErrors.submit && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 13px', borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.32)' }}>
+                    <span style={{ fontSize: 11, color: '#f87171', fontWeight: 600 }}>{addEventErrors.submit}</span>
+                  </div>
+                )}
+
                 {/* Step 2 actions */}
                 <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
                   <button onClick={() => { setAddEventStep(1); setAddEventErrors({}); }} style={{ flex: 1, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>← Back</button>
@@ -4708,16 +5179,37 @@ function HubPage() {
                       setAddEventErrors(errs);
                       if (Object.keys(errs).length > 0) return;
                       setAddEventSubmitting(true);
+                      // Actually send to the admin queue — only show success if it lands.
                       try {
-                        await fetch('/api/events/create', {
+                        const res = await fetch('/api/events/create', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           credentials: 'include',
-                          body: JSON.stringify({ ...addEventForm, submittedBy: user?.email }),
+                          body: JSON.stringify({ ...addEventForm, submittedBy: user?.email ?? addEventForm.organiserEmail }),
                         });
-                      } catch { /* best-effort */ }
+                        const data = await res.json().catch(() => ({} as any));
+                        if (!res.ok) {
+                          setAddEventSubmitting(false);
+                          setAddEventErrors({ submit: (data as any)?.error || 'Could not submit to the admin team. Please try again.' });
+                          return;
+                        }
+                      } catch {
+                        setAddEventSubmitting(false);
+                        setAddEventErrors({ submit: 'Network error — could not reach the server. Please try again.' });
+                        return;
+                      }
                       setAddEventSubmitting(false);
                       setAddEventDone(true);
+                      // Reflect locally so filters/donut update; admin sees it in the pending queue
+                      setAllEvents(prev => [...prev, {
+                        id: `ev-user-${Date.now()}`,
+                        title: addEventForm.title,
+                        date: addEventForm.date,
+                        time: addEventForm.time,
+                        type: addEventForm.type,
+                        location: addEventForm.location || (addEventForm.locationMode === 'online' ? 'Online' : 'Virtual'),
+                        description: addEventForm.description || '',
+                      }]);
                     }}
                     style={{ flex: 2, padding: '11px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: addEventSubmitting ? 'rgba(139,92,246,0.4)' : 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: addEventSubmitting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                   >
@@ -5035,7 +5527,7 @@ function HubPage() {
                     {editingDoc ? `Edit — ${editingDoc.name}` : uploadMode === 'investor' ? 'Upload Investor Pitch Deck' : 'Upload Brand Deck'}
                   </span>
                 </div>
-                <button onClick={() => { setUploadOpen(false); setEditingDoc(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 4 }}>
+                <button onClick={() => { setUploadOpen(false); setEditingDoc(null); setSelectedFile(null); setDetectedFileType(null); setSelectedDocType('Doc'); setUploadError(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 4 }}>
                   <X style={{ width: 16, height: 16 }} />
                 </button>
               </div>
@@ -5063,20 +5555,52 @@ function HubPage() {
                 <div
                   id="vup-drop"
                   onClick={() => document.getElementById('vup-file-input')?.click()}
-                  onDragOver={e => { e.preventDefault(); (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.6)'; }}
-                  onDragLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
-                  onDrop={e => { e.preventDefault(); (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)'; if (e.dataTransfer.files[0]) handleUploadFile(e.dataTransfer.files[0]); }}
-                  style={{ border: '2px dashed rgba(255,255,255,0.08)', borderRadius: 14, padding: '28px 20px', textAlign: 'center', cursor: 'pointer', marginBottom: 18, transition: 'border-color 0.2s', background: 'rgba(255,255,255,0.015)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 100 }}
+                  onDragOver={e => { e.preventDefault(); (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.6)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(139,92,246,0.07)'; }}
+                  onDragLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = selectedFile ? 'rgba(16,185,129,0.45)' : 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLDivElement).style.background = selectedFile ? 'rgba(16,185,129,0.05)' : 'rgba(255,255,255,0.015)'; }}
+                  onDrop={e => { e.preventDefault(); (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.015)'; if (e.dataTransfer.files[0]) handleUploadFile(e.dataTransfer.files[0]); }}
+                  style={{ border: `2px dashed ${selectedFile ? 'rgba(16,185,129,0.45)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 14, padding: '22px 20px', textAlign: 'center', cursor: 'pointer', marginBottom: 14, transition: 'all 0.2s', background: selectedFile ? 'rgba(16,185,129,0.04)' : 'rgba(255,255,255,0.015)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 96 }}
                 >
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Upload style={{ width: 16, height: 16, color: '#a78bfa' }} />
-                  </div>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Drop your file here or <span style={{ color: '#a78bfa', fontWeight: 600 }}>browse</span></span>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)' }}>PDF · PPTX · XLSX · DOCX · MP4 · ZIP</span>
+                  {selectedFile ? (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: 16 }}>
+                            {detectedFileType === 'Video' ? '🎬' : detectedFileType === 'Sheet' ? '📊' : detectedFileType === 'Bundle' ? '📦' : detectedFileType === 'Deck' ? '📑' : '📄'}
+                          </span>
+                        </div>
+                        <div style={{ textAlign: 'left' }}>
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'white' }}>{selectedFile.name}</p>
+                          <p style={{ margin: '2px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 999, background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981' }}>Detected as: {detectedFileType}</span>
+                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>· click to change file</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Upload style={{ width: 16, height: 16, color: '#a78bfa' }} />
+                      </div>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Drop your file here or <span style={{ color: '#a78bfa', fontWeight: 600 }}>browse</span></span>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)' }}>Deck · Doc · Sheet · Video · Bundle</span>
+                      <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.12)' }}>PPTX · PDF/DOCX · XLSX/CSV · MP4/MOV · ZIP/RAR</span>
+                    </>
+                  )}
                 </div>
-                <input id="vup-file-input" type="file" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleUploadFile(e.target.files[0]); }} />
+                <input id="vup-file-input" type="file" accept=".pdf,.pptx,.ppt,.xlsx,.xls,.csv,.mp4,.mov,.webm,.zip,.rar,.docx,.doc" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleUploadFile(e.target.files[0]); e.target.value = ''; }} />
 
-                {uploadError && <p style={{ fontSize: 12, color: '#f87171', marginBottom: 12 }}>{uploadError}</p>}
+                {uploadError && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', borderRadius: 10, background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.28)', marginBottom: 14 }}>
+                    <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1 }}>🚫</span>
+                    <div>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: '#f87171', margin: '0 0 4px' }}>Unsupported File Type</p>
+                      <p style={{ fontSize: 10.5, color: 'rgba(248,113,113,0.75)', margin: 0, lineHeight: 1.65, whiteSpace: 'pre-line' }}>{uploadError}</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Fields */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
@@ -5088,10 +5612,32 @@ function HubPage() {
 
                   <div className="hub-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: 10, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Type</label>
-                      <select id="vup-type" style={{ width: '100%', padding: '9px 13px', fontSize: 12, background: '#0d0d18', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, color: 'white', outline: 'none' }}>
-                        <option>Doc</option><option>Deck</option><option>Sheet</option><option>Video</option><option>Bundle</option>
-                      </select>
+                      <label style={{ display: 'block', fontSize: 10, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                        Type {detectedFileType && <span style={{ color: 'rgba(16,185,129,0.7)', fontSize: 9, marginLeft: 4 }}>· auto-detected</span>}
+                      </label>
+                      {/* Non-PDF: fully locked to detected type */}
+                      {detectedFileType && !['Doc', null].includes(detectedFileType) ? (
+                        <div style={{ width: '100%', padding: '9px 13px', fontSize: 12, background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10, color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, boxSizing: 'border-box' }}>
+                          <span style={{ fontSize: 10 }}>🔒</span>{detectedFileType}
+                          {/* hidden select so handleUploadSubmit can still read #vup-type */}
+                          <select id="vup-type" value={detectedFileType} onChange={() => {}} style={{ display: 'none' }}>
+                            <option value={detectedFileType}>{detectedFileType}</option>
+                          </select>
+                        </div>
+                      ) : (
+                        /* PDF / no file: Doc or Deck only (PDFs can't be Sheet/Video/Bundle) */
+                        <select
+                          id="vup-type"
+                          value={selectedDocType}
+                          onChange={e => setSelectedDocType(e.target.value)}
+                          style={{ width: '100%', padding: '9px 13px', fontSize: 12, background: '#0d0d18', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, color: 'white', outline: 'none' }}
+                        >
+                          {detectedFileType === 'Doc'
+                            ? <><option value="Doc">Doc</option><option value="Deck">Deck</option></>
+                            : <><option value="Doc">Doc</option><option value="Deck">Deck</option><option value="Sheet">Sheet</option><option value="Video">Video</option><option value="Bundle">Bundle</option></>
+                          }
+                        </select>
+                      )}
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: 10, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Status</label>
@@ -5104,11 +5650,11 @@ function HubPage() {
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-                  <button onClick={() => setUploadOpen(false)} style={{ flex: 1, padding: '10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                  <button onClick={() => { setUploadOpen(false); setSelectedFile(null); setDetectedFileType(null); setSelectedDocType('Doc'); setUploadError(''); }} style={{ flex: 1, padding: '10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                     Cancel
                   </button>
-                  <button id="vup-submit" onClick={handleUploadSubmit} disabled={uploadPending} style={{ flex: 2, padding: '10px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: uploadPending ? 'rgba(124,58,237,0.4)' : 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: uploadPending ? 'wait' : 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.4)' }}>
-                    {uploadPending ? 'Uploading…' : 'Add to Vault →'}
+                  <button id="vup-submit" onClick={handleUploadSubmit} disabled={uploadPending || !selectedFile} style={{ flex: 2, padding: '10px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: (!selectedFile || uploadPending) ? 'rgba(124,58,237,0.3)' : 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: !selectedFile ? 'rgba(255,255,255,0.4)' : 'white', border: 'none', cursor: uploadPending ? 'wait' : !selectedFile ? 'not-allowed' : 'pointer', boxShadow: selectedFile && !uploadPending ? '0 4px 18px rgba(124,58,237,0.4)' : 'none', transition: 'all 0.2s' }}>
+                    {uploadPending ? 'Uploading…' : !selectedFile ? 'Select a file first' : 'Add to Vault →'}
                   </button>
                 </div>
               </div>

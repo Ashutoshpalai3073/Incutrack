@@ -588,6 +588,9 @@ async function handleDocumentInsert(request: Request): Promise<Response> {
     const type   =  (formData.get('type')   as string) || 'Doc';
     const status =  (formData.get('status') as string) || 'Draft';
     const file   =   formData.get('file')   as File | null;
+    // 'brand' = public deck, 'investor' = restricted corporate pitch deck (visible in Scout Hub diligence room)
+    const deckTypeRaw = (formData.get('deck_type') as string) || 'brand';
+    const deck_type = deckTypeRaw === 'investor' ? 'investor' : 'brand';
 
     if (!name) {
       return new Response(
@@ -632,6 +635,7 @@ async function handleDocumentInsert(request: Request): Promise<Response> {
       file_url,
       file_path,
       startup_name: startupName,
+      deck_type,
     };
 
    const { data, error } = await admin
@@ -835,7 +839,7 @@ async function handleEventsPending(request: Request): Promise<Response> {
   const db = createClient(supabaseUrl, supabaseKey);
   // Guard: must be admin
   const cookieHeader = request.headers.get('cookie') ?? '';
-  const tokenMatch = cookieHeader.match(/auth_token=([^;]+)/);
+  const tokenMatch = cookieHeader.match(/jwt=([^;]+)/);
   if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
   try {
     const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
@@ -854,7 +858,7 @@ async function handleEventsReview(request: Request): Promise<Response> {
   const db = createClient(supabaseUrl, supabaseKey);
   // Guard: must be admin
   const cookieHeader = request.headers.get('cookie') ?? '';
-  const tokenMatch = cookieHeader.match(/auth_token=([^;]+)/);
+  const tokenMatch = cookieHeader.match(/jwt=([^;]+)/);
   if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
   try {
     const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
@@ -934,7 +938,7 @@ async function handleAdvancePending(request: Request): Promise<Response> {
   const { createClient } = await import('@supabase/supabase-js');
   const db = createClient(supabaseUrl, supabaseKey);
   const cookieHeader = request.headers.get('cookie') ?? '';
-  const tokenMatch = cookieHeader.match(/auth_token=([^;]+)/);
+  const tokenMatch = cookieHeader.match(/jwt=([^;]+)/);
   if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
   try {
     const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
@@ -952,7 +956,7 @@ async function handleAdvanceReview(request: Request): Promise<Response> {
   const { createClient } = await import('@supabase/supabase-js');
   const db = createClient(supabaseUrl, supabaseKey);
   const cookieHeader = request.headers.get('cookie') ?? '';
-  const tokenMatch = cookieHeader.match(/auth_token=([^;]+)/);
+  const tokenMatch = cookieHeader.match(/jwt=([^;]+)/);
   if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
   try {
     const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
@@ -1446,7 +1450,7 @@ function getVCAdmin() {
 }
 function extractVCEmail(request: Request): string | null {
   const cookie = request.headers.get('cookie') ?? '';
-  const m = cookie.match(/auth_token=([^;]+)/);
+  const m = cookie.match(/jwt=([^;]+)/);
   if (!m) return null;
   try {
     const payload = JSON.parse(atob(m[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
@@ -1501,6 +1505,17 @@ async function handleVCGetMandate(request: Request): Promise<Response> {
     .select('firm_name,partner_name,investment_thesis,sectors,stage_pref,check_min,check_max,status')
     .eq('email', email).maybeSingle();
   return jsonRes({ profile: data ?? null });
+}
+
+// ─── VC: Public directory — list verified VCs (visible to everyone) ──────────
+async function handleVCList(_request: Request): Promise<Response> {
+  const db = getVCAdmin();
+  const { data, error } = await db.from('vc_profiles')
+    .select('firm_name,partner_name,investment_thesis,sectors,stage_pref,check_min,check_max,status,created_at')
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false });
+  if (error) return jsonRes({ error: error.message }, 500);
+  return jsonRes({ vcs: data ?? [] });
 }
 
 // ─── VC: Confirm password ─────────────────────────────────────────────────────
@@ -1560,28 +1575,92 @@ async function handleVCDiligenceRequest(request: Request): Promise<Response> {
   } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
 }
 
+// ─── VC: Shortlist / revoke a startup → notify admin ─────────────────────────
+async function handleVCShortlist(request: Request): Promise<Response> {
+  const email = extractVCEmail(request);
+  if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
+  const db = getVCAdmin();
+  try {
+    const body = await request.json() as { action: string; startup_id: string; startup_name: string; reason?: string; vc_firm?: string };
+    if (!['shortlisted', 'revoked'].includes(body.action) || !body.startup_id || !body.startup_name) {
+      return jsonRes({ error: 'Invalid shortlist event.' }, 400);
+    }
+    // A revoke must carry a reason (the VC states why at the portal)
+    if (body.action === 'revoked' && !(body.reason || '').trim()) {
+      return jsonRes({ error: 'A reason is required to revoke a shortlist.' }, 400);
+    }
+    const { error } = await db.from('shortlist_events').insert({
+      vc_email: email,
+      vc_firm: body.vc_firm ?? null,
+      action: body.action,
+      startup_id: body.startup_id,
+      startup_name: body.startup_name,
+      reason: body.reason ?? null,
+    });
+    if (error) return jsonRes({ error: error.message }, 500);
+    return jsonRes({ ok: true });
+  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
+// ─── VC: Diligence audit log — record a live action ──────────────────────────
+async function handleVCAuditLog(request: Request): Promise<Response> {
+  const email = extractVCEmail(request);
+  if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
+  const db = getVCAdmin();
+  try {
+    const body = await request.json() as { action: string; doc_id?: string; doc_name: string; startup?: string; actor?: string };
+    const allowed = ['Viewed', 'Requested', 'Downloaded'];
+    if (!body.doc_name || !allowed.includes(body.action)) return jsonRes({ error: 'Invalid audit event.' }, 400);
+    const { data, error } = await db.from('diligence_audit').insert({
+      vc_email: email,
+      actor: body.actor ?? null,
+      action: body.action,
+      doc_id: body.doc_id ?? null,
+      doc_name: body.doc_name,
+      startup: body.startup ?? null,
+    }).select().single();
+    if (error) return jsonRes({ error: error.message }, 500);
+    return jsonRes({ ok: true, event: data });
+  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
+// ─── VC: Diligence audit log — list recent events for the signed-in fund ──────
+async function handleVCAuditList(request: Request): Promise<Response> {
+  const email = extractVCEmail(request);
+  if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
+  const db = getVCAdmin();
+  const { data, error } = await db.from('diligence_audit')
+    .select('*')
+    .eq('vc_email', email)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) return jsonRes({ error: error.message }, 500);
+  return jsonRes({ events: data ?? [] });
+}
+
 // ─── VC: Admin — get all pending VC activity ─────────────────────────────────
 async function handleVCAdminPending(request: Request): Promise<Response> {
   const cookie = request.headers.get('cookie') ?? '';
-  const m = cookie.match(/auth_token=([^;]+)/);
+  const m = cookie.match(/jwt=([^;]+)/);
   if (!m) return jsonRes({ error: 'Unauthorized.' }, 401);
   try {
     const payload = JSON.parse(atob(m[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
     if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
   } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
   const db = getVCAdmin();
-  const [profiles, interests, diligence] = await Promise.all([
+  const [profiles, interests, diligence, shortlists] = await Promise.all([
     db.from('vc_profiles').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
     db.from('deal_interests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
     db.from('diligence_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+    db.from('shortlist_events').select('*').order('created_at', { ascending: false }).limit(40),
   ]);
-  return jsonRes({ profiles: profiles.data ?? [], interests: interests.data ?? [], diligence: diligence.data ?? [] });
+  return jsonRes({ profiles: profiles.data ?? [], interests: interests.data ?? [], diligence: diligence.data ?? [], shortlists: shortlists.data ?? [] });
 }
 
 // ─── VC: Admin — review (approve/reject) ─────────────────────────────────────
 async function handleVCAdminReview(request: Request): Promise<Response> {
   const cookie = request.headers.get('cookie') ?? '';
-  const m = cookie.match(/auth_token=([^;]+)/);
+  const m = cookie.match(/jwt=([^;]+)/);
   if (!m) return jsonRes({ error: 'Unauthorized.' }, 401);
   try {
     const payload = JSON.parse(atob(m[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
@@ -1723,6 +1802,9 @@ export default {
     if (pathname === '/api/vc/mandate' && method === 'POST')
       return handleVCMandate(request);
 
+    if (pathname === '/api/vc/list' && method === 'GET')
+      return handleVCList(request);
+
     if (pathname === '/api/vc/mandate' && method === 'GET')
       return handleVCGetMandate(request);
 
@@ -1734,6 +1816,15 @@ export default {
 
     if (pathname === '/api/vc/diligence-request' && method === 'POST')
       return handleVCDiligenceRequest(request);
+
+    if (pathname === '/api/vc/shortlist' && method === 'POST')
+      return handleVCShortlist(request);
+
+    if (pathname === '/api/vc/audit' && method === 'POST')
+      return handleVCAuditLog(request);
+
+    if (pathname === '/api/vc/audit' && method === 'GET')
+      return handleVCAuditList(request);
 
     if (pathname === '/api/vc/admin/pending' && method === 'GET')
       return handleVCAdminPending(request);

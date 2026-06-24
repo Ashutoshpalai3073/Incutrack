@@ -15,6 +15,18 @@ export function Chatbot() {
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
     const bottomRef = useRef<HTMLDivElement>(null)
+    const chatRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!open) return
+        const handler = (e: MouseEvent) => {
+            if (chatRef.current && !chatRef.current.contains(e.target as Node)) {
+                setOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [open])
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -47,7 +59,7 @@ export function Chatbot() {
     }
 
     return (
-        <>
+        <div ref={chatRef}>
             {/* Floating Bubble */}
             <button
                 onClick={() => setOpen(!open)}
@@ -207,6 +219,6 @@ export function Chatbot() {
           30% { transform: translateY(-6px); }
         }
       `}</style>
-        </>
+        </div>
     )
 }
