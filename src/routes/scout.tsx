@@ -668,7 +668,9 @@ function ScoutPage() {
     const [searchOpen, setSearchOpen] = useState(false);
     // Result picked from global search → surface (and highlight) that item in its tab
     const [focus, setFocus] = useState<{ kind: string; key: string } | null>(null);
-    const [dealSector, setDealSector] = useState('All');
+    const [dealSectors, setDealSectors] = useState<string[]>([]); // empty = all sectors
+    const [dealSectorOpen, setDealSectorOpen] = useState(false);
+    const dealSectorRef = useRef<HTMLDivElement>(null);
     const [eventType, setEventType] = useState('All');
     const [selectedStartupId, setSelectedStartupId] = useState('st-6');
     const [shortlisted, setShortlisted] = useState<string[]>(['st-2', 'st-3', 'st-6']);
@@ -703,7 +705,9 @@ function ScoutPage() {
     const [mandateSubmitting, setMandateSubmitting] = useState(false);
     const [mandateErr, setMandateErr] = useState<Record<string, string>>({});
     const [vcList, setVcList] = useState<any[]>(VC_SEED);
-    const [insightSector, setInsightSector] = useState('All');
+    const [insightSectors, setInsightSectors] = useState<string[]>([]); // empty = all sectors
+    const [insightSectorOpen, setInsightSectorOpen] = useState(false);
+    const insightSectorRef = useRef<HTMLDivElement>(null);
     const [startups, setStartups] = useState(ALL_STARTUPS);
     const [accessRequests, setAccessRequests] = useState<string[]>([]);
     const [viewedDocs, setViewedDocs] = useState<string[]>([]);
@@ -860,15 +864,17 @@ function ScoutPage() {
 
     // close popovers on outside click (reliable across transform/backdrop-filter ancestors)
     useEffect(() => {
-        if (!notifOpen && !searchOpen) return;
+        if (!notifOpen && !searchOpen && !dealSectorOpen && !insightSectorOpen) return;
         const onDown = (e: MouseEvent) => {
             const t = e.target as Node;
             if (notifOpen && notifRef.current && !notifRef.current.contains(t)) setNotifOpen(false);
             if (searchOpen && searchRef.current && !searchRef.current.contains(t)) setSearchOpen(false);
+            if (dealSectorOpen && dealSectorRef.current && !dealSectorRef.current.contains(t)) setDealSectorOpen(false);
+            if (insightSectorOpen && insightSectorRef.current && !insightSectorRef.current.contains(t)) setInsightSectorOpen(false);
         };
         document.addEventListener('mousedown', onDown);
         return () => document.removeEventListener('mousedown', onDown);
-    }, [notifOpen, searchOpen]);
+    }, [notifOpen, searchOpen, dealSectorOpen, insightSectorOpen]);
 
     useEffect(() => {
         const channel = supabase
@@ -942,7 +948,7 @@ function ScoutPage() {
     // Route a chosen result to its tab and flag it to be surfaced/highlighted there
     const handleSearchPick = (kind: string, item: any) => {
         setSearchOpen(false); setScoutSearch('');
-        if (kind === 'startup') { setDealSector('All'); setFocus({ kind, key: item.id }); setTab('dealflow'); }
+        if (kind === 'startup') { setDealSectors([]); setFocus({ kind, key: item.id }); setTab('dealflow'); }
         else if (kind === 'founder') { setFocus({ kind, key: item.id }); setTab('network'); }
         else if (kind === 'deck') {
             const st = startups.find(s => s.name === item.startup);
@@ -968,9 +974,9 @@ function ScoutPage() {
 
     const filteredDeals = useMemo(() =>
         startups.filter(s =>
-            (dealSector === 'All' || s.industry === dealSector) &&
+            (dealSectors.length === 0 || dealSectors.includes(s.industry)) &&
             (scoutSearch === '' || s.name.toLowerCase().includes(scoutSearch.toLowerCase()))
-        ), [startups, dealSector, scoutSearch]);
+        ), [startups, dealSectors, scoutSearch]);
 
     const filteredEvents = useMemo(() =>
         events.filter(e => eventType === 'All' || e.type === eventType),
@@ -1525,7 +1531,11 @@ function ScoutPage() {
                     })()}
 
                     {/* ══ 2. DEAL FLOW KANBAN ══ */}
-                    {tab === 'dealflow' && (() => (
+                    {tab === 'dealflow' && (() => {
+                        // ── Sector filter — only sectors that actually have registered startups;
+                        //    grows automatically as startups of new sectors are enrolled ──
+                        const dealSectorOptions = ['All', ...Array.from(new Set(startups.map(s => s.industry).filter(Boolean))).sort()];
+                        return (
                         <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 22px', boxSizing: 'border-box', overflow: 'hidden', gap: 12, position: 'relative' }}>
                             <DealFlowGalaxy />
 
@@ -1561,18 +1571,52 @@ function ScoutPage() {
                             </div>
 
                             {/* Header */}
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <Filter style={{ width: 11, height: 11, color: 'rgba(255,255,255,.3)' }} />
-                                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,.28)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>Sector</span>
-                                    <div style={{ display: 'flex', gap: 5 }}>
-                                        {['All', 'SaaS', 'FinTech', 'DeepTech'].map(s => {
-                                            const active = dealSector === s;
-                                            return <button key={s} onClick={() => setDealSector(s)} className="sc-btn" style={{ padding: '5px 13px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: active ? 'rgba(6,182,212,.25)' : 'rgba(255,255,255,.04)', color: active ? '#06b6d4' : 'rgba(255,255,255,.35)', border: `1px solid ${active ? 'rgba(6,182,212,.5)' : 'rgba(255,255,255,.08)'}`, boxShadow: active ? '0 0 14px rgba(6,182,212,.35)' : 'none' }}>{s}</button>;
-                                        })}
-                                    </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: 30 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', whiteSpace: 'nowrap' }}><strong style={{ color: 'white', fontWeight: 800 }}>{filteredDeals.length}</strong> deals · {shortlisted.length} shortlisted</span>
+                                    {dealSectors.length > 0 && (
+                                        <button onClick={() => setDealSectors([])} className="sc-btn" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', background: 'rgba(255,255,255,.05)', color: 'rgba(255,255,255,.45)', border: '1px solid rgba(255,255,255,.1)' }}>
+                                            <X style={{ width: 9, height: 9 }} />Clear
+                                        </button>
+                                    )}
                                 </div>
-                                <span style={{ fontSize: 11, color: 'rgba(255,255,255,.28)' }}>{filteredDeals.length} deals · {shortlisted.length} shortlisted</span>
+
+                                {/* ── Multi-select sector dropdown ── */}
+                                <div ref={dealSectorRef} style={{ position: 'relative', flexShrink: 0 }}>
+                                    <button onClick={() => setDealSectorOpen(o => !o)} className="sc-btn" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderRadius: 10, background: dealSectors.length ? 'rgba(6,182,212,.18)' : 'rgba(255,255,255,.04)', border: `1px solid ${dealSectors.length ? 'rgba(6,182,212,.45)' : 'rgba(255,255,255,.1)'}`, color: dealSectors.length ? '#67e8f9' : 'rgba(255,255,255,.62)', fontSize: 11, fontWeight: 700, cursor: 'pointer', boxShadow: dealSectors.length ? '0 0 14px rgba(6,182,212,.28)' : 'none' }}>
+                                        <Filter style={{ width: 12, height: 12 }} />
+                                        <span style={{ whiteSpace: 'nowrap' }}>{dealSectors.length === 0 ? 'Select Sectors' : dealSectors.length === 1 ? dealSectors[0] : `${dealSectors.length} sectors`}</span>
+                                        {dealSectors.length > 0 && <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 999, background: 'rgba(6,182,212,.3)', color: '#67e8f9', minWidth: 16, textAlign: 'center' }}>{dealSectors.length}</span>}
+                                        <ChevronRight style={{ width: 12, height: 12, transform: dealSectorOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .18s' }} />
+                                    </button>
+                                    {dealSectorOpen && (
+                                        <div className="notif-scroll" style={{ position: 'absolute', top: 42, right: 0, width: 244, maxHeight: 320, overflowY: 'auto', zIndex: 41, background: 'rgba(8,8,16,.97)', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(6,182,212,.55)', borderRadius: 14, boxShadow: '0 24px 70px rgba(0,0,0,.7)', backdropFilter: 'blur(14px)', padding: 8 }}>
+                                            <div style={{ padding: '4px 8px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                                                <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.55)' }}>Filter by sector</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    {(() => { const opts = dealSectorOptions.filter(s => s !== 'All'); return opts.length > 0 && dealSectors.length < opts.length && <button onClick={() => setDealSectors(opts)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#67e8f9', fontSize: 10, fontWeight: 700 }}>Select all</button>; })()}
+                                                    {dealSectors.length > 0 && <button onClick={() => setDealSectors([])} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.45)', fontSize: 10, fontWeight: 700 }}>Clear all</button>}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 8 }}>
+                                                {dealSectorOptions.filter(s => s !== 'All').map(s => {
+                                                    const checked = dealSectors.includes(s);
+                                                    const count = startups.filter(x => x.industry === s).length;
+                                                    return (
+                                                        <button key={s} onClick={() => setDealSectors(prev => checked ? prev.filter(x => x !== s) : [...prev, s])} className="dr-btn" style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, background: checked ? 'rgba(6,182,212,.12)' : 'transparent', border: `1px solid ${checked ? 'rgba(6,182,212,.32)' : 'rgba(255,255,255,.06)'}`, cursor: 'pointer' }}>
+                                                            <div style={{ width: 16, height: 16, borderRadius: 5, flexShrink: 0, border: `1.5px solid ${checked ? '#06b6d4' : 'rgba(255,255,255,.25)'}`, background: checked ? '#06b6d4' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: checked ? '0 0 8px rgba(6,182,212,.5)' : 'none' }}>
+                                                                {checked && <CheckCircle style={{ width: 11, height: 11, color: '#04121a' }} />}
+                                                            </div>
+                                                            <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: checked ? 'white' : 'rgba(255,255,255,.62)' }}>{s}</span>
+                                                            <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 7px', borderRadius: 999, background: checked ? 'rgba(6,182,212,.2)' : 'rgba(255,255,255,.06)', color: checked ? '#67e8f9' : 'rgba(255,255,255,.3)' }}>{count}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <button onClick={() => setDealSectorOpen(false)} className="sc-btn" style={{ width: '100%', marginTop: 8, padding: '8px 0', borderRadius: 10, background: 'linear-gradient(90deg,#0e7490,#06b6d4)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, boxShadow: '0 4px 14px rgba(6,182,212,.35)' }}>Done</button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Funnel bar */}
@@ -1648,7 +1692,8 @@ function ScoutPage() {
                                 })}
                             </div>
                         </div>
-                    ))()}
+                        );
+                    })()}
 
                     {/* ══ 3. DILIGENCE ROOM ══ */}
                     {tab === 'diligence' && (() => {
@@ -2814,17 +2859,35 @@ function ScoutPage() {
 
                     {/* ══ 6. MARKET INSIGHTS ══ */}
                     {tab === 'insights' && (() => {
-                        // ── Sector filter (All / SaaS / FinTech / DeepTech) drives every panel below ──
-                        const sectorObj = SECTOR_DATA.find(s => s.sector === insightSector);
-                        const isAll = insightSector === 'All' || !sectorObj;
-                        const visibleSectors = isAll ? SECTOR_DATA : [sectorObj];
-                        const insightStartups = isAll ? startups : startups.filter(s => s.industry === insightSector);
+                        // ── Sector filter — only sectors with registered startups; multi-select ──
+                        const sectorPalette = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#f472b6', '#ef4444', '#a78bfa', '#22d3ee', '#34d399', '#fb923c'];
+                        const sectorNames = Array.from(new Set(startups.map(s => s.industry).filter(Boolean))).sort();
+                        const colorFor = (name: string) => sectorPalette[(Math.abs(sectorNames.indexOf(name)) % sectorPalette.length)];
+                        // synthesize stats for a sector (prefer curated SECTOR_DATA, else compute from startups)
+                        const statsFor = (name: string) => {
+                            const curated = SECTOR_DATA.find(s => s.sector === name);
+                            if (curated) return curated;
+                            const inSec = startups.filter(s => s.industry === name);
+                            const deployed = inSec.reduce((a, s) => a + (s.raised || 0), 0);
+                            const avgG = inSec.length ? Math.round(inSec.reduce((a, s) => a + (s.growth || 0), 0) / inSec.length) : 0;
+                            const pct = startups.length ? Math.round((inSec.length / startups.length) * 100) : 0;
+                            return { sector: name, pct, deployed, deals: inSec.length, color: colorFor(name), growth: `+${avgG}%` };
+                        };
+                        const isAll = insightSectors.length === 0;
+                        const selectedSectors = isAll ? sectorNames : insightSectors;
+                        const selStats = selectedSectors.map(statsFor);
+                        const insightStartups = isAll ? startups : startups.filter(s => insightSectors.includes(s.industry));
                         const scoreDenom = insightStartups.length || 1;
-                        // headline figures
-                        const deployedVal = isAll ? totalDeployed : sectorObj.deployed;
-                        const roiPct = isAll ? 52 : (parseInt(String(sectorObj.growth).replace(/[^\d-]/g, ''), 10) || 0);
-                        const dealsVal = isAll ? 14 : sectorObj.deals;
+                        // breakdown panel: curated AUM allocation when "All", else the selected sectors
+                        // (pct normalised across the selection so the donut never overflows)
+                        const selDep = selStats.reduce((a, s) => a + s.deployed, 0) || 1;
+                        const visibleSectors = isAll ? SECTOR_DATA : selStats.map(s => ({ ...s, pct: Math.round((s.deployed / selDep) * 100) }));
+                        // headline figures (aggregated across the selected sectors)
+                        const deployedVal = isAll ? totalDeployed : selStats.reduce((a, s) => a + s.deployed, 0);
+                        const roiPct = isAll ? 52 : Math.round(selStats.reduce((a, s) => a + (parseInt(String(s.growth).replace(/[^\d-]/g, ''), 10) || 0), 0) / (selStats.length || 1));
+                        const dealsVal = isAll ? 14 : selStats.reduce((a, s) => a + s.deals, 0);
                         const avgScore = insightStartups.length ? Math.round(insightStartups.reduce((a, s) => a + s.score, 0) / insightStartups.length) : 0;
+                        const sectorLabel = isAll ? 'all sectors' : insightSectors.length === 1 ? insightSectors[0] : `${insightSectors.length} sectors`;
                         // chart series scaled so the final point matches the sector headline
                         const roiSeries = isAll ? ROI_DATA : ROI_DATA.map(d => ({ ...d, v: Math.max(0, Math.round(d.v * (roiPct / 52))) }));
                         const pipeSeries = isAll ? PIPELINE_DATA : PIPELINE_DATA.map(d => ({ ...d, v: Math.max(0, Math.round(d.v * (dealsVal / 14))) }));
@@ -2883,7 +2946,7 @@ function ScoutPage() {
                             </div>
 
                             {/* ── Header row ── */}
-                            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
+                            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 30 }}>
                                 <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(139,92,246,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(139,92,246,.5)' }}>
                                     <BarChart3 style={{ width: 15, height: 15, color: '#a78bfa', filter: 'drop-shadow(0 0 4px #a78bfa)' }} />
                                 </div>
@@ -2891,23 +2954,50 @@ function ScoutPage() {
                                     <span style={{ fontSize: 14, fontWeight: 800, color: 'white', letterSpacing: '-.01em' }}>Market Intelligence</span>
                                     <span style={{ fontSize: 10, color: 'rgba(255,255,255,.28)', marginLeft: 10, fontWeight: 500 }}>Live · Updated now</span>
                                 </div>
-                                <div style={{ marginLeft: 'auto', display: 'flex', gap: 5 }}>
-                                    {['All', 'SaaS', 'FinTech', 'DeepTech'].map(s => {
-                                        const active = insightSector === s;
-                                        return (
-                                            <button key={s} onClick={() => setInsightSector(s)} className="sc-btn" style={{ padding: '6px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: active ? 'rgba(139,92,246,.25)' : 'rgba(255,255,255,.04)', color: active ? '#a78bfa' : 'rgba(255,255,255,.35)', border: `1px solid ${active ? 'rgba(139,92,246,.5)' : 'rgba(255,255,255,.08)'}`, boxShadow: active ? '0 0 16px rgba(139,92,246,.35)' : 'none', transition: 'all .18s' }}>
-                                                {s}
-                                            </button>
-                                        );
-                                    })}
+                                {/* ── Multi-select sector dropdown (only registered sectors) ── */}
+                                <div ref={insightSectorRef} style={{ position: 'relative', marginLeft: 'auto', flexShrink: 0 }}>
+                                    <button onClick={() => setInsightSectorOpen(o => !o)} className="sc-btn" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderRadius: 10, background: insightSectors.length ? 'rgba(139,92,246,.2)' : 'rgba(255,255,255,.04)', border: `1px solid ${insightSectors.length ? 'rgba(139,92,246,.5)' : 'rgba(255,255,255,.1)'}`, color: insightSectors.length ? '#c4b5fd' : 'rgba(255,255,255,.62)', fontSize: 11, fontWeight: 700, cursor: 'pointer', boxShadow: insightSectors.length ? '0 0 14px rgba(139,92,246,.3)' : 'none' }}>
+                                        <Filter style={{ width: 12, height: 12 }} />
+                                        <span style={{ whiteSpace: 'nowrap' }}>{insightSectors.length === 0 ? 'Select Sectors' : insightSectors.length === 1 ? insightSectors[0] : `${insightSectors.length} sectors`}</span>
+                                        {insightSectors.length > 0 && <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 999, background: 'rgba(139,92,246,.32)', color: '#c4b5fd', minWidth: 16, textAlign: 'center' }}>{insightSectors.length}</span>}
+                                        <ChevronRight style={{ width: 12, height: 12, transform: insightSectorOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .18s' }} />
+                                    </button>
+                                    {insightSectorOpen && (
+                                        <div className="notif-scroll" style={{ position: 'absolute', top: 42, right: 0, width: 244, maxHeight: 320, overflowY: 'auto', zIndex: 41, background: 'rgba(8,8,16,.97)', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(139,92,246,.55)', borderRadius: 14, boxShadow: '0 24px 70px rgba(0,0,0,.7)', backdropFilter: 'blur(14px)', padding: 8 }}>
+                                            <div style={{ padding: '4px 8px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                                                <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.55)' }}>Filter by sector</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    {sectorNames.length > 0 && insightSectors.length < sectorNames.length && <button onClick={() => setInsightSectors([...sectorNames])} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c4b5fd', fontSize: 10, fontWeight: 700 }}>Select all</button>}
+                                                    {insightSectors.length > 0 && <button onClick={() => setInsightSectors([])} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.45)', fontSize: 10, fontWeight: 700 }}>Clear all</button>}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 8 }}>
+                                                {sectorNames.length === 0 && <div style={{ padding: '14px 10px', textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,.3)' }}>No startups enrolled yet</div>}
+                                                {sectorNames.map(s => {
+                                                    const checked = insightSectors.includes(s);
+                                                    const count = startups.filter(x => x.industry === s).length;
+                                                    return (
+                                                        <button key={s} onClick={() => setInsightSectors(prev => checked ? prev.filter(x => x !== s) : [...prev, s])} className="dr-btn" style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, background: checked ? 'rgba(139,92,246,.12)' : 'transparent', border: `1px solid ${checked ? 'rgba(139,92,246,.32)' : 'rgba(255,255,255,.06)'}`, cursor: 'pointer' }}>
+                                                            <div style={{ width: 16, height: 16, borderRadius: 5, flexShrink: 0, border: `1.5px solid ${checked ? '#8b5cf6' : 'rgba(255,255,255,.25)'}`, background: checked ? '#8b5cf6' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: checked ? '0 0 8px rgba(139,92,246,.5)' : 'none' }}>
+                                                                {checked && <CheckCircle style={{ width: 11, height: 11, color: '#14081f' }} />}
+                                                            </div>
+                                                            <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: checked ? 'white' : 'rgba(255,255,255,.62)' }}>{s}</span>
+                                                            <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 7px', borderRadius: 999, background: checked ? 'rgba(139,92,246,.2)' : 'rgba(255,255,255,.06)', color: checked ? '#c4b5fd' : 'rgba(255,255,255,.3)' }}>{count}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <button onClick={() => setInsightSectorOpen(false)} className="sc-btn" style={{ width: '100%', marginTop: 8, padding: '8px 0', borderRadius: 10, background: 'linear-gradient(90deg,#6d28d9,#8b5cf6)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, boxShadow: '0 4px 14px rgba(139,92,246,.35)' }}>Done</button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
                             {/* ── KPI strip ── */}
                             <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                                 {[
-                                    { label: 'Total Deployed', val: fmt(deployedVal), sub: isAll ? 'Across all sectors' : `${insightSector} sector`, color: '#8b5cf6', Icon: TrendingUp },
-                                    { label: 'Portfolio ROI', val: `+${roiPct}%`, sub: isAll ? 'H1 2026 average' : `${insightSector} growth`, color: '#10b981', Icon: BarChart3 },
+                                    { label: 'Total Deployed', val: fmt(deployedVal), sub: isAll ? 'Across all sectors' : sectorLabel, color: '#8b5cf6', Icon: TrendingUp },
+                                    { label: 'Portfolio ROI', val: `+${roiPct}%`, sub: isAll ? 'H1 2026 average' : `${sectorLabel} growth`, color: '#10b981', Icon: BarChart3 },
                                     { label: 'Active Deals', val: `${dealsVal}`, sub: 'In pipeline', color: '#06b6d4', Icon: Target },
                                     { label: 'Avg Score', val: `${avgScore}`, sub: isAll ? 'Portfolio quality' : `${insightStartups.length} ${insightStartups.length === 1 ? 'company' : 'companies'}`, color: '#f59e0b', Icon: Star },
                                 ].map(k => (
@@ -2935,7 +3025,7 @@ function ScoutPage() {
                                     <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                                         <PieChart style={{ width: 13, height: 13, color: '#a78bfa' }} />
                                         <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Sector Breakdown</span>
-                                        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{isAll ? `${visibleSectors.length} sectors` : insightSector}</span>
+                                        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{isAll ? `${visibleSectors.length} sectors` : sectorLabel}</span>
                                     </div>
 
                                     {/* SVG Donut + legend */}
@@ -2957,8 +3047,8 @@ function ScoutPage() {
                                                                 style={{ filter: `drop-shadow(0 0 6px ${s.color}80)` }} />
                                                         );
                                                     })}
-                                                    <text x={cx} y={cy - 6} textAnchor="middle" fontSize="18" fontWeight="900" fill="white">{isAll ? visibleSectors.length : `${visibleSectors[0].pct}%`}</text>
-                                                    <text x={cx} y={cx + 10} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,.28)" letterSpacing="1">{isAll ? 'SECTORS' : 'OF AUM'}</text>
+                                                    <text x={cx} y={cy - 6} textAnchor="middle" fontSize="18" fontWeight="900" fill="white">{visibleSectors.length}</text>
+                                                    <text x={cx} y={cx + 10} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,.28)" letterSpacing="1">{isAll ? 'SECTORS' : 'SELECTED'}</text>
                                                 </svg>
                                             );
                                         })()}

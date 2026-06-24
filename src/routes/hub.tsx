@@ -841,6 +841,8 @@ function HubPage() {
   const [notifAllRead, setNotifAllRead] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  // Result picked from global search → surface (and highlight) that item in its tab
+  const [focus, setFocus] = useState<{ kind: string; key: string } | null>(null);
   // Modals
   const [registerOpen, setRegisterOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -1245,16 +1247,48 @@ function HubPage() {
     ),
     [vaultDocs, vaultType, vaultBrand]);
 
-  // ── Global search results (works on every tab) ──
-  const searchResults = useMemo(() => {
+  // ── Global search across all 4 domains — each result routes to its own tab ──
+  const searchGroups = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return [];
-    return startups.filter(s =>
-      s.name.toLowerCase().includes(q) ||
-      (s.founder || '').toLowerCase().includes(q) ||
-      (s.industry || '').toLowerCase().includes(q)
-    );
-  }, [search, startups]);
+    if (!q) return [] as any[];
+    const startupHits = startups.filter(s =>
+      s.name.toLowerCase().includes(q) || (s.founder || '').toLowerCase().includes(q) || (s.industry || '').toLowerCase().includes(q) || (s.tagline || '').toLowerCase().includes(q)
+    ).slice(0, 6);
+    const docHits = vaultDocs.filter(d =>
+      (d.name || '').toLowerCase().includes(q) || (d.type || '').toLowerCase().includes(q) || ((d as any).startup_name || '').toLowerCase().includes(q)
+    ).slice(0, 6);
+    const mentorHits = MENTORS.filter(m =>
+      m.name.toLowerCase().includes(q) || m.role.toLowerCase().includes(q) || m.company.toLowerCase().includes(q) || m.tags.some(t => t.toLowerCase().includes(q))
+    ).slice(0, 6);
+    const eventHits = allEvents.filter(e =>
+      (e.title || '').toLowerCase().includes(q) || (e.type || '').toLowerCase().includes(q) || (e.location || '').toLowerCase().includes(q)
+    ).slice(0, 6);
+    return [
+      { kind: 'startup', label: 'Startups', dest: 'Pipeline', color: '#8b5cf6', items: startupHits },
+      { kind: 'doc', label: 'Documents', dest: 'Brand Vault', color: '#06b6d4', items: docHits },
+      { kind: 'mentor', label: 'Mentors', dest: 'Mentor Network', color: '#10b981', items: mentorHits },
+      { kind: 'event', label: 'Events', dest: 'Event Arena', color: '#f59e0b', items: eventHits },
+    ].filter(g => g.items.length);
+  }, [search, startups, vaultDocs, allEvents]);
+  const searchTotal = useMemo(() => searchGroups.reduce((a, g) => a + g.items.length, 0), [searchGroups]);
+
+  // Route a chosen result to its tab and flag it to be surfaced/highlighted there
+  const handleSearchPick = (kind: string, item: any) => {
+    setSearch(''); setSearchOpen(false);
+    if (kind === 'startup') { setPipelineSector('All'); setFocus({ kind, key: item.id }); setTab('pipeline'); }
+    else if (kind === 'doc') { setVaultBrand(null); setVaultType('All'); setFocus({ kind, key: item.name }); setTab('vault'); }
+    else if (kind === 'mentor') { setMentorFilter('All'); setFocus({ kind, key: item.id }); setTab('network'); }
+    else if (kind === 'event') { setEventType('All'); setFocus({ kind, key: item.id }); setTab('events'); }
+  };
+
+  // Move a focused item to the front of its list so it shows first in the target tab
+  const bringToFront = (arr: any[], matchFn: (x: any) => boolean) => {
+    const i = arr.findIndex(matchFn);
+    if (i <= 0) return arr;
+    const copy = arr.slice();
+    copy.unshift(copy.splice(i, 1)[0]);
+    return copy;
+  };
 
   // close the search dropdown on outside click (robust across transformed ancestors)
   useEffect(() => {
@@ -1265,6 +1299,13 @@ function HubPage() {
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
   }, [searchOpen]);
+
+  // clear the search-focus highlight after it has played
+  useEffect(() => {
+    if (!focus) return;
+    const t = setTimeout(() => setFocus(null), 4500);
+    return () => clearTimeout(t);
+  }, [focus]);
 
   const filteredMentors = useMemo(() =>
     MENTORS.filter(m => {
@@ -1617,39 +1658,57 @@ function HubPage() {
                 onChange={e => { setSearch(e.target.value); setSearchOpen(true); }}
                 onFocus={() => setSearchOpen(true)}
                 onKeyDown={e => { if (e.key === 'Escape') { setSearch(''); setSearchOpen(false); } }}
-                placeholder="Search startups…"
+                placeholder="Search anything…"
                 className="pl-9 pr-4 py-2 w-52 text-xs bg-white/[0.04] border border-white/[0.08] rounded-full focus:outline-none focus:border-violet-500/50 text-white placeholder-white/20 transition"
               />
               {search && (
                 <button onClick={() => { setSearch(''); setSearchOpen(false); }} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: 14, lineHeight: 1, padding: 0 }}>✕</button>
               )}
-              {/* Global results dropdown — surfaces matches on any tab, opens Brand Vault on click */}
+              {/* focus-highlight animation (always mounted via the topbar) */}
+              <style>{`
+                @keyframes hub-search-focus{0%{box-shadow:0 0 0 0 rgba(139,92,246,.55),0 0 26px rgba(139,92,246,.45)}50%{box-shadow:0 0 0 2px rgba(139,92,246,.9),0 0 34px rgba(139,92,246,.6)}100%{box-shadow:0 0 0 0 rgba(139,92,246,0),0 0 0 rgba(139,92,246,0)}}
+                .search-focus{animation:hub-search-focus 1.6s ease-in-out 2;position:relative;z-index:3}
+              `}</style>
+              {/* Global results dropdown — spans all 4 domains, routes to the matching tab */}
               {searchOpen && search.trim() && (
-                <div className="notif-scroll" style={{ position: 'absolute', top: 42, right: 0, width: 290, maxHeight: 340, overflowY: 'auto', zIndex: 100, background: '#000000', border: '1px solid rgba(255,255,255,0.09)', borderTop: '2px solid rgba(139,92,246,0.55)', borderRadius: 14, boxShadow: '0 16px 48px rgba(0,0,0,0.8)', padding: 8 }}>
+                <div className="notif-scroll" style={{ position: 'absolute', top: 42, right: 0, width: 300, maxHeight: 400, overflowY: 'auto', zIndex: 100, background: '#000000', border: '1px solid rgba(255,255,255,0.09)', borderTop: '2px solid rgba(139,92,246,0.55)', borderRadius: 14, boxShadow: '0 16px 48px rgba(0,0,0,0.8)', padding: 8 }}>
                   <div style={{ padding: '4px 8px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)' }}>Startups</span>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: '#a78bfa', background: 'rgba(139,92,246,0.15)', padding: '2px 7px', borderRadius: 999, border: '1px solid rgba(139,92,246,0.3)' }}>{searchResults.length}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)' }}>Results</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#a78bfa', background: 'rgba(139,92,246,0.15)', padding: '2px 7px', borderRadius: 999, border: '1px solid rgba(139,92,246,0.3)' }}>{searchTotal}</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
-                    {searchResults.length === 0 && (
-                      <div style={{ padding: '14px 10px', textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>No startups match "{search}"</div>
-                    )}
-                    {searchResults.map(s => {
-                      const sc = STAGE_COLORS[s.stage] || '#8b5cf6';
-                      const score = s.metrics?.pitchScore;
-                      return (
-                        <button key={s.id || s.name} onClick={() => { setVaultBrand(s.name); setVaultType('All'); setTab('vault'); setSearch(''); setSearchOpen(false); }}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, background: `${sc}0c`, border: `1px solid ${sc}22`, borderLeft: `2px solid ${sc}70`, cursor: 'pointer' }}>
-                          <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: `radial-gradient(circle at 32% 28%, ${sc}, ${sc}66 60%, ${sc}18)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'white', boxShadow: `0 2px 8px ${sc}40` }}>{s.name[0]}</div>
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</p>
-                            <p style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.4)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.stage} · {s.industry}{s.founder ? ` · ${s.founder}` : ''}</p>
-                          </div>
-                          {score != null && <span style={{ fontSize: 12, fontWeight: 800, color: sc, flexShrink: 0 }}>{score}</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {searchTotal === 0 && (
+                    <div style={{ padding: '18px 10px', textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>Nothing matches "{search}"</div>
+                  )}
+                  {searchGroups.map(g => (
+                    <div key={g.kind} style={{ marginTop: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 4px 6px' }}>
+                        <span style={{ fontSize: 9, fontWeight: 800, color: g.color, textTransform: 'uppercase', letterSpacing: '.07em' }}>{g.label}</span>
+                        <span style={{ fontSize: 8, fontWeight: 700, color: g.color, background: `${g.color}18`, padding: '1px 6px', borderRadius: 999, border: `1px solid ${g.color}33` }}>{g.items.length}</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 8.5, color: 'rgba(255,255,255,0.28)' }}>→ {g.dest}</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                        {g.items.map((item: any, ii: number) => {
+                          const sc = g.kind === 'startup' ? (STAGE_COLORS[item.stage] || g.color) : g.color;
+                          let lead = '?', primary = '', secondary = '', trailing: any = null;
+                          if (g.kind === 'startup') { lead = (item.name || '?')[0]; primary = item.name; secondary = `${item.stage} · ${item.industry}${item.founder ? ` · ${item.founder}` : ''}`; trailing = item.metrics?.pitchScore; }
+                          else if (g.kind === 'doc') { lead = (item.name || '?')[0]; primary = item.name; secondary = `${item.type || 'Doc'}${(item as any).startup_name ? ` · ${(item as any).startup_name}` : ''}`; trailing = (item as any).deck_type === 'investor' ? 'VC' : null; }
+                          else if (g.kind === 'mentor') { lead = item.avatar || (item.name || '?')[0]; primary = item.name; secondary = `${item.role} · ${item.company}`; }
+                          else if (g.kind === 'event') { lead = (item.title || '?')[0]; primary = item.title; secondary = `${item.type || 'Event'} · ${item.date || ''}`; }
+                          return (
+                            <button key={(item.id || item.name || primary) + ii} onClick={() => handleSearchPick(g.kind, item)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, background: `${sc}0c`, border: `1px solid ${sc}22`, borderLeft: `2px solid ${sc}70`, cursor: 'pointer' }}>
+                              <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: `radial-gradient(circle at 32% 28%, ${sc}, ${sc}66 60%, ${sc}18)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'white', boxShadow: `0 2px 8px ${sc}40` }}>{lead}</div>
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{primary}</p>
+                                <p style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.4)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{secondary}</p>
+                              </div>
+                              {trailing != null && <span style={{ fontSize: trailing === 'VC' ? 8 : 12, fontWeight: 800, color: sc, flexShrink: 0, ...(trailing === 'VC' ? { background: `${sc}18`, border: `1px solid ${sc}38`, padding: '2px 6px', borderRadius: 999, letterSpacing: '.05em' } : {}) }}>{trailing}</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -2138,7 +2197,8 @@ function HubPage() {
                 <div className="hub-pipeline-kanban" style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
                   {STAGE_ORDER.map((stage, stageIdx) => {
                     const sc = STAGE_COLORS[stage];
-                    const cards = filteredPipeline.filter(s => s.stage === stage);
+                    const stageCards = filteredPipeline.filter(s => s.stage === stage);
+                    const cards = focus?.kind === 'startup' ? bringToFront(stageCards, s => s.id === focus.key) : stageCards;
                     const icon = STAGE_ICONS[stage]; const desc = STAGE_DESC[stage];
                     const isLast = stageIdx === STAGE_ORDER.length - 1;
                     return (
@@ -2179,7 +2239,7 @@ function HubPage() {
                             const scoreCol = s.metrics.pitchScore >= 90 ? '#10b981' : s.metrics.pitchScore >= 75 ? '#06b6d4' : '#f59e0b';
                             return (
                               /* FIXED height = perfectly uniform cards, no layout shifts */
-                              <div key={s.id} className="pl-card" style={{ ['--bc' as string]: `${sc}50`, height: 192, flexShrink: 0, borderRadius: 13, border: `1px solid ${sc}20`, background: `linear-gradient(145deg,${sc}0c 0%,rgba(0,0,0,0.6) 100%)`, padding: '11px 12px', cursor: 'pointer', position: 'relative', overflow: 'hidden', animationDelay: `${ci * 0.06}s`, display: 'flex', flexDirection: 'column' }}
+                              <div key={s.id} className={`pl-card${focus?.kind === 'startup' && focus.key === s.id ? ' search-focus' : ''}`} style={{ ['--bc' as string]: `${sc}50`, height: 192, flexShrink: 0, borderRadius: 13, border: `1px solid ${sc}20`, background: `linear-gradient(145deg,${sc}0c 0%,rgba(0,0,0,0.6) 100%)`, padding: '11px 12px', cursor: 'pointer', position: 'relative', overflow: 'hidden', animationDelay: `${ci * 0.06}s`, display: 'flex', flexDirection: 'column' }}
                                 onClick={() => { requireOwnership(s.id, () => { const knownIndustries = ['SaaS','FinTech','DeepTech','HealthTech','EdTech','AgriTech','ClimaTech','D2C / Consumer','E-commerce','Logistics & Supply Chain','HRTech','LegalTech','PropTech','SpaceTech','Gaming','Media & Content','Others']; const isKnown = knownIndustries.includes(s.industry); setEditTarget({ ...s, industry: isKnown ? s.industry : 'Others' }); setEditCustomIndustry(isKnown ? '' : s.industry); }); }}>
                                 {/* Top shimmer */}
                                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${sc}65,transparent)` }} />
@@ -2342,7 +2402,7 @@ function HubPage() {
               )}
               <div className="analytics-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
                 <div className="hub-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
-                  {filteredDocs.map(d => {
+                  {(focus?.kind === 'doc' ? bringToFront(filteredDocs, d => d.name === focus.key) : filteredDocs).map(d => {
                     const tc = TYPE_COLOR[d.type] || '#8b5cf6';
                     const sc = STAT_COLOR[d.status];
                     const scoreCol = d.score >= 90 ? '#10b981' : d.score >= 75 ? '#06b6d4' : '#f59e0b';
@@ -2353,6 +2413,7 @@ function HubPage() {
 
                     return (
                       <div key={d.name}
+                        className={focus?.kind === 'doc' && focus.key === d.name ? 'search-focus' : undefined}
                         onClick={() => {
                           if ((d as any).deck_type === 'investor') {
                             if (!user) { setSignInPromptMsg('Sign in as a verified investor to access this deck.'); setSignInPromptOpen(true); return; }
@@ -2760,10 +2821,11 @@ function HubPage() {
               )}
               <div className="analytics-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 28px 24px', position: 'relative', zIndex: 1 }}>
                 <div className="hub-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
-                  {filteredMentors.map(m => {
+                  {(focus?.kind === 'mentor' ? bringToFront(filteredMentors, m => m.id === focus.key) : filteredMentors).map(m => {
                     const mc = MENTOR_COLORS[m.id] || '#8b5cf6';
                     return (
                       <div key={m.id}
+                        className={focus?.kind === 'mentor' && focus.key === m.id ? 'search-focus' : undefined}
                         style={{
                           background: m.avail
                             ? `linear-gradient(135deg,${mc}16 0%,rgba(0,0,0,0.75) 60%,rgba(16,185,129,0.04) 100%)`
@@ -2952,12 +3014,12 @@ function HubPage() {
                           <span style={{ fontSize: 13, color: 'white' }}>No events match this filter</span>
                         </div>
                       )}
-                      {filteredEvents.map(ev => {
+                      {(focus?.kind === 'event' ? bringToFront(filteredEvents, ev => ev.id === focus.key) : filteredEvents).map(ev => {
                         const ec = TYPE_META[ev.type]?.color || '#8b5cf6';
                         const dp = parseDate(ev.date);
                         const isRsvpd = rsvpedIds.includes(ev.id);
                         return (
-                          <div key={ev.id} className="ea2-card"
+                          <div key={ev.id} className={`ea2-card${focus?.kind === 'event' && focus.key === ev.id ? ' search-focus' : ''}`}
                             style={{ borderRadius: 16, border: `1px solid ${ec}1a`, background: `linear-gradient(135deg,${ec}0b 0%,rgba(4,4,12,0.92) 100%)`, overflow: 'hidden', position: 'relative', boxShadow: `0 4px 28px rgba(0,0,0,0.38)` }}
                           >
                             {/* Left accent bar */}
@@ -3842,29 +3904,38 @@ function HubPage() {
 
           {/* ── ADMIN PANEL ───────────────────────────────────────────────── */}
           {tab === 'admin' && isAdmin && (
-            <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '18px 24px', boxSizing: 'border-box', overflow: 'hidden', gap: 16 }}>
-              {/* Ambient */}
-              <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(139,92,246,0.07) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+            <div className="hub-tab-content" style={{ height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', overflow: 'hidden' }}>
 
-              {/* Header */}
-              <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              {/* Header — fixed, never scrolls */}
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 11, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Shield style={{ width: 16, height: 16, color: '#a78bfa' }} />
-                  </div>
+                  <Shield style={{ width: 15, height: 15, color: '#a78bfa' }} />
                   <div>
-                    <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#fff' }}>Admin Panel</p>
-                    <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>Incutrack Hub — {user?.email}</p>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>Admin Panel</p>
+                    <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{user?.email}</p>
                   </div>
                 </div>
-                <button onClick={() => { setAdminEventsLoading(true); fetch('/api/events/pending', { credentials: 'include' }).then(r => r.json()).then(d => { setPendingEvents(Array.isArray(d) ? d : []); setAdminEventsLoading(false); }).catch(() => setAdminEventsLoading(false)); }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#a78bfa', cursor: 'pointer' }}>
-                  ↻ Refresh
+                <button
+                  onClick={() => {
+                    setAdminEventsLoading(true); setAdminAdvancesLoading(true); setAdminVCLoading(true);
+                    Promise.all([
+                      fetch('/api/events/pending', { credentials: 'include' }).then(r => r.json()).then(d => setPendingEvents(Array.isArray(d) ? d : [])),
+                      fetch('/api/startup-advance/pending', { credentials: 'include' }).then(r => r.json()).then(d => setPendingAdvances(Array.isArray(d) ? d : [])),
+                      fetch('/api/vc/admin/pending', { credentials: 'include' }).then(r => r.json()).then(d => { setPendingVCProfiles(Array.isArray(d?.vc_profiles) ? d.vc_profiles : []); setPendingDealInterests(Array.isArray(d?.deal_interests) ? d.deal_interests : []); setPendingDiligenceReqs(Array.isArray(d?.diligence_requests) ? d.diligence_requests : []); setShortlistEvents(Array.isArray(d?.shortlist_events) ? d.shortlist_events : []); }),
+                    ]).finally(() => { setAdminEventsLoading(false); setAdminAdvancesLoading(false); setAdminVCLoading(false); });
+                  }}
+                  style={{ padding: '6px 14px', borderRadius: 8, fontSize: 11, fontWeight: 700, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#a78bfa', cursor: 'pointer' }}
+                >
+                  ↻ Refresh All
                 </button>
               </div>
 
+              {/* Single scrollable body — all sections flow naturally */}
+              <div className="admin-scroll-body" style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+
               {/* Section: Event Submissions */}
-              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <CalendarDays style={{ width: 14, height: 14, color: '#a78bfa' }} />
                   <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Event Submissions</p>
                   {!adminEventsLoading && (
@@ -3875,15 +3946,11 @@ function HubPage() {
                 </div>
 
                 {adminEventsLoading ? (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2.5px solid rgba(139,92,246,0.2)', borderTop: '2.5px solid #8b5cf6', animation: 'spin 0.8s linear infinite' }} />
+                  <div style={{ padding: '16px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', border: '2.5px solid rgba(139,92,246,0.2)', borderTop: '2.5px solid #8b5cf6', animation: 'spin 0.8s linear infinite' }} />
                   </div>
                 ) : pendingEvents.length === 0 ? (
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: 0.5 }}>
-                    <CalendarDays style={{ width: 36, height: 36, color: 'rgba(255,255,255,0.15)' }} />
-                    <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>No pending event submissions</p>
-                    <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>New submissions from users will appear here</p>
-                  </div>
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.25)', paddingLeft: 22 }}>No pending submissions.</p>
                 ) : (
                   pendingEvents.map((ev: any) => (
                     <div key={ev.id} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
@@ -3969,12 +4036,9 @@ function HubPage() {
                 )}
               </div>
 
-              {/* Divider */}
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
-
               {/* Section: Stage Advance Requests */}
-              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <ArrowRight style={{ width: 14, height: 14, color: '#10b981' }} />
                   <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Stage Advance Requests</p>
                   {!adminAdvancesLoading && (
@@ -3989,10 +4053,7 @@ function HubPage() {
                     <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2.5px solid rgba(16,185,129,0.2)', borderTop: '2.5px solid #10b981', animation: 'spin 0.8s linear infinite' }} />
                   </div>
                 ) : pendingAdvances.length === 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '24px 0', opacity: 0.5 }}>
-                    <ArrowRight style={{ width: 32, height: 32, color: 'rgba(255,255,255,0.15)' }} />
-                    <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>No pending advance requests</p>
-                  </div>
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.25)', paddingLeft: 22 }}>No pending requests.</p>
                 ) : (
                   pendingAdvances.map((req: any) => (
                     <div key={req.id} style={{ background: 'rgba(16,185,129,0.03)', border: '1px solid rgba(16,185,129,0.12)', borderRadius: 16, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
@@ -4061,12 +4122,9 @@ function HubPage() {
                 )}
               </div>
 
-              {/* Divider */}
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
-
               {/* Section: VC Profile Verifications */}
-              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <Telescope style={{ width: 14, height: 14, color: '#a78bfa' }} />
                   <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>VC Profile Verifications</p>
                   {!adminVCLoading && (
@@ -4080,10 +4138,7 @@ function HubPage() {
                     <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2.5px solid rgba(139,92,246,0.2)', borderTop: '2.5px solid #a78bfa', animation: 'spin 0.8s linear infinite' }} />
                   </div>
                 ) : pendingVCProfiles.length === 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '20px 0', opacity: 0.4 }}>
-                    <Telescope style={{ width: 28, height: 28, color: 'rgba(255,255,255,0.15)' }} />
-                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No pending VC verifications</p>
-                  </div>
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.25)', paddingLeft: 22 }}>No pending verifications.</p>
                 ) : pendingVCProfiles.map((vc: any) => (
                   <div key={vc.id} style={{ background: 'rgba(139,92,246,0.03)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
@@ -4103,12 +4158,9 @@ function HubPage() {
                 ))}
               </div>
 
-              {/* Divider */}
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
-
               {/* Section: Deal Interest Requests */}
-              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <DollarSign style={{ width: 14, height: 14, color: '#10b981' }} />
                   <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Deal Interest Submissions</p>
                   {!adminVCLoading && (
@@ -4118,10 +4170,7 @@ function HubPage() {
                   )}
                 </div>
                 {pendingDealInterests.length === 0 && !adminVCLoading ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '20px 0', opacity: 0.4 }}>
-                    <DollarSign style={{ width: 28, height: 28, color: 'rgba(255,255,255,0.15)' }} />
-                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No pending deal interests</p>
-                  </div>
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.25)', paddingLeft: 22 }}>No pending deal interests.</p>
                 ) : pendingDealInterests.map((di: any) => (
                   <div key={di.id} style={{ background: 'rgba(16,185,129,0.03)', border: '1px solid rgba(16,185,129,0.12)', borderRadius: 14, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -4140,12 +4189,9 @@ function HubPage() {
                 ))}
               </div>
 
-              {/* Divider */}
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
-
               {/* Section: Diligence Access Requests */}
-              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <FolderKey style={{ width: 14, height: 14, color: '#f59e0b' }} />
                   <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Diligence Access Requests</p>
                   {!adminVCLoading && (
@@ -4155,10 +4201,7 @@ function HubPage() {
                   )}
                 </div>
                 {pendingDiligenceReqs.length === 0 && !adminVCLoading ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '20px 0', opacity: 0.4 }}>
-                    <FolderKey style={{ width: 28, height: 28, color: 'rgba(255,255,255,0.15)' }} />
-                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No pending diligence requests</p>
-                  </div>
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.25)', paddingLeft: 22 }}>No pending requests.</p>
                 ) : pendingDiligenceReqs.map((dr: any) => (
                   <div key={dr.id} style={{ background: 'rgba(245,158,11,0.03)', border: '1px solid rgba(245,158,11,0.12)', borderRadius: 14, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -4177,12 +4220,9 @@ function HubPage() {
                 ))}
               </div>
 
-              {/* Divider */}
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
-
-              {/* Section: Shortlist Activity (read-only notification feed) */}
-              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              {/* Section: Shortlist Activity */}
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <Star style={{ width: 14, height: 14, color: '#8b5cf6' }} />
                   <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Shortlist Activity</p>
                   {!adminVCLoading && (
@@ -4192,10 +4232,7 @@ function HubPage() {
                   )}
                 </div>
                 {shortlistEvents.length === 0 && !adminVCLoading ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '20px 0', opacity: 0.4 }}>
-                    <Star style={{ width: 28, height: 28, color: 'rgba(255,255,255,0.15)' }} />
-                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No shortlist activity yet</p>
-                  </div>
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.25)', paddingLeft: 22 }}>No shortlist activity yet.</p>
                 ) : shortlistEvents.map((ev: any) => {
                   const revoked = ev.action === 'revoked';
                   const ac = revoked ? '#f59e0b' : '#10b981';
@@ -4214,12 +4251,9 @@ function HubPage() {
                 })}
               </div>
 
-              {/* Divider */}
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
-
               {/* Section: Contact Messages */}
-              <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <MessageSquare style={{ width: 14, height: 14, color: '#06b6d4' }} />
                   <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Contact Messages</p>
                   {!contactMsgsLoading && (
@@ -4233,10 +4267,7 @@ function HubPage() {
                     <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2.5px solid rgba(6,182,212,0.2)', borderTop: '2.5px solid #06b6d4', animation: 'spin 0.8s linear infinite' }} />
                   </div>
                 ) : contactMessages.length === 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '20px 0', opacity: 0.4 }}>
-                    <MessageSquare style={{ width: 28, height: 28, color: 'rgba(255,255,255,0.15)' }} />
-                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No messages yet</p>
-                  </div>
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.25)', paddingLeft: 22 }}>No messages yet.</p>
                 ) : contactMessages.map((msg: any) => (
                   <div key={msg.id} style={{ background: msg.read ? 'rgba(255,255,255,0.02)' : 'rgba(6,182,212,0.05)', border: `1px solid ${msg.read ? 'rgba(255,255,255,0.08)' : 'rgba(6,182,212,0.22)'}`, borderRadius: 14, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
@@ -4264,6 +4295,7 @@ function HubPage() {
                 ))}
               </div>
 
+              </div>{/* end scrollable body */}
             </div>
           )}
 

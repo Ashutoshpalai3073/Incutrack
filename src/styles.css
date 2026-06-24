@@ -157,6 +157,13 @@
 @utility animate-spotlight {
   animation: spotlight 2s ease 0.75s 1 forwards;
 }
+/* Admin panel scrollbar — thin blue */
+.admin-scroll-body::-webkit-scrollbar { width: 3px; }
+.admin-scroll-body::-webkit-scrollbar-track { background: transparent; }
+.admin-scroll-body::-webkit-scrollbar-thumb { background: rgba(60, 130, 255, 0.45); border-radius: 999px; }
+.admin-scroll-body::-webkit-scrollbar-thumb:hover { background: rgba(100, 170, 255, 0.7); }
+.admin-scroll-body { scrollbar-width: thin; scrollbar-color: rgba(60,130,255,0.45) transparent; }
+
 /* Thin elegant scrollbars for analytics boxes */
 .analytics-scroll::-webkit-scrollbar {
   width: 3px;
