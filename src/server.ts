@@ -215,11 +215,173 @@ Respond ONLY with a valid JSON object, no markdown, no explanation, no commentar
   }
 }
 
+// ─── Document text extractors (pure JS, no native modules — works in Workers) ─
+
+/** Extract readable text from a PDF buffer using BT..ET stream parsing */
+function extractPdfText(buffer: ArrayBuffer): string {
+  try {
+    const bytes = new Uint8Array(buffer);
+    const latin1 = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
+    const parts: string[] = [];
+
+    // Extract compressed content streams and plain BT..ET blocks
+    const streamRx = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+    let m: RegExpExecArray | null;
+    while ((m = streamRx.exec(latin1)) !== null) {
+      const chunk = m[1];
+      // Tj single string: (Hello World) Tj
+      const tjRx = /\(([^)\\]*(?:\\.[^)\\]*)*)\)\s*Tj/g;
+      let t: RegExpExecArray | null;
+      while ((t = tjRx.exec(chunk)) !== null) {
+        parts.push(t[1].replace(/\\n/g, ' ').replace(/\\r/g, ' ').replace(/\\\(/g, '(').replace(/\\\)/g, ')').replace(/\\\\/g, '\\'));
+      }
+      // TJ array: [(Hello) 20 (World)] TJ
+      const tjArrRx = /\[([^\]]+)\]\s*TJ/g;
+      while ((t = tjArrRx.exec(chunk)) !== null) {
+        const inner = t[1];
+        const strRx = /\(([^)\\]*(?:\\.[^)\\]*)*)\)/g;
+        let s: RegExpExecArray | null;
+        while ((s = strRx.exec(inner)) !== null) {
+          parts.push(s[1].replace(/\\n/g, ' ').replace(/\\\(/g, '(').replace(/\\\)/g, ')'));
+        }
+      }
+    }
+    return parts.join(' ').replace(/\s+/g, ' ').trim().slice(0, 12000);
+  } catch {
+    return '';
+  }
+}
+
+/** Minimal pure-JS ZIP reader using DecompressionStream (available in Workers & modern browsers) */
+async function readZipEntries(buffer: ArrayBuffer): Promise<Map<string, Uint8Array>> {
+  const entries = new Map<string, Uint8Array>();
+  const view = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
+  let offset = 0;
+  const len = bytes.length;
+
+  while (offset < len - 4) {
+    const sig = view.getUint32(offset, true);
+    if (sig !== 0x04034b50) { offset++; continue; }
+    if (offset + 30 > len) break;
+
+    const compression = view.getUint16(offset + 8, true);
+    const compressedSize = view.getUint32(offset + 18, true);
+    const fileNameLen = view.getUint16(offset + 26, true);
+    const extraLen = view.getUint16(offset + 28, true);
+    const fileNameBytes = bytes.slice(offset + 30, offset + 30 + fileNameLen);
+    const fileName = new TextDecoder().decode(fileNameBytes);
+    const dataStart = offset + 30 + fileNameLen + extraLen;
+    const compressedData = bytes.slice(dataStart, dataStart + compressedSize);
+
+    try {
+      if (compression === 0) {
+        // Stored (no compression)
+        entries.set(fileName, compressedData);
+      } else if (compression === 8) {
+        // Deflate
+        const ds = new DecompressionStream('deflate-raw');
+        const writer = ds.writable.getWriter();
+        const reader = ds.readable.getReader();
+        writer.write(compressedData);
+        writer.close();
+        const chunks: Uint8Array[] = [];
+        let done = false;
+        while (!done) {
+          const { value, done: d } = await reader.read();
+          if (value) chunks.push(value);
+          done = d;
+        }
+        const total = chunks.reduce((a, c) => a + c.length, 0);
+        const out = new Uint8Array(total);
+        let pos = 0;
+        for (const c of chunks) { out.set(c, pos); pos += c.length; }
+        entries.set(fileName, out);
+      }
+    } catch { /* skip unreadable entry */ }
+
+    offset = dataStart + compressedSize;
+  }
+  return entries;
+}
+
+/** Strip XML tags and decode entities */
+function xmlToText(xml: string): string {
+  return xml
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/\s+/g, ' ').trim();
+}
+
+/** Extract text from DOCX (word/document.xml) */
+async function extractDocxText(buffer: ArrayBuffer): Promise<string> {
+  try {
+    const entries = await readZipEntries(buffer);
+    const docXml = entries.get('word/document.xml');
+    if (!docXml) return '';
+    return xmlToText(new TextDecoder().decode(docXml)).slice(0, 12000);
+  } catch { return ''; }
+}
+
+/** Extract text from PPTX (ppt/slides/slide*.xml) */
+async function extractPptxText(buffer: ArrayBuffer): Promise<string> {
+  try {
+    const entries = await readZipEntries(buffer);
+    const parts: string[] = [];
+    for (const [name, data] of entries) {
+      if (name.startsWith('ppt/slides/slide') && name.endsWith('.xml')) {
+        parts.push(xmlToText(new TextDecoder().decode(data)));
+      }
+    }
+    return parts.join(' ').replace(/\s+/g, ' ').trim().slice(0, 12000);
+  } catch { return ''; }
+}
+
+/** Extract text from XLSX (xl/sharedStrings.xml + xl/worksheets) */
+async function extractXlsxText(buffer: ArrayBuffer): Promise<string> {
+  try {
+    const entries = await readZipEntries(buffer);
+    const parts: string[] = [];
+    const sharedStrings = entries.get('xl/sharedStrings.xml');
+    if (sharedStrings) parts.push(xmlToText(new TextDecoder().decode(sharedStrings)));
+    for (const [name, data] of entries) {
+      if (name.startsWith('xl/worksheets/sheet') && name.endsWith('.xml')) {
+        parts.push(xmlToText(new TextDecoder().decode(data)));
+      }
+    }
+    return parts.join(' ').replace(/\s+/g, ' ').trim().slice(0, 12000);
+  } catch { return ''; }
+}
+
+/** Master extractor — fetches file URL and extracts text based on extension */
+async function extractDocumentContent(fileUrl: string, ext: string): Promise<string> {
+  try {
+    const res = await fetch(fileUrl);
+    if (!res.ok) return '';
+    const buffer = await res.arrayBuffer();
+    switch (ext.toLowerCase()) {
+      case 'pdf': return extractPdfText(buffer);
+      case 'docx': return await extractDocxText(buffer);
+      case 'pptx': return await extractPptxText(buffer);
+      case 'xlsx': return await extractXlsxText(buffer);
+      case 'ppt': case 'doc': case 'xls':
+        // Legacy binary formats — return empty, signal to AI it's a legacy format
+        return '[Legacy binary format — content not extractable]';
+      case 'csv': case 'txt':
+        return new TextDecoder().decode(await res.clone().arrayBuffer()).slice(0, 12000);
+      default: return '';
+    }
+  } catch {
+    return '';
+  }
+}
+
 // ─── IncuScore Phase 2 — Document-weighted rescore ───────────────────────────
 async function handleIncuScorePhase2(request: Request): Promise<Response> {
   let bodyParsed: {
     previousScore: number; startupName: string; documentName: string;
-    documentType: string; documentStatus: string; industry: string; description: string;
+    documentType: string; documentStatus: string; industry: string;
+    description: string; fileUrl?: string; fileExt?: string;
   } | null = null;
 
   try {
@@ -227,7 +389,16 @@ async function handleIncuScorePhase2(request: Request): Promise<Response> {
     const {
       previousScore, startupName, documentName,
       documentType, documentStatus, industry, description,
+      fileUrl, fileExt,
     } = bodyParsed!;
+
+    // ── Extract actual document content ──────────────────────────────────────
+    let documentContent = '';
+    let contentExtracted = false;
+    if (fileUrl && fileExt) {
+      documentContent = await extractDocumentContent(fileUrl, fileExt);
+      contentExtracted = documentContent.length > 50 && documentContent !== '[Legacy binary format — content not extractable]';
+    }
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' });
 
@@ -237,6 +408,7 @@ async function handleIncuScorePhase2(request: Request): Promise<Response> {
       Doc: 'Executive Summary / Business Plan (written narrative)',
       Sheet: 'Financial Model / Projections (numbers-driven)',
       Bundle: 'Full Pitch Bundle (deck + financials + executive summary — strongest signal)',
+      Video: 'Product Demo Video (supplementary signal)',
     };
     const docStatusLabel: Record<string, string> = {
       Final: 'Final / Investor-ready (polished, reviewed)',
@@ -244,68 +416,62 @@ async function handleIncuScorePhase2(request: Request): Promise<Response> {
       Draft: 'Draft (work-in-progress, incomplete)',
     };
 
+    const contentSection = contentExtracted
+      ? `\nEXTRACTED DOCUMENT CONTENT (first 4000 chars):\n"""\n${documentContent.slice(0, 4000)}\n"""\nIMPORTANT: You have the actual document text above. Base your entire assessment on what you can READ in this content, not on the file type or name alone.\n`
+      : `\nDOCUMENT CONTENT: Could not be extracted (${fileExt ?? 'unknown'} format). Assess based on type, status, and name only.\n`;
+
     const prompt = `
-You are a partner-level VC analyst at a top Indian VC firm. A startup has submitted a pitch document to their vault. You are evaluating how much this document improves their investment readiness.
+You are a partner-level VC analyst at Sequoia India / Peak XV. A startup has submitted a document to their investor vault. Read the content carefully and assess how much it improves their investment readiness.
 
 STARTUP CONTEXT:
 - Company: ${startupName}
 - Industry: ${industry}
-- Description: "${description}"
-- Phase 1 IncuScore (registration-based): ${previousScore}/100
+- Startup Description: "${description}"
+- Current IncuScore: ${previousScore}/100
 
-DOCUMENT SUBMITTED:
-- Document Name: "${documentName}"
-- Document Type: ${docTypeLabel[documentType] ?? documentType}
-- Document Status: ${docStatusLabel[documentStatus] ?? documentStatus}
+DOCUMENT METADATA:
+- Name: "${documentName}"
+- Type declared by founder: ${docTypeLabel[documentType] ?? documentType}
+- Status: ${docStatusLabel[documentStatus] ?? documentStatus}
+${contentSection}
+SCORING — 4 dimensions, 0–25 each:
 
-YOUR TASK:
-Evaluate the SIGNAL VALUE this document adds to the startup's investment readiness. You cannot read the document content — you are evaluating based on what type of document it is, its completion status, and what its submission signals about founder seriousness and preparation.
+DIMENSION 1 — PITCH NARRATIVE COMPLETENESS (0–25):
+IF content is available: Score based on whether the document actually contains a coherent pitch narrative — problem statement, solution, market opportunity, competitive positioning, team story. A deck with just bullet points scores lower than one with clear narrative flow.
+IF no content: Score based on document type and status as proxy.
+- Penalise heavily (cap at 10) if content reads as personal document, generic template, or completely unrelated to the startup.
+- Score 20–25 only if you can see a clear investor-grade pitch narrative in the content.
 
-DOCUMENT SIGNAL SCORING (4 dimensions, 0–25 each, max 100):
+DIMENSION 2 — FINANCIAL CREDIBILITY (0–25):
+IF content is available: Is there actual financial data? Revenue projections, unit economics (CAC, LTV, gross margin), funding ask breakdown, runway calculation, MRR/ARR data, cap table? Score based on depth and realism of financial content.
+IF no content: Use document type as proxy (Sheet highest, Bundle high, Deck medium, Doc low).
+- Placeholder numbers or generic "₹X crore" without context score 5–10.
+- Real, specific, internally consistent financial data scores 18–25.
 
-1. PITCH NARRATIVE COMPLETENESS (0–25)
-   - Deck/Bundle: Higher base signal (investors expect structured narrative)
-   - Doc (exec summary): Good signal if status is Final or Review
-   - Draft status: Cap at 14 regardless of type
-   - Final Pitch Deck: 20–25 | Review Pitch Deck: 15–19 | Draft Deck: 10–14
-   - Final Doc: 17–22 | Final Sheet: 14–18 | Bundle Final: 22–25
+DIMENSION 3 — MARKET VALIDATION READINESS (0–25):
+IF content is available: Is there evidence of market research? Specific TAM/SAM/SOM figures with sources, competitor analysis, customer persona, India market context, references to real data points? Generic market claims score 6–12. Cited, specific market data scores 18–25.
+IF no content: Deck/Bundle > Doc > Sheet > Video as proxy.
 
-2. FINANCIAL CREDIBILITY SIGNAL (0–25)
-   - Sheet (financial model): Highest signal — shows founder understands unit economics
-   - Bundle: High signal — includes financials
-   - Deck: Medium — decks may include financial slide
-   - Doc only: Lower — narrative without numbers
-   - Final Sheet: 21–25 | Review Sheet: 16–20 | Draft Sheet: 10–15
-   - Final Bundle: 20–24 | Final Deck: 14–18 | Doc: 10–16
+DIMENSION 4 — FOUNDER EXECUTION SIGNAL (0–25):
+IF content is available: Does the content read as the work of a serious, prepared founder? Look for: professional formatting (evidenced by structure), specificity (not vague claims), awareness of investor concerns, clear ask and use of funds. Vague, generic content scores 5–10. Specific, well-reasoned, investor-aware content scores 18–25.
+IF no content: Document status (Final > Review > Draft) as proxy.
 
-3. MARKET VALIDATION READINESS (0–25)
-   - Does the document type signal that market research has been done?
-   - Bundle signals most complete market research
-   - Deck signals curated market data for investors
-   - Doc signals written market analysis
-   - Sheet alone signals financial focus, less market narrative
-   - Score based on type + status combination
+FINAL SCORE FORMULA:
+finalScore = round((previousScore × 0.35) + (documentSignalTotal × 0.65))
 
-4. FOUNDER EXECUTION SIGNAL (0–25)
-   - Submitting a Final document = founder is serious and prepared
-   - Submitting a Review document = founder is iterating — shows process
-   - Submitting a Draft = early stage but shows initiative
-   - Bundle submission = exceptional — founder has done full prep work
-   - Factor in: is the document name professional? Does it suggest effort?
-
-FINAL SCORE CALCULATION:
-- Formula: (previousScore × 0.35) + (documentSignalTotal × 0.65)
-- The document carries MORE weight than registration details
-- Realistic delta expectations:
-  - Final Bundle: +12 to +20 points
-  - Final Deck: +8 to +15 points
-  - Final Sheet: +6 to +12 points
-  - Final Doc: +5 to +10 points
-  - Review documents: 60–70% of Final equivalent
-  - Draft documents: 30–45% of Final equivalent
-- NEVER increase score by more than 22 points in one submission
-- NEVER decrease score (document submission is always positive)
-- If previousScore is already high (75+), improvements will be smaller (diminishing returns)
+DELTA ENFORCEMENT (strictly apply):
+- Content-based assessment (content extracted): delta range is wider — can go +3 to +22 depending on actual quality
+- No-content assessment (metadata only): cap delta at +12
+- If content is clearly NOT startup material but passed the pre-flight (edge case): set delta = 0, irrelevantDocument = true
+- If previousScore >= 78: cap delta at 7
+- If previousScore >= 85: cap delta at 4
+- delta is ALWAYS at least +1 for any legitimate startup document
+- Review documents: 55–70% of Final equivalent
+- Draft documents: 25–40% of Final equivalent
+- Video (Final): +3 to +7
+- HARD CAP: delta cannot exceed 20 in one submission
+- HARD FLOOR: delta is always >= 1 (any legitimate startup doc adds some signal)
+- Diminishing returns: if previousScore >= 78, cap delta at 6; if >= 85, cap at 3
 
 BAND THRESHOLDS:
 - 83–100: "Series A Contender"
@@ -323,25 +489,25 @@ Respond ONLY with valid JSON, no markdown, no extra text:
     "marketValidation": <0-25>,
     "founderExecution": <0-25>
   },
-  "documentTotal": <sum of 4 scores, 0-100>,
-  "finalScore": <integer, calculated using formula above, 0-100>,
-  "delta": <finalScore minus previousScore, should be positive>,
-  "band": "<Series A Contender | Seed Ready | Angel Stage | Pre-seed Potential | Needs Validation | Concept Phase>",
-  "remark": "<2 sentence honest assessment of what this document submission signals to investors>",
+  "documentTotal": <sum of all 4 scores>,
+  "finalScore": <integer using formula above>,
+  "delta": <finalScore minus previousScore>,
+  "band": "<band label>",
+  "remark": "<2 honest sentences: what this document signals to a VC, and the single biggest gap remaining>",
   "documentInsights": [
-    "<specific insight about what this document type signals>",
-    "<what is still missing or what would further improve the score>",
-    "<honest assessment of readiness based on document status>"
+    "<what this document type signals about investor readiness>",
+    "<what is still missing that would most improve the score>",
+    "<honest assessment of this document status and what it tells investors>"
   ],
-  "nextSteps": ["<most impactful next action to raise score>", "<second action>"],
+  "nextSteps": ["<highest-impact next upload>", "<second action>"],
   "keywords": ["<kw1>", "<kw2>", "<kw3>", "<kw4>", "<kw5>"],
-  "finalMessage": "<1–2 sentence honest VC-voice message to the founder about where they stand and what to do next>",
-  "readyForVCs": <true only if finalScore >= 73, false otherwise>
+  "finalMessage": "<1–2 sentences in VC voice: direct, honest, specific to this startup and document>",
+  "readyForVCs": <true only if finalScore >= 73>
 }`;
 
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
-      max_tokens: 1200,
+      max_tokens: 1400,
       temperature: 0.15,
       messages: [{ role: 'user', content: prompt }],
     });
@@ -350,9 +516,27 @@ Respond ONLY with valid JSON, no markdown, no extra text:
     const cleaned = raw.replace(/```json|```/g, '').trim();
     const result = JSON.parse(cleaned);
 
+    // AI flagged doc as irrelevant despite passing pre-flight
+    if (result.irrelevantDocument) {
+      const band =
+        previousScore >= 83 ? 'Series A Contender' :
+        previousScore >= 73 ? 'Seed Ready' :
+        previousScore >= 61 ? 'Angel Stage' :
+        previousScore >= 46 ? 'Pre-seed Potential' :
+        previousScore >= 31 ? 'Needs Validation' : 'Concept Phase';
+      return new Response(
+        JSON.stringify({ ...result, finalScore: previousScore, delta: 0, band, readyForVCs: previousScore >= 73, phase: 2 }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Server-side score enforcement
-    const rawFinal = result.finalScore ?? (previousScore + 5);
-    const finalScore = Math.min(100, Math.max(previousScore, Math.round(rawFinal)));
+    const maxDelta = contentExtracted
+      ? (previousScore >= 85 ? 4 : previousScore >= 78 ? 7 : 22)
+      : 12;
+    const rawFinal = result.finalScore ?? (previousScore + 3);
+    const clampedFinal = Math.min(previousScore + maxDelta, Math.max(previousScore + 1, Math.round(rawFinal)));
+    const finalScore = Math.min(100, clampedFinal);
     const delta = finalScore - previousScore;
 
     const band =
@@ -363,7 +547,7 @@ Respond ONLY with valid JSON, no markdown, no extra text:
       finalScore >= 31 ? 'Needs Validation' : 'Concept Phase';
 
     return new Response(
-      JSON.stringify({ ...result, finalScore, delta, band, readyForVCs: finalScore >= 73, phase: 2 }),
+      JSON.stringify({ ...result, finalScore, delta, band, readyForVCs: finalScore >= 73, phase: 2, contentExtracted }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err) {
@@ -624,6 +808,28 @@ async function handleDocumentInsert(request: Request): Promise<Response> {
     const today = new Date();
 
     const startupName = (formData.get('startup_name') as string) || '';
+    const replacingId = (formData.get('replacing_id') as string) || '';
+
+    // ── One-doc-per-category enforcement ─────────────────────────────────────
+    // If replacing_id is supplied → delete the old document first (storage + DB row)
+    if (replacingId) {
+      const { data: oldDoc } = await admin.from('documents').select('file_path').eq('id', replacingId).single();
+      if (oldDoc?.file_path) {
+        await admin.storage.from('pitch-vault').remove([oldDoc.file_path]);
+      }
+      await admin.from('documents').delete().eq('id', replacingId);
+    } else if (startupName) {
+      // Catch-all: delete any existing doc for this startup+deck_type even without explicit id
+      const { data: existingDocs } = await admin.from('documents')
+        .select('id, file_path')
+        .eq('startup_name', startupName)
+        .eq('deck_type', deck_type);
+      if (existingDocs && existingDocs.length > 0) {
+        const paths = existingDocs.map((d: any) => d.file_path).filter(Boolean);
+        if (paths.length) await admin.storage.from('pitch-vault').remove(paths);
+        await admin.from('documents').delete().in('id', existingDocs.map((d: any) => d.id));
+      }
+    }
 
     const newDoc = {
       name,
@@ -631,18 +837,18 @@ async function handleDocumentInsert(request: Request): Promise<Response> {
       status,
       date:  `${months[today.getMonth()]} ${today.getDate()}`,
       views: 0,
-      score: Math.floor(Math.random() * 15) + 72,
+      score: 50, // placeholder — real score set by IncuScore Phase 2 after analysis
       file_url,
       file_path,
       startup_name: startupName,
       deck_type,
     };
 
-   const { data, error } = await admin
-  .from('documents')
-  .upsert(newDoc, { onConflict: 'name' })
-  .select()
-  .single();
+    const { data, error } = await admin
+      .from('documents')
+      .insert(newDoc)
+      .select()
+      .single();
 
     if (error) {
       console.error('[documents] DB insert error:', error);

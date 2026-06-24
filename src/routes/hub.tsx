@@ -11,7 +11,7 @@ import {
   Plus, X, Edit3, Save, Search, ArrowRight, Bell, TrendingUp, DollarSign,
   Award, Clock, Filter, Star, Building2, Activity, Rocket,
   Shield, Lightbulb, Wallet, Upload, CheckCircle, Briefcase,
-  ChevronRight, MoreHorizontal, Globe, Zap, Target, Lock, Eye, EyeOff, Key, UserCheck, AlertTriangle, Telescope, MessageSquare, Pencil, Trash2
+  ChevronRight, MoreHorizontal, Globe, Zap, Target, Lock, Eye, EyeOff, Key, UserCheck, AlertTriangle, Telescope, MessageSquare, Pencil, Trash2, FileText
 } from 'lucide-react';
 
 export const Route = createFileRoute('/hub')({
@@ -852,6 +852,7 @@ function HubPage() {
   const [viewingDoc, setViewingDoc] = useState<VaultDoc | null>(null);
   const [uploadChoiceOpen, setUploadChoiceOpen] = useState(false);
   const [uploadMode, setUploadMode] = useState<'brand' | 'investor'>('brand');
+  const [replaceConfirm, setReplaceConfirm] = useState<{ mode: 'brand' | 'investor'; existingDoc: any } | null>(null);
   const [signInPromptOpen, setSignInPromptOpen] = useState(false);
   const [signInPromptMsg, setSignInPromptMsg] = useState('');
   // ── Startup credential states ─────────────────────────────────────────────
@@ -1002,6 +1003,18 @@ function HubPage() {
       return;
     }
 
+    // Enforce naming convention: must end with _public_vault or _private_vault before the extension
+    const expectedSuffix = uploadMode === 'investor' ? '_private_vault' : '_public_vault';
+    const baseName = file.name.replace(/\.[^.]+$/, '').toLowerCase();
+    if (!baseName.endsWith(expectedSuffix)) {
+      setUploadError(
+        `File name must follow the required naming pattern for this vault category.`
+      );
+      setSelectedFile(null);
+      setDetectedFileType(null);
+      return;
+    }
+
     setSelectedFile(file);
     setDetectedFileType(detected);
     setSelectedDocType(detected);
@@ -1061,6 +1074,10 @@ function HubPage() {
       }
       const latestStartup = startups.find(s => !EXTENDED_STARTUPS.find(es => es.id === s.id));
       if (latestStartup) formData.append('startup_name', latestStartup.name);
+      // When replacing an existing deck, tell server to delete the old one first
+      if (editingDoc && (editingDoc as any).id) {
+        formData.append('replacing_id', String((editingDoc as any).id));
+      }
 
       // POST as multipart — do NOT set Content-Type header (browser adds boundary)
       const response = await fetch('/api/documents', {
@@ -1077,11 +1094,18 @@ function HubPage() {
       const latestUserStartup = startups.find(s => !EXTENDED_STARTUPS.find(es => es.id === s.id));
       // Attach startup_name to local doc object so link survives refresh
       const docWithLink = { ...data, startup_name: latestUserStartup?.name || '', deck_type: uploadMode };
-      setVaultDocs(prev =>
-        editingDoc
-          ? prev.map(doc => doc.name === editingDoc.name ? docWithLink : doc)
-          : [...prev, docWithLink]
-      );
+      setVaultDocs(prev => {
+        if (editingDoc) {
+          // Replace mode: remove the old doc (matched by id or name) and prepend the new one
+          const filtered = prev.filter(doc =>
+            (editingDoc as any).id
+              ? (doc as any).id !== (editingDoc as any).id
+              : doc.name !== editingDoc.name
+          );
+          return [docWithLink, ...filtered];
+        }
+        return [...prev, docWithLink];
+      });
       setUploadError('');
       setUploadOpen(false);
       setEditingDoc(null);
@@ -1104,6 +1128,7 @@ function HubPage() {
           delta: null, startupName: relatedStartup.name,
         });
         try {
+          const fileExt = (selectedFile?.name ?? name).split('.').pop()?.toLowerCase() ?? '';
           const p2res = await fetch('/api/incuscore/phase2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1115,28 +1140,36 @@ function HubPage() {
               documentStatus: statusEl?.value || 'Draft',
               industry: relatedStartup.industry,
               description: relatedStartup.description ?? '',
+              fileUrl: data.file_url ?? null,
+              fileExt,
             }),
           });
           const p2result = await p2res.json();
-          setStartups(prev => prev.map(s =>
-            s.id === relatedStartup.id
-              ? { ...s, metrics: { ...s.metrics, pitchScore: p2result.finalScore } }
-              : s
-          ));
-          setIncuScoreState({
-            phase: 2,
-            loading: false,
-            score: p2result.finalScore,
-            band: p2result.band,
-            remark: p2result.remark,
-            strengths: p2result.documentInsights ?? [],
-            improvements: [],
-            keywords: p2result.keywords ?? [],
-            message: p2result.finalMessage,
-            readyForVCs: p2result.readyForVCs,
-            delta: p2result.delta,
-            startupName: relatedStartup.name,
-          });
+          if (p2result.irrelevantDocument) {
+            // Document is not startup pitch material — don't update score, show warning
+            setIncuScoreState(null);
+            setUploadError(p2result.remark + '\n\n' + (p2result.documentInsights ?? []).join('\n'));
+          } else {
+            setStartups(prev => prev.map(s =>
+              s.id === relatedStartup.id
+                ? { ...s, metrics: { ...s.metrics, pitchScore: p2result.finalScore } }
+                : s
+            ));
+            setIncuScoreState({
+              phase: 2,
+              loading: false,
+              score: p2result.finalScore,
+              band: p2result.band,
+              remark: p2result.remark,
+              strengths: p2result.documentInsights ?? [],
+              improvements: [],
+              keywords: p2result.keywords ?? [],
+              message: p2result.finalMessage,
+              readyForVCs: p2result.readyForVCs,
+              delta: p2result.delta,
+              startupName: relatedStartup.name,
+            });
+          }
         } catch {
           setIncuScoreState(null);
         }
@@ -5493,7 +5526,12 @@ function HubPage() {
 
               {/* Option 1: Brand Deck */}
               <div
-                onClick={() => { setUploadChoiceOpen(false); setUploadMode('brand'); setUploadOpen(true); }}
+                onClick={() => {
+                  const myNames = new Set(userStartups.map(s => s.name));
+                  const existing = vaultDocs.find(d => (d as any).deck_type === 'brand' && myNames.has((d as any).startup_name));
+                  if (existing) { setUploadChoiceOpen(false); setReplaceConfirm({ mode: 'brand', existingDoc: existing }); }
+                  else { setUploadChoiceOpen(false); setUploadMode('brand'); setUploadOpen(true); }
+                }}
                 style={{ border: '1px solid rgba(139,92,246,0.35)', borderRadius: 14, padding: '18px 20px', cursor: 'pointer', background: 'rgba(139,92,246,0.06)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.7)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(139,92,246,0.11)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.35)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(139,92,246,0.06)'; }}>
@@ -5515,7 +5553,12 @@ function HubPage() {
 
               {/* Option 2: Investor Pitch Deck */}
               <div
-                onClick={() => { setUploadChoiceOpen(false); setUploadMode('investor'); setUploadOpen(true); }}
+                onClick={() => {
+                  const myNames = new Set(userStartups.map(s => s.name));
+                  const existing = vaultDocs.find(d => (d as any).deck_type === 'investor' && myNames.has((d as any).startup_name));
+                  if (existing) { setUploadChoiceOpen(false); setReplaceConfirm({ mode: 'investor', existingDoc: existing }); }
+                  else { setUploadChoiceOpen(false); setUploadMode('investor'); setUploadOpen(true); }
+                }}
                 style={{ border: '1px solid rgba(6,182,212,0.3)', borderRadius: 14, padding: '18px 20px', cursor: 'pointer', background: 'rgba(6,182,212,0.05)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(6,182,212,0.65)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(6,182,212,0.1)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(6,182,212,0.3)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(6,182,212,0.05)'; }}>
@@ -5534,6 +5577,58 @@ function HubPage() {
                   <ChevronRight style={{ width: 16, height: 16, color: 'rgba(6,182,212,0.5)', flexShrink: 0, marginTop: 12 }} />
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Replace Confirmation Modal ─────────────────────────────────────── */}
+      {replaceConfirm && (
+        <div onClick={() => setReplaceConfirm(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 440, background: '#0d0d1a', border: `1px solid ${replaceConfirm.mode === 'investor' ? 'rgba(6,182,212,0.3)' : 'rgba(139,92,246,0.3)'}`, borderRadius: 20, padding: '28px 26px', display: 'flex', flexDirection: 'column', gap: 18, boxShadow: '0 0 60px rgba(0,0,0,0.8)' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: replaceConfirm.mode === 'investor' ? 'rgba(6,182,212,0.12)' : 'rgba(139,92,246,0.12)', border: `1px solid ${replaceConfirm.mode === 'investor' ? 'rgba(6,182,212,0.35)' : 'rgba(139,92,246,0.35)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {replaceConfirm.mode === 'investor' ? <Shield style={{ width: 18, height: 18, color: '#67e8f9' }} /> : <BarChart3 style={{ width: 18, height: 18, color: '#c4b5fd' }} />}
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>You already have a {replaceConfirm.mode === 'investor' ? 'Investor Pitch Deck' : 'Brand Deck'}</p>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Each startup is limited to one per category</p>
+              </div>
+            </div>
+
+            {/* Existing doc card */}
+            <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <FileText style={{ width: 16, height: 16, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{replaceConfirm.existingDoc.name}</p>
+                <p style={{ margin: '2px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{replaceConfirm.existingDoc.type} · {replaceConfirm.existingDoc.status} · {replaceConfirm.existingDoc.date}</p>
+              </div>
+              <span style={{ fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 999, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', flexShrink: 0 }}>EXISTING</span>
+            </div>
+
+            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
+              Replacing will <strong style={{ color: 'rgba(255,255,255,0.7)' }}>permanently remove the current document</strong> from your vault and from investor view. Your IncuScore will be recalculated based on the new upload.
+            </p>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setReplaceConfirm(null)}
+                style={{ flex: 1, padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.45)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                Keep Existing
+              </button>
+              <button
+                onClick={() => {
+                  const { mode, existingDoc } = replaceConfirm;
+                  setReplaceConfirm(null);
+                  setUploadMode(mode);
+                  setEditingDoc(existingDoc);
+                  setUploadOpen(true);
+                }}
+                style={{ flex: 2, padding: '11px', borderRadius: 12, background: replaceConfirm.mode === 'investor' ? 'linear-gradient(90deg,rgba(6,182,212,0.25),rgba(6,182,212,0.1))' : 'linear-gradient(90deg,rgba(139,92,246,0.25),rgba(139,92,246,0.1))', border: `1px solid ${replaceConfirm.mode === 'investor' ? 'rgba(6,182,212,0.4)' : 'rgba(139,92,246,0.4)'}`, color: replaceConfirm.mode === 'investor' ? '#67e8f9' : '#c4b5fd', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+                <Upload style={{ width: 13, height: 13 }} />Replace with New Upload
+              </button>
             </div>
           </div>
         </div>
@@ -5625,11 +5720,33 @@ function HubPage() {
                 <input id="vup-file-input" type="file" accept=".pdf,.pptx,.ppt,.xlsx,.xls,.csv,.mp4,.mov,.webm,.zip,.rar,.docx,.doc" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleUploadFile(e.target.files[0]); e.target.value = ''; }} />
 
                 {uploadError && (
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', borderRadius: 10, background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.28)', marginBottom: 14 }}>
-                    <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1 }}>🚫</span>
-                    <div>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: '#f87171', margin: '0 0 4px' }}>Unsupported File Type</p>
-                      <p style={{ fontSize: 10.5, color: 'rgba(248,113,113,0.75)', margin: 0, lineHeight: 1.65, whiteSpace: 'pre-line' }}>{uploadError}</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+                    {/* Error row */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', borderRadius: 10, background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.28)' }}>
+                      <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1 }}>🚫</span>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: '#f87171', margin: '0 0 4px' }}>Unsupported File Type</p>
+                        <p style={{ fontSize: 10.5, color: 'rgba(248,113,113,0.75)', margin: 0, lineHeight: 1.65, whiteSpace: 'pre-line' }}>{uploadError}</p>
+                      </div>
+                    </div>
+                    {/* Naming convention guide */}
+                    <div style={{ padding: '11px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Recommended File Naming</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981', flexShrink: 0 }}>PUBLIC</span>
+                          <code style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)', padding: '2px 7px', borderRadius: 5, fontFamily: 'monospace' }}>
+                            brandname_public_vault.pdf
+                          </code>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.25)', color: '#06b6d4', flexShrink: 0 }}>VC ONLY</span>
+                          <code style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)', padding: '2px 7px', borderRadius: 5, fontFamily: 'monospace' }}>
+                            brandname_private_vault.pptx
+                          </code>
+                        </div>
+                      </div>
+                      <p style={{ margin: '8px 0 0', fontSize: 9.5, color: 'rgba(255,255,255,0.25)', lineHeight: 1.5 }}>Replace <em>brandname</em> with your startup name. Accepted formats: .pdf, .pptx, .ppt, .docx, .doc, .xlsx, .csv, .mp4, .mov, .zip</p>
                     </div>
                   </div>
                 )}
