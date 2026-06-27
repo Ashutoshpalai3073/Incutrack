@@ -147,7 +147,7 @@ function SignUpPage() {
                 <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
               </div>
 
-              <button type="button" onClick={loginWithGoogle} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '11px 20px', borderRadius: 10, background: 'white', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#1a1a2e' }}>
+              <button type="button" onClick={() => loginWithGoogle('signup')} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '11px 20px', borderRadius: 10, background: 'white', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#1a1a2e' }}>
                 <GoogleIcon />
                 Continue with Google
               </button>

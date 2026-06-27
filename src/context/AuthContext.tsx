@@ -15,7 +15,7 @@ interface AuthContextValue {
   refetch: () => Promise<void>;
   login: (email: string) => Promise<void>;
   logout: () => Promise<void>;
-  loginWithGoogle: () => void;
+  loginWithGoogle: (mode?: 'login' | 'signup') => void;
   deleteAccount: () => Promise<void>;
 }
 
@@ -90,9 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('auth_user');
   }, []);
 
-  const loginWithGoogle = useCallback(() => {
+  const loginWithGoogle = useCallback((mode: 'login' | 'signup' = 'login') => {
     sessionStorage.setItem('auth_redirect', window.location.pathname);
-    window.location.href = '/api/auth/google';
+    // mode tells the server whether to create a missing account (signup) or
+    // bounce the user to sign up (login). Keeps Google consistent with OTP.
+    window.location.href = `/api/auth/google?mode=${mode}`;
   }, []);
 
   const deleteAccount = useCallback(async () => {

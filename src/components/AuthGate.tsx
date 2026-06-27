@@ -60,7 +60,7 @@ export function AuthGate() {
         </p>
 
         <button
-          onClick={loginWithGoogle}
+          onClick={() => loginWithGoogle('login')}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
             padding: '11px 20px', borderRadius: 10, background: 'white', border: 'none', cursor: 'pointer',

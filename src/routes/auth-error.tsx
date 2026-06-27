@@ -14,6 +14,7 @@ const MESSAGES: Record<string, string> = {
   userinfo_failed:  'Failed to retrieve your Google profile. Please try again.',
   cancelled:        'Authentication was cancelled. Please try again.',
   db_error:         'A server error occurred while creating your account. Please try again.',
+  no_account:       'No Incutrack account is linked to this Google email. If you deleted your account, you’ll need to sign up again to create a fresh one.',
 };
 
 function AuthErrorPage() {
@@ -41,10 +42,10 @@ function AuthErrorPage() {
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button
-              onClick={() => navigate({ to: '/login' })}
+              onClick={() => navigate({ to: reason === 'no_account' ? '/signup' : '/login' })}
               style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', border: 'none', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
             >
-              Log In
+              {reason === 'no_account' ? 'Sign Up' : 'Log In'}
             </button>
             <button
               onClick={() => navigate({ to: '/' })}

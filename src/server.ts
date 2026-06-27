@@ -637,6 +637,17 @@ async function handleStartupInsert(request: Request): Promise<Response> {
       created_by_email?: string; owner_email?: string; owner_password?: string;
       __dryRun?: boolean;
     };
+    // ── Identity ───────────────────────────────────────────────────────────
+    // Must be logged in. Ownership is taken from the VERIFIED token, never from
+    // the client body — so nobody can register/edit a startup as someone else.
+    const authed = await getAuthedUser(request);
+    if (!authed) return jsonRes({ error: 'Not authenticated.' }, 401);
+    const { data: existingStartup } = await admin
+      .from('startups').select('id, created_by_email, owner_email').eq('id', body.id).maybeSingle();
+    // Editing an existing startup requires being its owner (or admin).
+    if (existingStartup && !(await canManageStartup(admin, body.id, authed))) {
+      return jsonRes({ error: 'You can only modify your own startup.' }, 403);
+    }
     // ── Duplicate password guard ──────────────────────────────────────────
     // Each startup must have a unique password. If the submitted password
     // matches ANY existing startup's hash, reject it immediately.
@@ -671,20 +682,19 @@ async function handleStartupInsert(request: Request): Promise<Response> {
         industry: body.industry, stage: body.stage,
         funding_goal: body.fundingGoal, raised: body.raised,
         pitch_score: body.pitchScore, members: body.members,
-        created_by_email: body.created_by_email ?? null,
-        owner_email: body.owner_email ?? body.created_by_email ?? null,
+        // Creator is fixed to whoever first made it; owner defaults to the
+        // verified caller. Both come from the token, not the request body.
+        created_by_email: existingStartup?.created_by_email ?? authed.email,
+        owner_email: body.owner_email ?? existingStartup?.owner_email ?? authed.email,
         owner_password_hash: passwordHash,
       }, { onConflict: 'id' })
       .select().single();
     if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-    // Promote user to 'founder' role when they register their first startup
-    if (body.created_by_email) {
-      // Never touch the permanent admin's role
-      if (body.created_by_email.toLowerCase() !== PERMANENT_ADMIN_EMAIL) {
-        const { data: currentUser } = await admin.from('users').select('role').eq('email', body.created_by_email).maybeSingle();
-        if (currentUser && currentUser.role === 'visitor') {
-          await admin.from('users').update({ role: 'founder' }).eq('email', body.created_by_email);
-        }
+    // Promote the verified caller to 'founder' when they register a new startup
+    if (!existingStartup && authed.email !== PERMANENT_ADMIN_EMAIL) {
+      const { data: currentUser } = await admin.from('users').select('role').eq('email', authed.email).maybeSingle();
+      if (currentUser && currentUser.role === 'visitor') {
+        await admin.from('users').update({ role: 'founder' }).eq('email', authed.email);
       }
     }
     return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -700,6 +710,10 @@ async function handleStartupDelete(request: Request): Promise<Response> {
   const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
     const { id, startupName } = await request.json() as { id: string; startupName: string };
+    // Identity + ownership: only the verified owner (or admin) may delete a startup.
+    const authed = await getAuthedUser(request);
+    if (!authed) return jsonRes({ error: 'Not authenticated.' }, 401);
+    if (!(await canManageStartup(admin, id, authed))) return jsonRes({ error: 'You can only delete your own startup.' }, 403);
     // Delete linked documents first using startup_name
     if (startupName) {
       await admin.from('documents').delete().eq('startup_name', startupName);
@@ -721,6 +735,10 @@ async function handleStartupUpdate(request: Request): Promise<Response> {
   try {
     const body = await request.json() as { id: string; [key: string]: unknown };
     const { id, ...fields } = body;
+    // Identity + ownership: only the verified owner (or admin) may edit a startup.
+    const authed = await getAuthedUser(request);
+    if (!authed) return jsonRes({ error: 'Not authenticated.' }, 401);
+    if (!(await canManageStartup(admin, id, authed))) return jsonRes({ error: 'You can only modify your own startup.' }, 403);
     const mapped: Record<string, unknown> = {};
     if (fields.stage !== undefined) mapped.stage = fields.stage;
     if (fields.raised !== undefined) mapped.raised = fields.raised;
@@ -1044,13 +1062,8 @@ async function handleEventsPending(request: Request): Promise<Response> {
   const { createClient } = await import('@supabase/supabase-js');
   const db = createClient(supabaseUrl, supabaseKey);
   // Guard: must be admin
-  const cookieHeader = request.headers.get('cookie') ?? '';
-  const tokenMatch = cookieHeader.match(/jwt=([^;]+)/);
-  if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
-  try {
-    const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
-    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
-  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   const { data, error } = await db.from('events').select('*').eq('status', 'pending').order('created_at', { ascending: false });
   if (error) return jsonRes({ error: error.message }, 500);
   return jsonRes(data ?? []);
@@ -1063,13 +1076,8 @@ async function handleEventsReview(request: Request): Promise<Response> {
   const { createClient } = await import('@supabase/supabase-js');
   const db = createClient(supabaseUrl, supabaseKey);
   // Guard: must be admin
-  const cookieHeader = request.headers.get('cookie') ?? '';
-  const tokenMatch = cookieHeader.match(/jwt=([^;]+)/);
-  if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
-  try {
-    const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
-    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
-  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   const { id, action } = await request.json() as { id: string; action: 'approve' | 'reject' };
   if (!id || !['approve', 'reject'].includes(action)) return jsonRes({ error: 'Invalid request.' }, 400);
   const { error } = await db.from('events').update({ status: action === 'approve' ? 'approved' : 'rejected' }).eq('id', id);
@@ -1143,13 +1151,8 @@ async function handleAdvancePending(request: Request): Promise<Response> {
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
   const { createClient } = await import('@supabase/supabase-js');
   const db = createClient(supabaseUrl, supabaseKey);
-  const cookieHeader = request.headers.get('cookie') ?? '';
-  const tokenMatch = cookieHeader.match(/jwt=([^;]+)/);
-  if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
-  try {
-    const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
-    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
-  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   const { data, error } = await db.from('startup_advance_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
   if (error) return jsonRes({ error: error.message }, 500);
   return jsonRes(data ?? []);
@@ -1161,13 +1164,8 @@ async function handleAdvanceReview(request: Request): Promise<Response> {
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
   const { createClient } = await import('@supabase/supabase-js');
   const db = createClient(supabaseUrl, supabaseKey);
-  const cookieHeader = request.headers.get('cookie') ?? '';
-  const tokenMatch = cookieHeader.match(/jwt=([^;]+)/);
-  if (!tokenMatch) return jsonRes({ error: 'Unauthorized.' }, 401);
-  try {
-    const payload = JSON.parse(atob(tokenMatch[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
-    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
-  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   const { id, action, startup_id, target_stage } = await request.json() as { id: string; action: 'approve' | 'reject'; startup_id?: string; target_stage?: string };
   if (!id || !['approve', 'reject'].includes(action)) return jsonRes({ error: 'Invalid request.' }, 400);
   await db.from('startup_advance_requests').update({ status: action === 'approve' ? 'approved' : 'rejected' }).eq('id', id);
@@ -1501,11 +1499,14 @@ async function handleGoogleInit(request: Request, env: Env): Promise<Response> {
     });
 
     const cookieOpts = 'HttpOnly; SameSite=Lax; Path=/; Max-Age=600';
+    // login = only sign in an existing account; signup = create one if missing.
+    const mode = new URL(request.url).searchParams.get('mode') === 'signup' ? 'signup' : 'login';
     const headers = new Headers({
       Location: `https://accounts.google.com/o/oauth2/v2/auth?${params}`,
     });
     headers.append('Set-Cookie', `oauth_state=${state}; ${cookieOpts}`);
     headers.append('Set-Cookie', `oauth_code_verifier=${codeVerifier}; ${cookieOpts}`);
+    headers.append('Set-Cookie', `oauth_mode=${mode}; ${cookieOpts}`);
     return new Response(null, { status: 302, headers });
   } catch (err) {
     console.error('[google-init] unexpected error:', err);
@@ -1536,10 +1537,12 @@ async function handleGoogleCallback(request: Request, env: Env): Promise<Respons
   const cookies      = parseCookies(request);
   const savedState   = cookies['oauth_state'];
   const codeVerifier = cookies['oauth_code_verifier'];
+  const mode         = cookies['oauth_mode'] === 'signup' ? 'signup' : 'login';
 
   const clearCookies = [
     'oauth_state=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0',
     'oauth_code_verifier=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0',
+    'oauth_mode=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0',
   ];
 
   if (!savedState || savedState !== stateParam || !codeVerifier) return redirect('invalid_state');
@@ -1603,6 +1606,15 @@ async function handleGoogleCallback(request: Request, env: Env): Promise<Respons
     if (byGoogleId) {
       user = byGoogleId;
     } else {
+      // No account exists for this Google email. In LOGIN mode we must NOT
+      // silently create one (this is the path a deleted user would hit) — bounce
+      // them to sign up instead, mirroring the OTP "User not found" behaviour.
+      // Only SIGNUP mode is allowed to create a fresh account.
+      if (mode === 'login') {
+        const h = new Headers({ Location: `${frontendUrl}/auth-error?reason=no_account` });
+        clearCookies.forEach(c => h.append('Set-Cookie', c));
+        return new Response(null, { status: 302, headers: h });
+      }
       // Try inserting with role column first; fall back without it if migration 003 not yet run
       let insertResult = await admin.from('users')
         .insert({ email: googleUser.email, name: googleUser.name, google_id: googleUser.sub, avatar_url: googleUser.picture || null, auth_method: 'google', role: resolveRole(googleUser.email, 'visitor') })
@@ -1654,19 +1666,47 @@ function getVCAdmin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
-function extractVCEmail(request: Request): string | null {
-  const cookie = request.headers.get('cookie') ?? '';
-  const m = cookie.match(/jwt=([^;]+)/);
-  if (!m) return null;
-  try {
-    const payload = JSON.parse(atob(m[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
-    return payload.email ?? null;
-  } catch { return null; }
+// ─── Verified identity — the ONLY trustworthy way to know who is calling ───────
+// Reads the jwt cookie and cryptographically verifies its HMAC signature with
+// JWT_SECRET. Anything that decodes the token WITHOUT this is forgeable, so every
+// protected endpoint must go through getAuthedUser / extractVCEmail / requireAdmin.
+async function getAuthedUser(request: Request): Promise<{ email: string; role: string } | null> {
+  const secret = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET || 'dev-secret-change-in-production';
+  const cookies = parseCookies(request);
+  const token = cookies['jwt'];
+  if (!token) return null;
+  const payload = await verifyJWT(token, secret);          // ← signature checked here
+  if (!payload?.email) return null;
+  const email = String(payload.email).toLowerCase();
+  return { email, role: resolveRole(email, payload.role as string | undefined) };
+}
+
+async function extractVCEmail(request: Request): Promise<string | null> {
+  const u = await getAuthedUser(request);
+  return u?.email ?? null;
+}
+
+// Admin guard — returns an error Response if the caller is not a verified admin,
+// or null if they are. Usage: `const g = await requireAdmin(request); if (g) return g;`
+async function requireAdmin(request: Request): Promise<Response | null> {
+  const u = await getAuthedUser(request);
+  if (!u) return jsonRes({ error: 'Unauthorized.' }, 401);
+  if (u.role !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
+  return null;
+}
+
+// Ownership check — true if the verified caller created/owns the startup, or is admin.
+async function canManageStartup(admin: ReturnType<typeof createClient>, startupId: string, authed: { email: string; role: string }): Promise<boolean> {
+  if (authed.role === 'admin') return true;
+  const { data } = await admin.from('startups').select('created_by_email, owner_email').eq('id', startupId).maybeSingle();
+  if (!data) return false;
+  const owners = [data.created_by_email, data.owner_email].filter(Boolean).map((x: string) => x.toLowerCase());
+  return owners.includes(authed.email.toLowerCase());
 }
 
 // ─── VC: Save/Update mandate ──────────────────────────────────────────────────
 async function handleVCMandate(request: Request): Promise<Response> {
-  const email = extractVCEmail(request);
+  const email = await extractVCEmail(request);
   if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
   const db = getVCAdmin();
   try {
@@ -1710,7 +1750,7 @@ async function handleVCMandate(request: Request): Promise<Response> {
 
 // ─── VC: Get my mandate ───────────────────────────────────────────────────────
 async function handleVCGetMandate(request: Request): Promise<Response> {
-  const email = extractVCEmail(request);
+  const email = await extractVCEmail(request);
   if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
   const db = getVCAdmin();
   const { data } = await db.from('vc_profiles')
@@ -1732,7 +1772,7 @@ async function handleVCList(_request: Request): Promise<Response> {
 
 // ─── VC: Confirm password ─────────────────────────────────────────────────────
 async function handleVCConfirmPassword(request: Request): Promise<Response> {
-  const email = extractVCEmail(request);
+  const email = await extractVCEmail(request);
   if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
   const db = getVCAdmin();
   try {
@@ -1748,7 +1788,7 @@ async function handleVCConfirmPassword(request: Request): Promise<Response> {
 
 // ─── VC: Submit deal interest ─────────────────────────────────────────────────
 async function handleVCDealInterest(request: Request): Promise<Response> {
-  const email = extractVCEmail(request);
+  const email = await extractVCEmail(request);
   if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
   const db = getVCAdmin();
   try {
@@ -1768,7 +1808,7 @@ async function handleVCDealInterest(request: Request): Promise<Response> {
 
 // ─── VC: Request diligence doc access ────────────────────────────────────────
 async function handleVCDiligenceRequest(request: Request): Promise<Response> {
-  const email = extractVCEmail(request);
+  const email = await extractVCEmail(request);
   if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
   const db = getVCAdmin();
   try {
@@ -1789,7 +1829,7 @@ async function handleVCDiligenceRequest(request: Request): Promise<Response> {
 
 // ─── VC: Shortlist / revoke a startup → notify admin ─────────────────────────
 async function handleVCShortlist(request: Request): Promise<Response> {
-  const email = extractVCEmail(request);
+  const email = await extractVCEmail(request);
   if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
   const db = getVCAdmin();
   try {
@@ -1816,7 +1856,7 @@ async function handleVCShortlist(request: Request): Promise<Response> {
 
 // ─── VC: Diligence audit log — record a live action ──────────────────────────
 async function handleVCAuditLog(request: Request): Promise<Response> {
-  const email = extractVCEmail(request);
+  const email = await extractVCEmail(request);
   if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
   const db = getVCAdmin();
   try {
@@ -1838,7 +1878,7 @@ async function handleVCAuditLog(request: Request): Promise<Response> {
 
 // ─── VC: Diligence audit log — list recent events for the signed-in fund ──────
 async function handleVCAuditList(request: Request): Promise<Response> {
-  const email = extractVCEmail(request);
+  const email = await extractVCEmail(request);
   if (!email) return jsonRes({ error: 'Not authenticated.' }, 401);
   const db = getVCAdmin();
   const { data, error } = await db.from('diligence_audit')
@@ -1852,13 +1892,8 @@ async function handleVCAuditList(request: Request): Promise<Response> {
 
 // ─── VC: Admin — get all pending VC activity ─────────────────────────────────
 async function handleVCAdminPending(request: Request): Promise<Response> {
-  const cookie = request.headers.get('cookie') ?? '';
-  const m = cookie.match(/jwt=([^;]+)/);
-  if (!m) return jsonRes({ error: 'Unauthorized.' }, 401);
-  try {
-    const payload = JSON.parse(atob(m[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
-    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
-  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   const db = getVCAdmin();
   const [profiles, interests, diligence, shortlists] = await Promise.all([
     db.from('vc_profiles').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
@@ -1871,13 +1906,8 @@ async function handleVCAdminPending(request: Request): Promise<Response> {
 
 // ─── VC: Admin — review (approve/reject) ─────────────────────────────────────
 async function handleVCAdminReview(request: Request): Promise<Response> {
-  const cookie = request.headers.get('cookie') ?? '';
-  const m = cookie.match(/jwt=([^;]+)/);
-  if (!m) return jsonRes({ error: 'Unauthorized.' }, 401);
-  try {
-    const payload = JSON.parse(atob(m[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { email?: string };
-    if (resolveRole(payload.email ?? '') !== 'admin') return jsonRes({ error: 'Admin only.' }, 403);
-  } catch { return jsonRes({ error: 'Invalid session.' }, 401); }
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   const db = getVCAdmin();
   const { table, id, action } = await request.json() as { table: string; id: string; action: 'approve' | 'reject' };
   if (!['vc_profiles', 'deal_interests', 'diligence_requests'].includes(table)) return jsonRes({ error: 'Invalid table.' }, 400);
@@ -1914,7 +1944,7 @@ async function handleContactSubmit(request: Request): Promise<Response> {
 
 // ─── Contact: admin list ──────────────────────────────────────────────────────
 async function handleContactAdminList(request: Request): Promise<Response> {
-  const email = extractVCEmail(request);
+  const email = await extractVCEmail(request);
   if (email !== 'ashutoshforcorporate@gmail.com') return jsonRes({ error: 'Forbidden.' }, 403);
 
   const db = getVCAdmin();
@@ -1928,7 +1958,7 @@ async function handleContactAdminList(request: Request): Promise<Response> {
 
 // ─── Contact: admin mark read ─────────────────────────────────────────────────
 async function handleContactMarkRead(request: Request): Promise<Response> {
-  const email = extractVCEmail(request);
+  const email = await extractVCEmail(request);
   if (email !== 'ashutoshforcorporate@gmail.com') return jsonRes({ error: 'Forbidden.' }, 403);
 
   const { id, read } = await request.json() as { id?: string; read?: boolean };
