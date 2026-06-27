@@ -604,6 +604,18 @@ async function handleDocumentDelete(request: Request): Promise<Response> {
     if (!name) {
       return new Response(JSON.stringify({ error: 'Document name required.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
+    // Identity + ownership: only the owning founder (or admin) may delete a doc.
+    const authed = await getAuthedUser(request);
+    if (!authed) return jsonRes({ error: 'Not authenticated.' }, 401);
+    if (authed.role !== 'admin') {
+      const { data: doc } = await admin.from('documents').select('startup_name').eq('name', name).maybeSingle();
+      let owners: string[] = [];
+      if (doc?.startup_name) {
+        const { data: st } = await admin.from('startups').select('created_by_email, owner_email').eq('name', doc.startup_name).maybeSingle();
+        if (st) owners = [st.created_by_email, st.owner_email].filter(Boolean).map((x: string) => x.toLowerCase());
+      }
+      if (!owners.includes(authed.email.toLowerCase())) return jsonRes({ error: 'You can only delete documents for your own startup.' }, 403);
+    }
     // Delete file from storage if it exists
     if (file_path) {
       await admin.storage.from('pitch-vault').remove([file_path]);
@@ -799,6 +811,17 @@ async function handleDocumentInsert(request: Request): Promise<Response> {
         JSON.stringify({ error: 'Document name is required.' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Identity + ownership BEFORE any storage write, so a rejected upload can't
+    // leave an orphaned file. Uploads must target a startup you own (or admin).
+    const authed = await getAuthedUser(request);
+    if (!authed) return jsonRes({ error: 'Not authenticated.' }, 401);
+    const ownerStartupName = (formData.get('startup_name') as string) || '';
+    if (authed.role !== 'admin' && ownerStartupName) {
+      const { data: st } = await admin.from('startups').select('created_by_email, owner_email').eq('name', ownerStartupName).maybeSingle();
+      const owners = st ? [st.created_by_email, st.owner_email].filter(Boolean).map((x: string) => x.toLowerCase()) : [];
+      if (!owners.includes(authed.email.toLowerCase())) return jsonRes({ error: 'You can only upload documents for your own startup.' }, 403);
     }
 
     let file_url = '', file_path = '';
@@ -1003,6 +1026,11 @@ async function handleStartupAuthSet(request: Request): Promise<Response> {
     const body = await request.json() as { startup_id: string; owner_email: string; password: string };
     if (!body.startup_id || !body.owner_email || !body.password) return jsonRes({ error: 'Missing fields.' }, 400);
     if (body.password.length < 6) return jsonRes({ error: 'Password too short.' }, 400);
+    // Only the verified owner (or admin) may (re)set a startup's ownership creds —
+    // otherwise anyone could claim ownership of any startup.
+    const authed = await getAuthedUser(request);
+    if (!authed) return jsonRes({ error: 'Not authenticated.' }, 401);
+    if (!(await canManageStartup(admin, body.startup_id, authed))) return jsonRes({ error: 'You can only set credentials for your own startup.' }, 403);
     const hash = await hashPassword(body.password);
     const { error } = await admin.from('startups').update({ owner_email: body.owner_email, owner_password_hash: hash }).eq('id', body.startup_id);
     if (error) return jsonRes({ error: error.message }, 500);
@@ -1696,7 +1724,7 @@ async function requireAdmin(request: Request): Promise<Response | null> {
 }
 
 // Ownership check — true if the verified caller created/owns the startup, or is admin.
-async function canManageStartup(admin: ReturnType<typeof createClient>, startupId: string, authed: { email: string; role: string }): Promise<boolean> {
+async function canManageStartup(admin: any, startupId: string, authed: { email: string; role: string }): Promise<boolean> {
   if (authed.role === 'admin') return true;
   const { data } = await admin.from('startups').select('created_by_email, owner_email').eq('id', startupId).maybeSingle();
   if (!data) return false;
