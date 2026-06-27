@@ -1697,9 +1697,15 @@ async function handleVCMandate(request: Request): Promise<Response> {
 
     const { error } = await db.from('vc_profiles')
       .upsert(payload, { onConflict: 'email' });
-    if (error) return jsonRes({ error: error.message }, 500);
+    if (error) {
+      console.error('[vc/mandate] upsert error:', error.message);
+      return jsonRes({ error: error.message }, 500);
+    }
     return jsonRes({ ok: true });
-  } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+  } catch (e) {
+    console.error('[vc/mandate] unexpected error:', e);
+    return jsonRes({ error: e instanceof Error ? e.message : 'Server error.' }, 500);
+  }
 }
 
 // ─── VC: Get my mandate ───────────────────────────────────────────────────────

@@ -818,13 +818,20 @@ function ScoutPage() {
 
     // Gate check — user must have a registered VC mandate to use elite investor actions
     const [hasMandate, setHasMandate] = useState(false);
-    useEffect(() => {
-        if (!user?.email) return;
-        fetch('/api/vc/mandate', { credentials: 'include' })
-            .then(r => r.ok ? r.json() : null)
-            .then(d => { if (d?.firm_name) setHasMandate(true); })
-            .catch(() => {});
-    }, [user?.email]);
+    const [myProfile, setMyProfile] = useState<any>(null);
+    // Loads the signed-in user's own registered mandate. The server wraps the
+    // row in { profile }, so we must read d.profile (not d) to detect it.
+    const loadMyMandate = async () => {
+        if (!user?.email) { setHasMandate(false); setMyProfile(null); return; }
+        try {
+            const r = await fetch('/api/vc/mandate', { credentials: 'include' });
+            if (!r.ok) return;
+            const d = await r.json() as { profile?: any };
+            if (d?.profile?.firm_name) { setHasMandate(true); setMyProfile(d.profile); }
+            else { setHasMandate(false); setMyProfile(null); }
+        } catch { /* keep prior state */ }
+    };
+    useEffect(() => { loadMyMandate(); }, [user?.email]);
     const requireMandate = (fn: () => void) => { if (hasMandate) { fn(); } else { setMandateGate(true); } };
 
     // Load startups uploaded in the Explore Hub so they appear in the Scout selector / diligence room
@@ -1139,15 +1146,54 @@ function ScoutPage() {
                         </div>
                     ))}
 
-                    {/* VC Profile card */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, padding: '10px 11px', borderRadius: 13, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', cursor: 'pointer' }}>
-                        <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg,#7c3aed,#0ea5e9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0, boxShadow: '0 4px 12px rgba(124,58,237,.4)' }}>{VC_PROFILE.avatar}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontSize: 12, fontWeight: 600, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{VC_PROFILE.name}</p>
-                            <p style={{ fontSize: 10, color: 'rgba(255,255,255,.38)', margin: 0 }}>{VC_PROFILE.firm}</p>
-                        </div>
-                        <button onClick={() => setRegisterOpen(true)} style={{ background: 'rgba(139,92,246,.18)', border: '1px solid rgba(139,92,246,.3)', borderRadius: 7, padding: '4px 8px', cursor: 'pointer', color: '#a78bfa', fontSize: 10, fontWeight: 700 }}>Edit</button>
-                    </div>
+                    {/* VC Profile card — shows the signed-in user's registered mandate when present */}
+                    {(() => {
+                        const pname = myProfile?.partner_name || VC_PROFILE.name;
+                        const pfirm = myProfile?.firm_name || VC_PROFILE.firm;
+                        // Avatar carries the FIRM/brand initials (e.g. "Bade bhai" → BB)
+                        const pavatar = (myProfile ? (myProfile.firm_name || myProfile.partner_name || '?') : VC_PROFILE.firm)
+                            .split(' ').map((w: string) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+                        const statusMeta: Record<string, { label: string; color: string }> = {
+                            approved: { label: 'Verified', color: '#34d399' },
+                            pending: { label: 'Pending', color: '#f59e0b' },
+                            rejected: { label: 'Rejected', color: '#f87171' },
+                        };
+                        const sm = myProfile?.status ? statusMeta[myProfile.status as string] : null;
+                        const openEdit = () => {
+                            setMandate(myProfile ? {
+                                firm_name: myProfile.firm_name ?? '',
+                                partner_name: myProfile.partner_name ?? '',
+                                investment_thesis: myProfile.investment_thesis ?? '',
+                                sectors: myProfile.sectors ?? '',
+                                stage_pref: myProfile.stage_pref ?? '',
+                                check_min: myProfile.check_min != null ? String(myProfile.check_min) : '',
+                                check_max: myProfile.check_max != null ? String(myProfile.check_max) : '',
+                            } : {});
+                            setMandateErr({});
+                            setRegisterOpen(true);
+                        };
+                        return (
+                            <div onClick={openEdit} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, padding: '10px 11px', borderRadius: 13, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', cursor: 'pointer' }}>
+                                {/* Brand avatar with status badge anchored to its corner */}
+                                <div style={{ position: 'relative', flexShrink: 0 }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#7c3aed,#0ea5e9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, letterSpacing: '.02em', color: 'white', boxShadow: '0 4px 12px rgba(124,58,237,.4)' }}>{pavatar}</div>
+                                    {sm && (
+                                        <span title={sm.label} style={{ position: 'absolute', right: -3, bottom: -3, width: 15, height: 15, borderRadius: '50%', background: sm.color, border: '2px solid #07070f', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 8px ${sm.color}90` }}>
+                                            {myProfile?.status === 'approved'
+                                                ? <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#07070f" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                                : <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#07070f' }} />}
+                                        </span>
+                                    )}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    {/* Brand name = primary; partner = secondary */}
+                                    <p style={{ fontSize: 12.5, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-.01em' }}>{pfirm}</p>
+                                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,.42)', margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pname}</p>
+                                </div>
+                                <button onClick={e => { e.stopPropagation(); openEdit(); }} style={{ background: 'rgba(139,92,246,.18)', border: '1px solid rgba(139,92,246,.3)', borderRadius: 7, padding: '4px 8px', cursor: 'pointer', color: '#a78bfa', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{myProfile ? 'Edit' : 'Register'}</button>
+                            </div>
+                        );
+                    })()}
                 </div>
             </aside>
 
@@ -3975,16 +4021,16 @@ function ScoutPage() {
             {/* ══ MODAL: VC Registration ══ */}
             {
                 registerOpen && (
-                    <div onClick={() => setRegisterOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
-                        <div onClick={e => e.stopPropagation()} className="notif-scroll hub-modal-wrap" style={{ background: '#07070f', border: '1px solid rgba(139,92,246,.22)', borderTop: '2px solid rgba(139,92,246,.6)', borderRadius: 22, width: '100%', maxWidth: 480, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
+                    <div onMouseDown={e => { if (e.target === e.currentTarget) setRegisterOpen(false); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+                        <div onMouseDown={e => e.stopPropagation()} className="notif-scroll hub-modal-wrap" style={{ background: '#07070f', border: '1px solid rgba(139,92,246,.22)', borderTop: '2px solid rgba(139,92,246,.6)', borderRadius: 22, width: '100%', maxWidth: 480, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 32px 90px rgba(0,0,0,.85)' }}>
                             <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(255,255,255,.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: '#07070f', zIndex: 2 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     <div style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(139,92,246,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 14px rgba(139,92,246,.5)' }}>
                                         <Telescope style={{ width: 13, height: 13, color: '#a78bfa' }} />
                                     </div>
                                     <div>
-                                        <p style={{ fontSize: 14, fontWeight: 700, color: 'white', margin: 0 }}>Register Your Fund</p>
-                                        <p style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', margin: '1px 0 0' }}>Set up your investor profile &amp; mandate password</p>
+                                        <p style={{ fontSize: 14, fontWeight: 700, color: 'white', margin: 0 }}>{myProfile ? 'Edit Your Fund' : 'Register Your Fund'}</p>
+                                        <p style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', margin: '1px 0 0' }}>{myProfile ? 'Update your investor profile & mandate' : 'Set up your investor profile & mandate password'}</p>
                                     </div>
                                 </div>
                                 <button onClick={() => setRegisterOpen(false)} aria-label="Close" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,.5)', padding: 6, display: 'flex' }}><X style={{ width: 14, height: 14 }} /></button>
@@ -4025,11 +4071,11 @@ function ScoutPage() {
                                 {/* Password */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                                     <div>
-                                        <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>Mandate Password *</label>
-                                        <input type="password" value={mandate.password ?? ''} onChange={e => setMandate(p => ({ ...p, password: e.target.value }))} placeholder="6+ characters" style={{ width: '100%', padding: '10px 13px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: `1px solid ${mandateErr.password ? '#f87171' : 'rgba(255,255,255,.1)'}`, color: 'white', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+                                        <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>{myProfile ? 'Mandate Password' : 'Mandate Password *'}</label>
+                                        <input type="password" value={mandate.password ?? ''} onChange={e => setMandate(p => ({ ...p, password: e.target.value }))} placeholder={myProfile ? 'Leave blank to keep current' : '6+ characters'} style={{ width: '100%', padding: '10px 13px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: `1px solid ${mandateErr.password ? '#f87171' : 'rgba(255,255,255,.1)'}`, color: 'white', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
                                     </div>
                                     <div>
-                                        <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>Confirm Password *</label>
+                                        <label style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', textTransform: 'uppercase', letterSpacing: '.09em', display: 'block', marginBottom: 6 }}>{myProfile ? 'Confirm Password' : 'Confirm Password *'}</label>
                                         <input type="password" value={mandate.password2 ?? ''} onChange={e => setMandate(p => ({ ...p, password2: e.target.value }))} placeholder="Repeat password" style={{ width: '100%', padding: '10px 13px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: `1px solid ${mandateErr.password2 ? '#f87171' : 'rgba(255,255,255,.1)'}`, color: 'white', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
                                     </div>
                                 </div>
@@ -4038,15 +4084,22 @@ function ScoutPage() {
                                         <span style={{ fontSize: 11, color: '#f87171', fontWeight: 600 }}>{mandateErr.firm_name || mandateErr.partner_name || mandateErr.password || mandateErr.password2 || mandateErr.submit}</span>
                                     </div>
                                 )}
-                                <p style={{ fontSize: 10, color: 'rgba(255,255,255,.28)', margin: 0, lineHeight: 1.5 }}>Your profile is submitted for verification. Once the Incutrack team approves it, your fund goes live in the public <strong style={{ color: 'rgba(255,255,255,.55)' }}>Investor Network</strong>.</p>
+                                <p style={{ fontSize: 10, color: 'rgba(255,255,255,.28)', margin: 0, lineHeight: 1.5 }}>{myProfile?.status === 'approved'
+                                    ? <>Your fund is live in the public <strong style={{ color: 'rgba(255,255,255,.55)' }}>Investor Network</strong>. Saving keeps it published with your latest details.</>
+                                    : <>Your profile is submitted for verification. Once the Incutrack team approves it, your fund goes live in the public <strong style={{ color: 'rgba(255,255,255,.55)' }}>Investor Network</strong>.</>}</p>
                                 <button
                                     disabled={mandateSubmitting}
                                     onClick={async () => {
                                         const errs: Record<string, string> = {};
+                                        const editing = !!myProfile;
+                                        const pw = mandate.password || '';
                                         if (!(mandate.firm_name || '').trim()) errs.firm_name = 'Firm name is required';
                                         else if (!(mandate.partner_name || '').trim()) errs.partner_name = 'Partner name is required';
-                                        else if ((mandate.password || '').length < 6) errs.password = 'Password must be at least 6 characters';
-                                        else if (mandate.password !== mandate.password2) errs.password2 = 'Passwords do not match';
+                                        // Fresh registration needs a password. When editing, a blank password
+                                        // means "keep current" — only validate a newly typed one.
+                                        else if (!editing && pw.length < 6) errs.password = 'Password must be at least 6 characters';
+                                        else if (editing && pw.length > 0 && pw.length < 6) errs.password = 'Password must be at least 6 characters';
+                                        else if (pw.length > 0 && pw !== (mandate.password2 || '')) errs.password2 = 'Passwords do not match';
                                         setMandateErr(errs);
                                         if (Object.keys(errs).length > 0) return;
                                         setMandateSubmitting(true);
@@ -4059,7 +4112,7 @@ function ScoutPage() {
                                                     sectors: mandate.sectors || null, stage_pref: mandate.stage_pref || null,
                                                     check_min: mandate.check_min ? Number(mandate.check_min) : null,
                                                     check_max: mandate.check_max ? Number(mandate.check_max) : null,
-                                                    password: mandate.password,
+                                                    password: pw || undefined,
                                                 }),
                                             });
                                             const data = await res.json().catch(() => ({} as any));
@@ -4069,12 +4122,13 @@ function ScoutPage() {
                                         const firm = mandate.firm_name;
                                         setRegisterOpen(false); setMandate({}); setMandateErr({});
                                         setHasMandate(true);
-                                        showToast(`Mandate submitted — ${firm} is pending verification`, '#a78bfa');
+                                        showToast(editing ? `Mandate updated — ${firm} saved` : `Mandate submitted — ${firm} is pending verification`, '#a78bfa');
+                                        loadMyMandate();
                                         loadVCs();
                                     }}
                                     className="sc-btn"
                                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 13, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: mandateSubmitting ? 'wait' : 'pointer', fontSize: 13, fontWeight: 700, boxShadow: '0 6px 24px rgba(124,58,237,.45)', marginTop: 2 }}>
-                                    <Telescope style={{ width: 14, height: 14 }} />{mandateSubmitting ? 'Submitting…' : 'Register My Fund →'}
+                                    <Telescope style={{ width: 14, height: 14 }} />{mandateSubmitting ? 'Submitting…' : (myProfile ? 'Save Changes →' : 'Register My Fund →')}
                                 </button>
                             </div>
                         </div>
