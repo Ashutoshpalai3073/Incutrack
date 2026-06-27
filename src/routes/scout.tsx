@@ -1692,7 +1692,7 @@ function ScoutPage() {
                             </div>
 
                             {/* Kanban columns */}
-                            <div className="hub-pipeline-kanban" style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+                            <div className="scout-dealflow-board" style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
                                 {STAGE_ORDER.map(stage => {
                                     const sc = STAGE_COLORS[stage];
                                     const stageCards = filteredDeals.filter(s => s.stage === stage);
@@ -1833,7 +1833,7 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── KPI strip ── */}
-                                <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
+                                <div className="sc-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                                     {[
                                         { label: 'Corporate Decks', val: diligenceDocs.filter(d => d.corporate).length, sub: 'Investor pitch decks', color: '#8b5cf6', Icon: FolderKey },
                                         { label: 'Viewed', val: diligenceDocs.filter(d => d.viewed || viewedDocs.includes(d.id)).length, sub: 'Documents opened', color: '#10b981', Icon: Eye },
@@ -1857,7 +1857,7 @@ function ScoutPage() {
 
                                 {/* ── Startup selector ── */}
                                 <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
+                                    <div className="sc-dr-selector" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
                                         <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.08em', padding: '0 6px' }}>Viewing</span>
                                         {startups.map(s => {
                                             const active = selectedStartupId === s.id;
@@ -2236,7 +2236,7 @@ function ScoutPage() {
                             </div>
 
                             {/* ── HOLOGRAPHIC KPI BAR ── */}
-                            <div style={{ flexShrink:0,display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,position:'relative',zIndex:1 }}>
+                            <div className="sc-stat-grid" style={{ flexShrink:0,display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,position:'relative',zIndex:1 }}>
                                 {[
                                     { label:'Total Contacts', value:NETWORK_CONTACTS.length, color:'#8b5cf6', sub:'in network', icon:'⬡' },
                                     { label:'Total Meetings', value:NETWORK_CONTACTS.reduce((a,c)=>a+c.meetings,0), color:'#06b6d4', sub:'scheduled', icon:'◈' },
@@ -2260,11 +2260,11 @@ function ScoutPage() {
                             </div>
 
                             {/* ── Main body: cards + right sidebar ── */}
-                            <div style={{ flex:'1 1 0',minHeight:0,display:'flex',gap:14,position:'relative',zIndex:1 }}>
+                            <div className="sc-network-body" style={{ flex:'1 1 0',minHeight:0,display:'flex',gap:14,position:'relative',zIndex:1 }}>
 
                                 {/* LEFT: PREMIUM contact cards grid */}
-                                <div className="sc-scroll" style={{ flex:'1 1 0',minWidth:0,overflowY:'auto' }}>
-                                    <div style={{ display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:14 }}>
+                                <div className="sc-scroll sc-network-scroll" style={{ flex:'1 1 0',minWidth:0,overflowY:'auto' }}>
+                                    <div className="sc-network-cards" style={{ display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:14 }}>
                                         {(focus?.kind === 'founder' ? bringToFront(NETWORK_CONTACTS, c => c.id === focus.key) : NETWORK_CONTACTS).map((c,idx)=>{
                                             const col = TAG_COL[c.tag] || '#a78bfa';
                                             const h = health(c);
@@ -2377,7 +2377,7 @@ function ScoutPage() {
 
 {/* RIGHT: PREMIUM scrollable panels — sidebar scrolls as one column, panels size to content */}
 <div
-    className="sc-scroll"
+    className="sc-scroll sc-network-side"
     style={{
         width: 242,
         flexShrink: 0,
@@ -3050,7 +3050,7 @@ function ScoutPage() {
                             </div>
 
                             {/* ── KPI strip ── */}
-                            <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
+                            <div className="sc-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                                 {[
                                     { label: 'Total Deployed', val: fmt(deployedVal), sub: isAll ? 'Across all sectors' : sectorLabel, color: '#8b5cf6', Icon: TrendingUp },
                                     { label: 'Portfolio ROI', val: `+${roiPct}%`, sub: isAll ? 'H1 2026 average' : `${sectorLabel} growth`, color: '#10b981', Icon: BarChart3 },

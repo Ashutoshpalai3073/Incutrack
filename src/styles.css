@@ -1044,3 +1044,82 @@ img, video { max-width: 100%; height: auto; }
     /* Can't target inline styles — handled by class-based rules above */
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SCOUT — DESKTOP / TABLET / MOBILE for Deal Flow, Diligence, Startup Network,
+   Market Insights. Desktop (>1024px) keeps the inline layout, untouched.
+══════════════════════════════════════════════════════════════════════════ */
+
+/* ── KPI stat grids (Diligence / Network / Insights): 4-col → 2-col tablet → 1-col phone ── */
+@media (max-width: 1024px) {
+  .sc-stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 480px) {
+  .sc-stat-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── Market Insights charts: 3×2 grid → 2-col on tablet (phone handled at ≤768 above) ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sc-insights-main-grid {
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: auto !important;
+  }
+  .sc-insights-main-grid > * {
+    grid-row: auto !important;
+    grid-column: auto !important;
+    min-height: 240px;
+  }
+}
+
+/* ── Startup Network: cards + right sidebar side-by-side → stacked on mobile ── */
+@media (max-width: 768px) {
+  .sc-network-body {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  .sc-network-side {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    flex: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* ── Diligence "Viewing" startup selector: horizontal scroll instead of overflowing ── */
+@media (max-width: 768px) {
+  .sc-dr-selector {
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    scrollbar-width: none !important;
+  }
+  .sc-dr-selector::-webkit-scrollbar { display: none; }
+  .sc-dr-selector > * { flex-shrink: 0 !important; }
+}
+
+/* ── Deal Flow board: horizontal kanban → vertical stack on mobile ──
+     Each stage becomes a full-width section showing ALL its deal cards; the page
+     scrolls. Fixes the clipped / non-scrollable "Ideation" column. ── */
+@media (max-width: 768px) {
+  .scout-dealflow-board {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  .scout-dealflow-board > * {            /* each stage column */
+    flex: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .scout-dealflow-board .sc-scroll {     /* the card list inside a column */
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
