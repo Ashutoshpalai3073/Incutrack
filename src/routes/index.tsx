@@ -1295,10 +1295,86 @@ function Index() {
   }, [])
 
   useEffect(() => {
+    let touchStartX = 0
     let touchStartY = 0
-    const onTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY }
-    const onTouchMove = (e: TouchEvent) => { e.preventDefault() }
+    let lastX = 0
+    // When a swipe begins inside a horizontal carousel (marked [data-hscroll]),
+    // we drive the scroll ourselves rather than relying on native overflow scroll.
+    // Native horizontal scroll is unreliable here: these carousels live inside
+    // position:fixed, overflow-y:auto wrappers (which swallow the horizontal pan)
+    // and the cards contain form fields/links that hijack the drag. JS-driving
+    // every horizontal swipe makes all carousels reliably slidable.
+    let scroller: HTMLElement | null = null
+    let vscroller: HTMLElement | null = null   // the active fixed section (vertical scroll container)
+    let verticalNative = false                 // true once we've drag-scrolled the section
+    let lastY = 0
+    let axis: 'h' | 'v' | null = null
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartX = lastX = e.touches[0].clientX
+      touchStartY = lastY = e.touches[0].clientY
+      axis = null
+      verticalNative = false
+      const t = e.target as HTMLElement | null
+      scroller = t?.closest?.('[data-hscroll]') as HTMLElement | null
+      vscroller = (t?.closest?.('.lp-fixed-section') as HTMLElement | null)
+        ?? (t?.closest?.('.lp-hero-fixed') as HTMLElement | null)
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (!axis) {
+        const dx = Math.abs(e.touches[0].clientX - touchStartX)
+        const dy = Math.abs(e.touches[0].clientY - touchStartY)
+        if (dx < 6 && dy < 6) return // too small to decide direction yet
+        axis = dx > dy ? 'h' : 'v'
+      }
+      if (scroller && axis === 'h') {
+        // pan the carousel ourselves — prevent the page/section from reacting
+        const x = e.touches[0].clientX
+        scroller.scrollLeft -= x - lastX
+        lastX = x
+        e.preventDefault()
+        return
+      }
+      // Vertical: if the section's content is taller than the screen, drag-scroll
+      // it ourselves so nothing is cut off. We only fall through to section paging
+      // once the user is at the top/bottom edge of the section.
+      if (axis === 'v' && vscroller && vscroller.scrollHeight > vscroller.clientHeight + 2) {
+        const y = e.touches[0].clientY
+        const goingUp = y < lastY // finger up → reveal content lower down
+        const atTop = vscroller.scrollTop <= 0
+        const atBottom = vscroller.scrollTop + vscroller.clientHeight >= vscroller.scrollHeight - 1
+        if ((goingUp && !atBottom) || (!goingUp && !atTop)) {
+          vscroller.scrollTop -= y - lastY
+          lastY = y
+          verticalNative = true
+          e.preventDefault()
+          return
+        }
+        lastY = y
+      }
+      e.preventDefault()
+    }
     const onTouchEnd = (e: TouchEvent) => {
+      const s = scroller
+      const wasHorizontal = s && axis === 'h'
+      const didVScroll = verticalNative
+      scroller = null
+      vscroller = null
+      axis = null
+      verticalNative = false
+      if (didVScroll) return // user scrolled within the section — don't page
+      if (wasHorizontal && s) {
+        // snap to whichever card is nearest the carousel's left edge
+        const srect = s.getBoundingClientRect()
+        const padLeft = parseFloat(getComputedStyle(s).scrollPaddingLeft) || 0
+        const kids = Array.from(s.children).filter(c => c.nodeType === 1) as HTMLElement[]
+        let best = Infinity, delta = 0
+        for (const c of kids) {
+          const d = c.getBoundingClientRect().left - srect.left - padLeft
+          if (Math.abs(d) < best) { best = Math.abs(d); delta = d }
+        }
+        if (kids.length) s.scrollBy({ left: delta, behavior: 'smooth' })
+        return // handled by the carousel — do not page the section
+      }
       const diff = touchStartY - e.changedTouches[0].clientY
       if (Math.abs(diff) < 40) return
       window.dispatchEvent(new WheelEvent('wheel', { deltaY: diff, bubbles: true }))
@@ -1594,7 +1670,7 @@ function Index() {
         </button>
         {/* Mobile dropdown */}
         {mobileNavOpen && (
-          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'rgba(2,2,10,0.97)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '8px 0', zIndex: 40 }}>
+          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#04040c', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 26px 56px rgba(0,0,0,0.75)', padding: '8px 0', zIndex: 40, maxHeight: '82vh', overflowY: 'auto' }}>
             {([['Home', -1], ['Features', 0], ['Founders', 1], ['Investors', 2], ['Testimonials', 3], ['About', 4], ['Contact', 5]] as [string, number][]).map(([label, idx]) => (
               <button
                 key={label}
@@ -1852,7 +1928,7 @@ function Index() {
             </p>
           </div>
 
-          <div className="lp-features-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
+          <div className="lp-features-grid" data-hscroll style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
             {[
               { Icon: GitBranch, color: "#8b5cf6", title: "Pipeline Management", desc: "Visualise your journey through every stage — Ideation to Funding Secured. Kanban-style with real-time updates." },
               { Icon: BarChart3, color: "#06b6d4", title: "Growth Analytics", desc: "Track MRR, user acquisition, burn rate, and runway in one unified dashboard. Know where you stand before every investor meeting." },
@@ -1870,6 +1946,12 @@ function Index() {
                 <p style={{ fontSize: 12.5, color: "rgba(255,255,255,.4)", lineHeight: 1.5, margin: 0 }}>{desc}</p>
               </div>
             ))}
+          </div>
+          {/* Mobile-only swipe affordance (shown via .lp-swipe-hint media rule) */}
+          <div className="lp-swipe-hint" style={{ display: "none", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 14, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.32)" }}>
+            <ArrowRight style={{ width: 13, height: 13, transform: "rotate(180deg)" }} />
+            <span>Swipe to explore</span>
+            <ArrowRight style={{ width: 13, height: 13 }} />
           </div>
         </div>
       </section>
@@ -1893,8 +1975,8 @@ function Index() {
         <div className="ambient-blob" style={{ width: 400, height: 400, background: "#a78bfa", bottom: "0%", left: "5%", opacity: 0.05 }} />
 
         <div className={`section-inner ${SC}`} style={{ ...SS }}>
-          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : 80, alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 28 }}>
+          <div className="lp-two-col lp-founders-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : 80, alignItems: "center" }}>
+            <div className="lp-founders-intro" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 28 }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 999, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)" }}>
                 <Rocket style={{ width: 12, height: 12, color: "#a78bfa" }} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", letterSpacing: ".1em", textTransform: "uppercase" }}>For Founders</span>
@@ -1903,10 +1985,10 @@ function Index() {
                 <span style={{ background: "linear-gradient(135deg,white 40%,rgba(255,255,255,.5))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Stop managing chaos.</span><br />
                 <span style={{ background: "linear-gradient(135deg,#a78bfa,#67e8f9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Start building momentum.</span>
               </h2>
-              <p style={{ fontSize: 15, color: "rgba(255,255,255,.45)", lineHeight: 1.75, margin: 0 }}>
+              <p className="lp-founders-desc" style={{ fontSize: 15, color: "rgba(255,255,255,.45)", lineHeight: 1.75, margin: 0 }}>
                 A single command centre to track every metric that matters — from early validation signals to Series A readiness indicators. Know your numbers. Own your narrative.
               </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+              <div className="lp-founders-checklist" style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
                 {[
                   ["Real-time MRR and growth tracking", "#10b981"],
                   ["Automated investor-ready reports", "#06b6d4"],
@@ -1925,10 +2007,11 @@ function Index() {
               </Link>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div className="lp-founder-cards" data-hscroll style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <GlassCard accentColor="#8b5cf6">
-                <div style={{ display: "flex", gap: 20, alignItems: "flex-start", marginBottom: 20 }}>
-                  <PersonAvatar initials="AP" gradient="linear-gradient(135deg,#4c1d95,#7c3aed,#a78bfa)" ringColor="#8b5cf6" size={80} />
+                <div style={{ display: "flex", gap: isMobile ? 12 : 20, alignItems: "flex-start", marginBottom: isMobile ? 8 : 20 }}>
+                  <PersonAvatar initials="AP" gradient="linear-gradient(135deg,#4c1d95,#7c3aed,#a78bfa)" ringColor="#8b5cf6" size={isMobile ? 48 : 80} />
                   <div>
                     <p style={{ fontSize: 18, fontWeight: 800, color: "white", margin: "0 0 3px" }}>Ashutosh Palai</p>
                     <p style={{ fontSize: 13, color: "#a78bfa", margin: "0 0 8px", fontWeight: 600 }}>Founder & CEO · EduSphere</p>
@@ -1939,18 +2022,18 @@ function Index() {
                     </div>
                   </div>
                 </div>
-                <blockquote style={{ margin: 0, padding: "14px 18px", borderRadius: 12, background: "rgba(139,92,246,.06)", border: "1px solid rgba(139,92,246,.18)", borderLeft: "2px solid rgba(139,92,246,.6)" }}>
-                  <p style={{ fontSize: 13.5, color: "rgba(255,255,255,.65)", lineHeight: 1.7, margin: "0 0 10px", fontStyle: "italic" }}>
+                <blockquote style={{ margin: 0, padding: isMobile ? "10px 14px" : "14px 18px", borderRadius: 12, background: "rgba(139,92,246,.06)", border: "1px solid rgba(139,92,246,.18)", borderLeft: "2px solid rgba(139,92,246,.6)" }}>
+                  <p style={{ fontSize: isMobile ? 11.5 : 13.5, color: "rgba(255,255,255,.65)", lineHeight: isMobile ? 1.45 : 1.7, margin: isMobile ? "0 0 6px" : "0 0 10px", fontStyle: "italic" }}>
                     "Before Incutrack, I was drowning in spreadsheets and investor emails. Now I walk into every meeting knowing exactly where my startup stands. We closed our seed round 3 months faster than expected."
                   </p>
                   <div style={{ display: "flex", gap: 3 }}>
                     {[1, 2, 3, 4, 5].map(i => <Star key={i} style={{ width: 11, height: 11, color: "#f59e0b", fill: "#f59e0b" }} />)}
                   </div>
                 </blockquote>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr 1fr" : "1fr 1fr 1fr", gap: 10, marginTop: 18 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: isMobile ? 8 : 10, marginTop: isMobile ? 6 : 18 }}>
                   {[["₹1.2Cr", "MRR"], ["+180%", "Growth"], ["92", "IncuScore™"]].map(([val, label]) => (
-                    <div key={label} style={{ textAlign: "center", padding: "10px 0", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)" }}>
-                      <p style={{ fontSize: 17, fontWeight: 900, color: "white", margin: 0 }}>{val}</p>
+                    <div key={label} style={{ textAlign: "center", padding: isMobile ? "7px 0" : "10px 0", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)" }}>
+                      <p style={{ fontSize: isMobile ? 15 : 17, fontWeight: 900, color: "white", margin: 0 }}>{val}</p>
                       <p style={{ fontSize: 9, color: "rgba(255,255,255,.3)", margin: "3px 0 0", textTransform: "uppercase", letterSpacing: ".06em" }}>{label}</p>
                     </div>
                   ))}
@@ -1968,6 +2051,13 @@ function Index() {
                   </div>
                 </div>
               </GlassCard>
+              </div>
+              {/* Mobile-only swipe affordance for the founder cards */}
+              <div className="lp-swipe-hint" style={{ display: "none", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.32)" }}>
+                <ArrowRight style={{ width: 13, height: 13, transform: "rotate(180deg)" }} />
+                <span>Swipe for more</span>
+                <ArrowRight style={{ width: 13, height: 13 }} />
+              </div>
             </div>
           </div>
         </div>
@@ -1992,7 +2082,7 @@ function Index() {
         <div className="ambient-blob" style={{ width: 450, height: 450, background: "#10b981", bottom: "0%", right: "5%", opacity: 0.05 }} />
 
         <div className={`section-inner ${SC}`} style={{ ...SS }}>
-          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : 56, alignItems: "center" }}>
+          <div className="lp-investors-cols" data-hscroll style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : 56, alignItems: "center" }}>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <GlassCard accentColor="#06b6d4">
@@ -2076,6 +2166,11 @@ function Index() {
             </div>
 
           </div>
+          <div className="lp-swipe-hint" style={{ display: "none", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 14, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.32)" }}>
+            <ArrowRight style={{ width: 13, height: 13, transform: "rotate(180deg)" }} />
+            <span>Swipe to explore</span>
+            <ArrowRight style={{ width: 13, height: 13 }} />
+          </div>
         </div>
       </section>
       </div>
@@ -2107,7 +2202,7 @@ function Index() {
               Loved by builders &amp; backers
             </h2>
           </div>
-          <div className="lp-features-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
+          <div className="lp-features-grid" data-hscroll style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
             {[
               { name: "Meera Iyer", role: "Founder · ClimateOS", initials: "MI", gradient: "linear-gradient(135deg,#064e3b,#065f46,#34d399)", ring: "#10b981", text: "IncuScore™ told us exactly what investors would push back on before we walked into the room. Fixed those gaps, raised ₹3Cr in 6 weeks.", rating: 5 },
               { name: "Pawan Kumar", role: "CTO · QuantumGrid", initials: "PK", gradient: "linear-gradient(135deg,#0c4a6e,#0369a1,#38bdf8)", ring: "#06b6d4", text: "Our lead investor said it was the most professional due diligence process they'd ever seen from a seed-stage company.", rating: 5 },
@@ -2167,7 +2262,7 @@ function Index() {
         <div className={`section-inner ${SC}`} style={{ ...SS, display: "flex", flexDirection: "column", justifyContent: "center", gap: isMobile ? 36 : 48 }}>
 
           {/* ── Top: headline left / principles right ── */}
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 28 : 64, alignItems: "start" }}>
+          <div className="ab-top-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 28 : 64, alignItems: "start" }}>
 
             {/* LEFT */}
             <div style={{ animation: "ab-in .6s ease both" }}>
@@ -2194,42 +2289,58 @@ function Index() {
               </div>
             </div>
 
-            {/* RIGHT — 2×2 principle grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, animation: "ab-in .6s .12s ease both" }}>
-              {([
-                { Icon: Zap,        color: "#f59e0b", title: "Speed‑first",      desc: "Every feature saves a founder meaningful time." },
-                { Icon: Shield,     color: "#10b981", title: "Privacy by design", desc: "Your data, end-to-end encrypted. Always." },
-                { Icon: Globe,      color: "#06b6d4", title: "Ecosystem thinking",desc: "Founders, VCs, mentors — one network." },
-                { Icon: TrendingUp, color: "#8b5cf6", title: "Honest metrics",    desc: "Numbers that actually predict success." },
-              ] as { Icon: any; color: string; title: string; desc: string }[]).map(({ Icon, color, title, desc }) => (
-                <div key={title} className="ab-principle" style={{ padding: "20px 18px", borderRadius: 16, background: `linear-gradient(145deg,${color}0c,rgba(4,4,14,0.9))`, border: `1px solid ${color}20`, backdropFilter: "blur(12px)", position: "relative", overflow: "hidden" }}>
-                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${color}55,transparent)` }} />
-                  <div style={{ width: 36, height: 36, borderRadius: 11, background: `${color}14`, border: `1px solid ${color}28`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
-                    <Icon style={{ width: 16, height: 16, color }} />
+            {/* RIGHT — principle grid (2×2 desktop, swipe carousel on mobile) */}
+            <div style={{ animation: "ab-in .6s .12s ease both" }}>
+              <div className="ab-principle-grid" data-hscroll style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {([
+                  { Icon: Zap,        color: "#f59e0b", title: "Speed‑first",      desc: "Saves founders real time." },
+                  { Icon: Shield,     color: "#10b981", title: "Privacy by design", desc: "End-to-end encrypted." },
+                  { Icon: Globe,      color: "#06b6d4", title: "Ecosystem thinking",desc: "Founders, VCs & mentors, one network." },
+                  { Icon: TrendingUp, color: "#8b5cf6", title: "Honest metrics",    desc: "Metrics that predict success." },
+                ] as { Icon: any; color: string; title: string; desc: string }[]).map(({ Icon, color, title, desc }) => (
+                  <div key={title} className="ab-principle" style={{ padding: "20px 18px", borderRadius: 16, background: `linear-gradient(145deg,${color}0c,rgba(4,4,14,0.9))`, border: `1px solid ${color}20`, backdropFilter: "blur(12px)", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${color}55,transparent)` }} />
+                    <div style={{ width: 36, height: 36, borderRadius: 11, background: `${color}14`, border: `1px solid ${color}28`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+                      <Icon style={{ width: 16, height: 16, color }} />
+                    </div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "white", margin: "0 0 6px", letterSpacing: "-.01em" }}>{title}</p>
+                    <p style={{ fontSize: 11.5, color: "rgba(255,255,255,.3)", margin: 0, lineHeight: 1.65 }}>{desc}</p>
                   </div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "white", margin: "0 0 6px", letterSpacing: "-.01em" }}>{title}</p>
-                  <p style={{ fontSize: 11.5, color: "rgba(255,255,255,.3)", margin: 0, lineHeight: 1.65 }}>{desc}</p>
-                </div>
-              ))}
+                ))}
+              </div>
+              {/* Mobile-only swipe affordance */}
+              <div className="lp-swipe-hint" style={{ display: "none", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 14, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.32)" }}>
+                <ArrowRight style={{ width: 13, height: 13, transform: "rotate(180deg)" }} />
+                <span>Swipe to explore</span>
+                <ArrowRight style={{ width: 13, height: 13 }} />
+              </div>
             </div>
           </div>
 
-          {/* ── Bottom: stat row ── */}
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 14 }}>
-            {([
-              { value: "2026",   label: "Founded",    sub: "IIT KGP · Kharagpur", color: "#a78bfa", ringColor: "#7c3aed" },
-              { value: "2,400+", label: "Founders",   sub: "actively building",    color: "#22d3ee", ringColor: "#0891b2" },
-              { value: "38",     label: "Ecosystems", sub: "across 12 countries",  color: "#34d399", ringColor: "#059669" },
-            ] as { value: string; label: string; sub: string; color: string; ringColor: string }[]).map(({ value, label, sub, color, ringColor }) => (
-              <div key={label} className="ab-stat" style={{ padding: "22px 24px", borderRadius: 18, background: `linear-gradient(145deg,${color}0e,rgba(4,4,14,0.95))`, border: `1px solid ${color}28`, backdropFilter: "blur(16px)", boxShadow: `0 8px 36px ${color}12, inset 0 1px 0 ${color}22`, position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${color}80,transparent)` }} />
-                <div style={{ position: "absolute", bottom: 0, right: 0, width: 120, height: 120, background: `radial-gradient(circle at bottom right,${color}0e,transparent 70%)`, pointerEvents: "none" }} />
-                <MiniPlanetCanvas color={color} ringColor={ringColor} size={26} />
-                <p style={{ fontSize: 36, fontWeight: 900, margin: "14px 0 2px", lineHeight: 1, letterSpacing: "-.03em", background: `linear-gradient(135deg,#fff 30%,${color})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{value}</p>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.75)", margin: "0 0 3px" }}>{label}</p>
-                <p style={{ fontSize: 11, color, margin: 0, fontWeight: 500, opacity: .8, letterSpacing: ".02em" }}>{sub}</p>
-              </div>
-            ))}
+          {/* ── Bottom: stat row (slidable carousel on mobile) ── */}
+          <div>
+            <div className="ab-stats-grid" data-hscroll style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 14 }}>
+              {([
+                { value: "2026",   label: "Founded",    sub: "IIT KGP · Kharagpur", color: "#a78bfa", ringColor: "#7c3aed" },
+                { value: "2,400+", label: "Founders",   sub: "actively building",    color: "#22d3ee", ringColor: "#0891b2" },
+                { value: "38",     label: "Ecosystems", sub: "across 12 countries",  color: "#34d399", ringColor: "#059669" },
+              ] as { value: string; label: string; sub: string; color: string; ringColor: string }[]).map(({ value, label, sub, color, ringColor }) => (
+                <div key={label} className="ab-stat" style={{ padding: "22px 24px", borderRadius: 18, background: `linear-gradient(145deg,${color}0e,rgba(4,4,14,0.95))`, border: `1px solid ${color}28`, backdropFilter: "blur(16px)", boxShadow: `0 8px 36px ${color}12, inset 0 1px 0 ${color}22`, position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${color}80,transparent)` }} />
+                  <div style={{ position: "absolute", bottom: 0, right: 0, width: 120, height: 120, background: `radial-gradient(circle at bottom right,${color}0e,transparent 70%)`, pointerEvents: "none" }} />
+                  <MiniPlanetCanvas color={color} ringColor={ringColor} size={26} />
+                  <p style={{ fontSize: 36, fontWeight: 900, margin: "14px 0 2px", lineHeight: 1, letterSpacing: "-.03em", background: `linear-gradient(135deg,#fff 30%,${color})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{value}</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.75)", margin: "0 0 3px" }}>{label}</p>
+                  <p style={{ fontSize: 11, color, margin: 0, fontWeight: 500, opacity: .8, letterSpacing: ".02em" }}>{sub}</p>
+                </div>
+              ))}
+            </div>
+            {/* Mobile-only swipe affordance */}
+            <div className="lp-swipe-hint" style={{ display: "none", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 14, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.32)" }}>
+              <ArrowRight style={{ width: 13, height: 13, transform: "rotate(180deg)" }} />
+              <span>Swipe stats</span>
+              <ArrowRight style={{ width: 13, height: 13 }} />
+            </div>
           </div>
 
         </div>
@@ -2267,7 +2378,7 @@ function Index() {
             </p>
           </div>
 
-          <div className="lp-two-col" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : 28 }}>
+          <div className="lp-two-col lp-contact-cols" data-hscroll style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : 28 }}>
             <GlassCard accentColor="#06b6d4">
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "white", margin: "0 0 14px" }}>Send us a message</h3>
               {contactSent ? (
@@ -2366,6 +2477,12 @@ function Index() {
               </div>
             </div>
           </div>
+          {/* Mobile-only swipe affordance for the two contact boxes */}
+          <div className="lp-swipe-hint" style={{ display: "none", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 14, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.32)" }}>
+            <ArrowRight style={{ width: 13, height: 13, transform: "rotate(180deg)" }} />
+            <span>Swipe to explore</span>
+            <ArrowRight style={{ width: 13, height: 13 }} />
+          </div>
         </div>
       </section>
       </div>
@@ -2388,10 +2505,6 @@ function Index() {
           <div className="lp-footer-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "2fr 1fr 1fr 1fr", gap: isMobile ? 24 : 48, marginBottom: 48 }}>
             {/* brand */}
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#a78bfa", boxShadow: "0 0 10px rgba(167,139,250,.7)", display: "inline-block" }} />
-                <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase", color: "white" }}>Incutrack</span>
-              </div>
               <p style={{ fontSize: 13.5, color: "rgba(255,255,255,.32)", lineHeight: 1.75, maxWidth: 260, margin: "0 0 18px" }}>
                 The operating system for startup ecosystems. Built for founders who move fast and investors who think deep.
               </p>

@@ -46,14 +46,14 @@ const ALL_STARTUPS = [
 // `corporate: true` (deck_type 'investor') = the restricted Corporate Pitch Deck uploaded from the
 // Explore Hub Brand Vault. These are the decks founders intend for investors and that surface here.
 const DILIGENCE_DOCS = [
-    { id: 'd1', startup: 'NeuralKit', name: 'NeuralKit Pitch Deck v4.1', type: 'Deck', date: 'Jun 12', access: true, viewed: true, viewedAt: 'Jun 14 09:42', size: '4.2 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
-    { id: 'd2', startup: 'NeuralKit', name: 'Financial Projections FY27', type: 'Sheet', date: 'Jun 10', access: true, viewed: false, viewedAt: null, size: '1.1 MB', corporate: false, deck_type: 'brand', file_url: '', status: 'Final' },
-    { id: 'd3', startup: 'FinFlow', name: 'FinFlow Series A Pitch Deck', type: 'Deck', date: 'Jun 11', access: true, viewed: false, viewedAt: null, size: '5.6 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
-    { id: 'd4', startup: 'FinFlow', name: 'FinFlow Executive Summary', type: 'Doc', date: 'Jun 10', access: true, viewed: true, viewedAt: 'Jun 13 14:18', size: '0.8 MB', corporate: false, deck_type: 'brand', file_url: '', status: 'Final' },
-    { id: 'd5', startup: 'QuantumGrid', name: 'Technical Deep Dive Deck', type: 'Deck', date: 'May 30', access: true, viewed: true, viewedAt: 'Jun 12 11:05', size: '8.4 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
-    { id: 'd6', startup: 'ClimateOS', name: 'ClimateOS Investor Pitch Deck', type: 'Deck', date: 'Jun 5', access: true, viewed: false, viewedAt: null, size: '3.7 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Review' },
-    { id: 'd7', startup: 'EduSphere', name: 'EduSphere Seed Pitch Deck', type: 'Deck', date: 'Jun 2', access: true, viewed: false, viewedAt: null, size: '2.9 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
-    { id: 'd8', startup: 'BioWeave', name: 'BioWeave Pre-Seed Pitch Deck', type: 'Deck', date: 'May 28', access: true, viewed: false, viewedAt: null, size: '3.1 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Draft' },
+    { id: 'd1', startup: 'NeuralKit', name: 'NeuralKit_Private_Vault', type: 'Deck', date: 'Jun 12', access: true, viewed: true, viewedAt: 'Jun 14 09:42', size: '4.2 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
+    { id: 'd2', startup: 'NeuralKit', name: 'NeuralKit_Public_Vault', type: 'Sheet', date: 'Jun 10', access: true, viewed: false, viewedAt: null, size: '1.1 MB', corporate: false, deck_type: 'brand', file_url: '', status: 'Final' },
+    { id: 'd3', startup: 'FinFlow', name: 'FinFlow_Private_Vault', type: 'Deck', date: 'Jun 11', access: true, viewed: false, viewedAt: null, size: '5.6 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
+    { id: 'd4', startup: 'FinFlow', name: 'FinFlow_Public_Vault', type: 'Doc', date: 'Jun 10', access: true, viewed: true, viewedAt: 'Jun 13 14:18', size: '0.8 MB', corporate: false, deck_type: 'brand', file_url: '', status: 'Final' },
+    { id: 'd5', startup: 'QuantumGrid', name: 'QuantumGrid_Private_Vault', type: 'Deck', date: 'May 30', access: true, viewed: true, viewedAt: 'Jun 12 11:05', size: '8.4 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
+    { id: 'd6', startup: 'ClimateOS', name: 'ClimateOS_Private_Vault', type: 'Deck', date: 'Jun 5', access: true, viewed: false, viewedAt: null, size: '3.7 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Review' },
+    { id: 'd7', startup: 'EduSphere', name: 'EduSphere_Private_Vault', type: 'Deck', date: 'Jun 2', access: true, viewed: false, viewedAt: null, size: '2.9 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Final' },
+    { id: 'd8', startup: 'BioWeave', name: 'BioWeave_Private_Vault', type: 'Deck', date: 'May 28', access: true, viewed: false, viewedAt: null, size: '3.1 MB', corporate: true, deck_type: 'investor', file_url: '', status: 'Draft' },
 ];
 
 const NETWORK_CONTACTS = [
@@ -666,7 +666,11 @@ function ScoutPage() {
     }, []);
     const [scoutSearch, setScoutSearch] = useState('');
     const [searchOpen, setSearchOpen] = useState(false);
-    // Result picked from global search → surface (and highlight) that item in its tab
+    // Result picked from global search → surface (and highlight) that item in its tab.
+    // `pinned` controls ORDER (stays at top until the next search). `focus` controls the
+    // one-time glow animation only and auto-clears — keeping the two separate is what makes
+    // the surfaced item STAY at the top instead of dropping back after the glow ends.
+    const [pinned, setPinned] = useState<{ kind: string; key: string } | null>(null);
     const [focus, setFocus] = useState<{ kind: string; key: string } | null>(null);
     const [dealSectors, setDealSectors] = useState<string[]>([]); // empty = all sectors
     const [dealSectorOpen, setDealSectorOpen] = useState(false);
@@ -967,15 +971,20 @@ function ScoutPage() {
     // Route a chosen result to its tab and flag it to be surfaced/highlighted there
     const handleSearchPick = (kind: string, item: any) => {
         setSearchOpen(false); setScoutSearch('');
-        if (kind === 'startup') { setDealSectors([]); setFocus({ kind, key: item.id }); setTab('dealflow'); }
-        else if (kind === 'founder') { setFocus({ kind, key: item.id }); setTab('network'); }
+        // The key identifies the item within its list. `pinned` keeps it at the top until the
+        // NEXT pick replaces it; `focus` fires the glow once and then clears itself.
+        const key = kind === 'investor' ? (item.firm_name || '').toLowerCase() : item.id;
+        setPinned({ kind, key });
+        setFocus({ kind, key });
+        if (kind === 'startup') { setDealSectors([]); setTab('dealflow'); }
+        else if (kind === 'founder') { setTab('network'); }
         else if (kind === 'deck') {
             const st = startups.find(s => s.name === item.startup);
             if (st) setSelectedStartupId(st.id);
-            setFocus({ kind, key: item.id }); setTab('diligence');
+            setTab('diligence');
         }
-        else if (kind === 'investor') { setFocus({ kind, key: (item.firm_name || '').toLowerCase() }); setTab('vcnetwork'); }
-        else if (kind === 'event') { setEventType('All'); setFocus({ kind, key: item.id }); setTab('demodays'); }
+        else if (kind === 'investor') { setTab('vcnetwork'); }
+        else if (kind === 'event') { setEventType('All'); setTab('demodays'); }
     };
 
     // Move a focused item to the front of its list so it shows first in the target tab
@@ -1696,7 +1705,7 @@ function ScoutPage() {
                                 {STAGE_ORDER.map(stage => {
                                     const sc = STAGE_COLORS[stage];
                                     const stageCards = filteredDeals.filter(s => s.stage === stage);
-                                    const cards = focus?.kind === 'startup' ? bringToFront(stageCards, s => s.id === focus.key) : stageCards;
+                                    const cards = pinned?.kind === 'startup' ? bringToFront(stageCards, s => s.id === pinned.key) : stageCards;
                                     return (
                                         <div key={stage} style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', borderRadius: 18, border: `1px solid ${sc}28`, background: `linear-gradient(170deg,${sc}0a,rgba(5,5,9,.95) 62%)`, overflow: 'hidden', position: 'relative' }}>
                                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${sc}90,transparent)` }} />
@@ -1760,7 +1769,7 @@ function ScoutPage() {
                             Bundle: '#f59e0b', Video: '#f472b6',
                         };
                         const selectedDocsRaw = diligenceDocs.filter(d => d.startup === selectedStartupName);
-                        const selectedDocs = focus?.kind === 'deck' ? bringToFront(selectedDocsRaw, d => d.id === focus.key) : selectedDocsRaw;
+                        const selectedDocs = pinned?.kind === 'deck' ? bringToFront(selectedDocsRaw, d => d.id === pinned.key) : selectedDocsRaw;
                         const viewedCount = selectedDocs.filter(d => d.viewed || viewedDocs.includes(d.id)).length;
                         const grantedCount = selectedDocs.filter(d => d.access).length;
                         const pendingCount = selectedDocs.filter(d => !d.access).length;
@@ -1856,8 +1865,8 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── Startup selector ── */}
-                                <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
-                                    <div className="sc-dr-selector" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
+                                <div className="sc-dr-selrow" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
+                                    <div className="sc-dr-selector sc-dr-chips" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
                                         <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.08em', padding: '0 6px' }}>Viewing</span>
                                         {startups.map(s => {
                                             const active = selectedStartupId === s.id;
@@ -1872,6 +1881,20 @@ function ScoutPage() {
                                             );
                                         })}
                                     </div>
+                                    {/* Mobile dropdown — replaces the chip row on small screens */}
+                                    <label className="sc-dr-select-wrap" style={{ display: 'none', alignItems: 'center', gap: 8, flex: '1 1 100%' }}>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.08em', flexShrink: 0 }}>Viewing</span>
+                                        <select
+                                            value={selectedStartupId}
+                                            onChange={e => setSelectedStartupId(e.target.value)}
+                                            className="sc-dr-select"
+                                            style={{ flex: 1, minWidth: 0, padding: '10px 34px 10px 12px', borderRadius: 10, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.14)', color: 'white', fontSize: 13, fontWeight: 600, outline: 'none', WebkitAppearance: 'none', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                                        >
+                                            {startups.map(s => (
+                                                <option key={s.id} value={s.id} style={{ background: '#0a0a16', color: 'white' }}>{s.name}{shortlisted.includes(s.id) ? '  ★ shortlisted' : ''}</option>
+                                            ))}
+                                        </select>
+                                    </label>
                                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
                                         {[
                                             { val: selectedDocs.length, label: 'docs', col: '#a78bfa' },
@@ -1927,13 +1950,13 @@ function ScoutPage() {
                                                         {/* corner glow */}
                                                         <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: `radial-gradient(circle,${tc}18,transparent 70%)`, pointerEvents: 'none' }} />
 
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                                        <div className="dr-doc-row" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                                                             {/* 3D doc icon */}
                                                             <DocComet typeColor={tc} docType={doc.type} />
 
                                                             {/* content */}
                                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                                                                <div className="dr-doc-head" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
                                                                     <span style={{ fontSize: 13, fontWeight: 700, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
                                                                     {doc.corporate && (
                                                                         <div title="Corporate pitch deck — verified investors only" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 999, background: 'rgba(6,182,212,.12)', border: '1px solid rgba(6,182,212,.32)', flexShrink: 0 }}>
@@ -2208,7 +2231,7 @@ function ScoutPage() {
                             </div>
 
                             {/* ── ELITE Header ── */}
-                            <div style={{ flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:1 }}>
+                            <div className="sc-network-header" style={{ flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:1 }}>
                                 <div style={{ display:'flex',flexDirection:'column',gap:5 }}>
                                     <div style={{ display:'flex',alignItems:'center',gap:12 }}>
                                         <div style={{ position:'relative',width:32,height:32,borderRadius:10,background:'linear-gradient(135deg,rgba(139,92,246,.35),rgba(6,182,212,.2))',border:'1px solid rgba(139,92,246,.45)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 20px rgba(139,92,246,.3)' }}>
@@ -2265,7 +2288,7 @@ function ScoutPage() {
                                 {/* LEFT: PREMIUM contact cards grid */}
                                 <div className="sc-scroll sc-network-scroll" style={{ flex:'1 1 0',minWidth:0,overflowY:'auto' }}>
                                     <div className="sc-network-cards" style={{ display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:14 }}>
-                                        {(focus?.kind === 'founder' ? bringToFront(NETWORK_CONTACTS, c => c.id === focus.key) : NETWORK_CONTACTS).map((c,idx)=>{
+                                        {(pinned?.kind === 'founder' ? bringToFront(NETWORK_CONTACTS, c => c.id === pinned.key) : NETWORK_CONTACTS).map((c,idx)=>{
                                             const col = TAG_COL[c.tag] || '#a78bfa';
                                             const h = health(c);
                                             const startup = startups.find(s=>s.name===c.company);
@@ -2605,7 +2628,7 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── Header: stats + filter row ── */}
-                                <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
+                                <div className="sc-demodays-stats" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
                                     {/* KPI pills */}
                                     {[
                                         { val: events.length, label: 'Events', col: '#8b5cf6' },
@@ -2619,10 +2642,10 @@ function ScoutPage() {
                                         </div>
                                     ))}
 
-                                    <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,.08)', margin: '0 4px' }} />
+                                    <div className="dd-filter-divider" style={{ width: 1, height: 22, background: 'rgba(255,255,255,.08)', margin: '0 4px' }} />
 
                                     {/* filter pills */}
-                                    <div style={{
+                                    <div className="dd-filter-pills" style={{
                                         display: 'flex', gap: 5
                                     }}>
                                         {
@@ -2638,8 +2661,23 @@ function ScoutPage() {
                                         }
                                     </div>
 
+                                    {/* Mobile dropdown — replaces the filter chips on small screens */}
+                                    <label className="dd-filter-select-wrap" style={{ display: 'none', alignItems: 'center', gap: 8, flex: '1 1 100%' }}>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.08em', flexShrink: 0 }}>Filter</span>
+                                        <select
+                                            value={eventType}
+                                            onChange={e => setEventType(e.target.value)}
+                                            className="dd-filter-select"
+                                            style={{ flex: 1, minWidth: 0, padding: '10px 34px 10px 12px', borderRadius: 10, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.14)', color: 'white', fontSize: 13, fontWeight: 600, outline: 'none', WebkitAppearance: 'none', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                                        >
+                                            {TYPES.map(t => (
+                                                <option key={t} value={t} style={{ background: '#0a0a16', color: 'white' }}>{t === 'All' ? 'All event types' : t}</option>
+                                            ))}
+                                        </select>
+                                    </label>
+
                                     {/* add event */}
-                                    <button onClick={() => setAddEventOpen(true)} className="dd-btn" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(124,58,237,.4)' }}>
+                                    <button onClick={() => setAddEventOpen(true)} className="dd-btn dd-add-event" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(124,58,237,.4)' }}>
                                         <Plus style={{ width: 12, height: 12 }} />Add Event
                                     </button>
                                 </div>
@@ -2671,7 +2709,7 @@ function ScoutPage() {
                                                 </div>
                                             )}
                                             <div className="sc-demodays-event-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                                {(focus?.kind === 'event' ? bringToFront(filteredEvents, ev => ev.id === focus.key) : filteredEvents).map((ev, idx) => {
+                                                {(pinned?.kind === 'event' ? bringToFront(filteredEvents, ev => ev.id === pinned.key) : filteredEvents).map((ev, idx) => {
                                                     const pd = parseDate(ev.date);
                                                     const watched = watchedEvents.includes(ev.id);
                                                     const registered = registeredEvents.includes(ev.id);
@@ -3362,7 +3400,7 @@ function ScoutPage() {
             </div>
 
             {/* ── KPI strip ── */}
-            <div className="hub-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
+            <div className="sc-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                 {[
                     { label: 'Total AUM', val: fmt(VC_PROFILE.aum), sub: 'Fund size', color: '#8b5cf6', Icon: Building2 },
                     { label: 'Deployed', val: fmt(totalD), sub: `${((totalD / fundTotal) * 100).toFixed(0)}% of fund`, color: '#10b981', Icon: TrendingUp },
@@ -3421,7 +3459,7 @@ function ScoutPage() {
                                 );
                             })}
                         </div>
-                        <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
+                        <div className="dp-legend" style={{ display: 'flex', gap: 12, marginTop: 6 }}>
                             {DEPLOYMENTS.map(d => (
                                 <div key={d.startup} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                     <div style={{ width: 7, height: 7, borderRadius: '50%', background: d.color, boxShadow: `0 0 5px ${d.color}` }} />
@@ -3445,7 +3483,7 @@ function ScoutPage() {
                                     {/* corner radial */}
                                     <div style={{ position: 'absolute', top: -35, right: -35, width: 140, height: 140, borderRadius: '50%', background: `radial-gradient(circle,${d.color}18,transparent 70%)`, pointerEvents: 'none' }} />
 
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                    <div className="dp-card-row" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                                         {/* 3D planet */}
                                         <div style={{ flexShrink: 0, animation: 'dp-float 5s ease-in-out infinite', animationDelay: `${idx * 0.8}s` }}>
                                             <SectorPlanet color={d.color} size={58} />
@@ -3453,10 +3491,10 @@ function ScoutPage() {
 
                                         {/* main info */}
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
+                                            <div className="dp-card-namerow" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
                                                 <div>
                                                     <p style={{ fontSize: 16, fontWeight: 800, color: 'white', margin: 0, letterSpacing: '-.01em' }}>{d.startup}</p>
-                                                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', margin: '2px 0 0' }}>{d.sector} · {d.stage} · {d.date}</p>
+                                                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', margin: '2px 0 0', whiteSpace: 'nowrap' }}>{d.sector} · {d.stage} · {d.date}</p>
                                                 </div>
                                                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                                     <p style={{ fontSize: 22, fontWeight: 900, color: d.color, margin: 0, lineHeight: 1, textShadow: `0 0 16px ${d.color}60` }}>{fmt(d.amount)}</p>
@@ -3477,7 +3515,7 @@ function ScoutPage() {
                                         </div>
 
                                         {/* SVG ring gauge */}
-                                        <div style={{ flexShrink: 0, position: 'relative', width: 52, height: 52 }}>
+                                        <div className="dp-card-ring" style={{ flexShrink: 0, position: 'relative', width: 52, height: 52 }}>
                                             <svg width={52} height={52} viewBox="0 0 52 52">
                                                 <circle cx="26" cy="26" r={r} fill="none" stroke={`${d.color}20`} strokeWidth="4" />
                                                 <circle cx="26" cy="26" r={r} fill="none" stroke={d.color} strokeWidth="4"
@@ -3499,11 +3537,11 @@ function ScoutPage() {
                                     </div>
 
                                     {/* bottom detail strip */}
-                                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${d.color}18`, display: 'flex', gap: 16, alignItems: 'center' }}>
+                                    <div className="dp-card-strip" style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${d.color}18`, display: 'flex', gap: 16, alignItems: 'center' }}>
                                         {[['Sector', d.sector], ['Stage', d.stage], ['Deployed', d.date], ['Position', `${pct.toFixed(1)}% of capital`]].map(([l, v]) => (
                                             <div key={l}>
-                                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', margin: 0, textTransform: 'uppercase', letterSpacing: '.06em' }}>{l}</p>
-                                                <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.6)', margin: '2px 0 0' }}>{v}</p>
+                                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', margin: 0, textTransform: 'uppercase', letterSpacing: '.06em', whiteSpace: 'nowrap' }}>{l}</p>
+                                                <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.6)', margin: '2px 0 0', whiteSpace: l === 'Deployed' ? 'nowrap' : 'normal' }}>{v}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -3788,7 +3826,7 @@ function ScoutPage() {
                                     <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,.25)', fontSize: 13 }}>No funds listed yet — be the first to register.</div>
                                 ) : (
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16, paddingBottom: 4 }}>
-                                        {(focus?.kind === 'investor' ? bringToFront(vcList, v => (v.firm_name || '').toLowerCase() === focus.key) : vcList).map((vc, i) => {
+                                        {(pinned?.kind === 'investor' ? bringToFront(vcList, v => (v.firm_name || '').toLowerCase() === pinned.key) : vcList).map((vc, i) => {
                                             const initials = (vc.firm_name || '?').split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
                                             const col = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#f472b6'][i % 5];
                                             const sectors = (vc.sectors || '').split(',').map((s: string) => s.trim()).filter(Boolean);

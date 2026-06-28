@@ -479,10 +479,171 @@ img, video { max-width: 100%; height: auto; }
     padding-right: 32px !important;
   }
 }
+/* A section wrapper with overflow-y:auto forces overflow-x to compute to `auto`
+   too (CSS spec), so a horizontal swipe inside a carousel was panning the whole
+   section. Lock the wrapper's horizontal axis so only the carousel itself scrolls. */
+.lp-fixed-section { overflow-x: hidden; }
+
 @media (max-width: 480px) {
+  /* Features become a horizontal swipe carousel on phones — cards sit side by side,
+     each peeking the next so it's clear you can slide left/right to see them all. */
   .lp-features-grid {
-    grid-template-columns: 1fr !important;
+    display: flex !important;
+    grid-template-columns: none !important;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: none;
+    gap: 14px !important;
+    padding-bottom: 4px;
+    scroll-padding-left: 16px;
   }
+  .lp-features-grid::-webkit-scrollbar { display: none; }
+  .lp-features-grid > * {
+    flex: 0 0 100%;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+  /* Founder testimonial cards also become a horizontal swipe carousel so the section
+     fits one viewport and the bottom card is no longer pushed below the fold. */
+  .lp-founder-cards {
+    flex-direction: row !important;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: none;
+    gap: 14px !important;
+    scroll-padding-left: 16px;
+  }
+  .lp-founder-cards::-webkit-scrollbar { display: none; }
+  .lp-founder-cards > * {
+    flex: 0 0 100%;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+  /* About → principle boxes become a horizontal swipe carousel; each box grows to
+     fill the UI (one per view) and is taller so the content sits comfortably. */
+  .ab-principle-grid {
+    display: flex !important;
+    grid-template-columns: none !important;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: none;
+    gap: 14px !important;
+    padding-bottom: 4px;
+    scroll-padding-left: 16px;
+  }
+  .ab-principle-grid::-webkit-scrollbar { display: none; }
+  .ab-principle-grid > * {
+    flex: 0 0 62%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    min-height: 116px;
+    padding: 15px 16px !important;
+  }
+  .ab-principle-grid > * p:first-of-type { font-size: 13px !important; margin-bottom: 4px !important; }
+  .ab-principle-grid > * p:last-of-type { font-size: 11px !important; }
+
+  /* About → stat boxes become their own slidable row (compact peek cards). */
+  .ab-stats-grid {
+    display: flex !important;
+    grid-template-columns: none !important;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: none;
+    gap: 14px !important;
+    padding-bottom: 4px;
+    scroll-padding-left: 16px;
+  }
+  .ab-stats-grid::-webkit-scrollbar { display: none; }
+  .ab-stats-grid > * {
+    flex: 0 0 60%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    padding: 16px 18px !important;
+  }
+  .ab-stats-grid > * p:nth-of-type(1) { font-size: 30px !important; }
+
+  /* Contact → the two boxes (message form + contact info) become a full-width
+     swipe carousel: one box per screen, slide to reveal the other. */
+  .lp-contact-cols {
+    display: flex !important;
+    grid-template-columns: none !important;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: none;
+    gap: 14px !important;
+    padding-bottom: 4px;
+    scroll-padding-left: 16px;
+  }
+  .lp-contact-cols::-webkit-scrollbar { display: none; }
+  .lp-contact-cols > * {
+    flex: 0 0 100%;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+  /* Form fields default to touch-action:auto, so a horizontal drag starting on
+     them moves the caret instead of panning the carousel — let them pan it. Taps
+     still focus/click; only horizontal drags are redirected to the slider. */
+  .lp-contact-cols input,
+  .lp-contact-cols textarea,
+  .lp-contact-cols button,
+  .lp-contact-cols a { touch-action: pan-x; }
+
+  /* For Investors → the two columns (pitch + features and the testimonials)
+     become a full-width swipe carousel: one box per screen, slide for the other. */
+  .lp-investors-cols {
+    display: flex !important;
+    grid-template-columns: none !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    height: auto !important;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: none;
+    gap: 14px !important;
+    padding-bottom: 4px;
+    scroll-padding-left: 16px;
+    align-items: stretch !important;
+  }
+  .lp-investors-cols::-webkit-scrollbar { display: none; }
+  .lp-investors-cols > * {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+  /* Compact the For Founders section so the whole thing holds together in one
+     mobile viewport ("stiff") and the testimonial card is shifted up into view
+     instead of being pushed under the device chrome. */
+  .lp-founders-grid { gap: 12px !important; }
+  .lp-founders-intro { gap: 6px !important; }
+  .lp-founders-intro h2 { font-size: 20px !important; line-height: 1.15 !important; }
+  .lp-founders-intro p { font-size: 13px !important; line-height: 1.5 !important; }
+  .lp-founders-checklist { gap: 3px !important; }
+  .lp-founders-checklist span { font-size: 12.5px !important; }
+  /* Hide the long intro paragraph on mobile so the For Founders section
+     (headline + checklist + testimonial card) fits in one phone screen. */
+  .lp-founders-desc { display: none !important; }
+  .lp-swipe-hint { display: flex !important; }
   .lp-testimonials-grid {
     grid-template-columns: 1fr !important;
   }
@@ -490,6 +651,15 @@ img, video { max-width: 100%; height: auto; }
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
+
+  /* Fix the landing "page shift": a CSS grid column of `1fr` is minmax(auto,1fr),
+     and the swipe-carousel child forces the `auto` minimum wider than the screen,
+     so the whole column (and its heading) overflow/clip. minmax(0,1fr) + min-width:0
+     lets the column shrink to the viewport. */
+  .ab-top-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .ab-top-grid > * { min-width: 0 !important; }
 }
 
 /* ─── LANDING PAGE FOOTER ───────────────────────────────────────────────── */
@@ -500,11 +670,16 @@ img, video { max-width: 100%; height: auto; }
   }
 }
 @media (max-width: 480px) {
+  /* Two compact columns on phones so the footer stays a tidy block in the top
+     half of the section instead of stretching link-by-link down the whole page. */
   .lp-footer-grid {
-    grid-template-columns: 1fr !important;
-    gap: 24px !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px 20px !important;
   }
 }
+/* Footer links are flex items, so the global 44px touch tap-target rule stretches
+   them and scatters the columns. Keep them at their natural compact height. */
+.lp-footer-grid a { min-height: 0 !important; min-width: 0 !important; }
 
 /* ─── CONTACT FORM INPUTS ────────────────────────────────────────────────── */
 @media (max-width: 768px) {
@@ -534,22 +709,8 @@ img, video { max-width: 100%; height: auto; }
    HUB / SCOUT — ADDITIONAL RESPONSIVE LAYOUTS
 ═══════════════════════════════════════════════════════════ */
 
-/* Pipeline & Deal Flow Kanban — horizontal scroll on mobile */
-@media (max-width: 768px) {
-  .hub-pipeline-kanban {
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important;
-    flex-wrap: nowrap !important;
-  }
-  .hub-pipeline-kanban::-webkit-scrollbar { display: none; }
-  .hub-pipeline-kanban > * {
-    min-width: 200px !important;
-    max-width: 200px !important;
-    flex-shrink: 0 !important;
-  }
-}
+/* (Removed stale .hub-pipeline-kanban horizontal-scroll rule — superseded by the
+   vertical-stack rule further down so all pipeline cards are reachable on mobile.) */
 
 /* 5-col KPI strips (Funding, Scout Cockpit) */
 @media (max-width: 768px) {
@@ -755,13 +916,16 @@ img, video { max-width: 100%; height: auto; }
   }
 
   /* ── Two-column grids inside hub overview: already 1-col via CSS.
-     Remove height constraints so they grow naturally. ── */
-  .lp-two-col {
+     Remove height constraints so they grow naturally.
+     Exclude .lp-contact-cols — it's a horizontal swipe carousel, so it needs
+     overflow-x:auto and full-width (flex:0 0 100%) slides, not the stacking
+     clobber this rule applies. ── */
+  .lp-two-col:not(.lp-contact-cols) {
     height: auto !important;
     overflow-x: hidden !important;
     overflow-y: visible !important;
   }
-  .lp-two-col > * {
+  .lp-two-col:not(.lp-contact-cols) > * {
     flex: none !important;
     height: auto !important;
     overflow-x: hidden !important;
@@ -791,19 +955,28 @@ img, video { max-width: 100%; height: auto; }
     flex: none !important;
   }
 
-  /* ── Pipeline kanban: fixed height, h-scroll between columns ── */
+  /* ── Pipeline kanban: vertical stack on mobile — each stage becomes a
+     full-width section showing ALL its cards (cards keep their uniform fixed
+     height); the page scrolls. Fixes columns clipping cards past 3–4. ── */
   .hub-pipeline-kanban {
     flex: none !important;
-    height: 520px !important;
-    min-height: 520px !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
-  .hub-pipeline-kanban > * {
-    min-width: 220px !important;
-    max-width: 220px !important;
-    flex-shrink: 0 !important;
-    height: 100% !important;
+  .hub-pipeline-kanban > * {            /* each stage column */
+    min-width: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    flex: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .hub-pipeline-kanban .analytics-scroll {   /* card list inside a column */
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   /* ── Scout cockpit 3-col / hub funding 3-col / events 2-col:
@@ -886,10 +1059,12 @@ img, video { max-width: 100%; height: auto; }
 
 /* ─── LANDING PAGE SECTION VERTICAL PADDING ─────────────────────────────── */
 @media (max-width: 768px) {
-  .section-full { padding-top: 48px !important; padding-bottom: 40px !important; }
+  /* top padding must clear the fixed nav header (~68px tall on mobile) so section
+     content like the "For Founders" badge doesn't slide under the INCUTRACK logo */
+  .section-full { padding-top: 64px !important; padding-bottom: 24px !important; }
 }
 @media (max-width: 480px) {
-  .section-full { padding-top: 36px !important; padding-bottom: 32px !important; }
+  .section-full { padding-top: 76px !important; padding-bottom: 24px !important; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1088,15 +1263,14 @@ img, video { max-width: 100%; height: auto; }
   }
 }
 
-/* ── Diligence "Viewing" startup selector: horizontal scroll instead of overflowing ── */
+/* ── Diligence "Viewing" selector → native dropdown on mobile ──
+   The chip row can't fit every startup on a phone, so on mobile we hide the
+   chips and show a full-width <select> (native picker) instead. ── */
+.sc-dr-select-wrap { display: none; }
 @media (max-width: 768px) {
-  .sc-dr-selector {
-    overflow-x: auto !important;
-    max-width: 100% !important;
-    scrollbar-width: none !important;
-  }
-  .sc-dr-selector::-webkit-scrollbar { display: none; }
-  .sc-dr-selector > * { flex-shrink: 0 !important; }
+  .sc-dr-selrow { flex-wrap: wrap !important; }
+  .sc-dr-chips { display: none !important; }
+  .sc-dr-select-wrap { display: flex !important; }
 }
 
 /* ── Deal Flow board: horizontal kanban → vertical stack on mobile ──
@@ -1122,4 +1296,122 @@ img, video { max-width: 100%; height: auto; }
     max-height: none !important;
     overflow: visible !important;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SCOUT / HUB — MOBILE ROUND 2: declutter decorations + stop content clipping
+   (Investor Network, Demo Days, Market Insights, Deployment, Diligence cards,
+    Explore Hub Portfolio Leaderboard.)
+══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Decorative orbit / constellation layers overlap the headers on small
+     screens. They are purely decorative (aria-hidden, pointer-events:none),
+     so hide them on mobile to declutter. */
+  .hub-tab-content > div[aria-hidden] { display: none !important; }
+
+  /* Diligence doc cards: wrap rows and let the title wrap instead of clipping
+     off the right edge ("NeuralKit Pitc…" / "CORPORATE · VC ON…"). */
+  .dr-doc-row { flex-wrap: wrap !important; row-gap: 10px !important; }
+  .dr-doc-head { flex-wrap: wrap !important; }
+  .dr-doc-head > span:first-child {
+    white-space: normal !important;
+    overflow: visible !important;
+    word-break: break-word !important;
+  }
+
+  /* Explore Hub Portfolio Leaderboard: the fixed-width columns are wider than a
+     phone, so make the table scroll horizontally instead of clipping STAGE etc. */
+  .hub-leaderboard {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .hub-leaderboard > * { min-width: 600px !important; }
+
+  /* Defensive: no scout/hub card or panel may exceed the viewport width. */
+  .sc-tab-panel-left, .sc-tab-sidebar, .sc-network-side,
+  .dr-doc-card, .iv-card, .dp-card {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── Mentor Network filter bar: stack the "Filter:" pills and the
+     "N available now" indicator so they don't overlap / clip on mobile. ── */
+  .hub-mentor-filterbar {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    justify-content: flex-start !important;
+    padding: 16px !important;
+  }
+  .hub-mentor-filterbar-left { flex-wrap: wrap !important; }
+
+  /* ── Event Arena: let event titles wrap onto 2 lines instead of clipping. ── */
+  .hub-event-title {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    display: block !important;
+  }
+
+  /* ── National Capital Matrix liquidity panel: rigid (no internal scroll) —
+     expand to content so the whole scenario shows at once. ── */
+  .hub-liquidity-panel {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .hub-liquidity-panel > * {
+    flex: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* ── Scout Startup/Founder Network header: title + status chips wrap so the
+     "Active / Warm / Cold" chips don't clip off the right edge. ── */
+  .sc-network-header { flex-wrap: wrap !important; gap: 10px !important; }
+  .sc-network-header > * { margin-left: 0 !important; }
+
+  /* ── Demo Days header: KPI pills + event-type filters all wrap so nothing
+     clips. The filter group takes its own full row and wraps internally; the
+     desktop-only vertical divider is hidden. ── */
+  .sc-demodays-stats { flex-wrap: wrap !important; }
+  .dd-filter-divider { display: none !important; }
+  /* On mobile the chip row is replaced by a native dropdown (cleaner). */
+  .dd-filter-pills { display: none !important; }
+  .dd-filter-select-wrap { display: flex !important; }
+  .dd-add-event { margin-left: 0 !important; flex: 1 1 100% !important; justify-content: center !important; }
+
+  /* ── Deployment Tracker: wrap card rows / detail strip / legend so the ring
+     gauge, ROI, "% of capital" and "Remaining" never clip off the right edge. ── */
+  .dp-card-row { flex-wrap: wrap !important; row-gap: 12px !important; }
+  /* Fixed 4-column grid so Sector/Stage/Deployed/Position always stay on ONE row.
+     Each column is constrained (minmax 0), so a long stage like "Funding Secured"
+     wraps to two lines inside its own column instead of pushing Position onto a
+     second row and making the box taller than its siblings. */
+  .dp-card-strip {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 8px 10px !important;
+    align-items: start !important;
+  }
+  .dp-legend { flex-wrap: wrap !important; row-gap: 6px !important; }
+  /* Hide the redundant ring gauge on mobile (it collides with the ROI badge;
+     the same % already shows as "of deployed" + in the detail strip). */
+  .dp-card-ring { display: none !important; }
+  /* Let the name + ₹amount/ROI block wrap so they never overlap. */
+  .dp-card-namerow { flex-wrap: wrap !important; row-gap: 6px !important; }
+  .dp-card-namerow > div:last-child { text-align: left !important; }
+}
+
+/* ── Explore Hub Brand Vault "Type" filter → native dropdown on mobile ── */
+@media (max-width: 768px) {
+  .bv-filter-pills { display: none !important; }
+  .bv-filter-select { display: block !important; }
+}
+
+/* ── Explore Hub Event Arena header → matches the Demo Days mobile layout:
+   filter becomes a dropdown, stats wrap, Add Event goes full-width. ── */
+@media (max-width: 768px) {
+  .ea-header { flex-wrap: wrap !important; gap: 12px !important; }
+  .ea-stats-cta { flex-wrap: wrap !important; flex: 1 1 100% !important; }
+  .ea-add-event { flex: 1 1 100% !important; justify-content: center !important; }
 }

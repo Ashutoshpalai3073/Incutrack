@@ -54,12 +54,12 @@ const BASE_EVENTS = [
 ];
 
 const VAULT_DOCS = [
-  { name: 'NeuralKit Pitch Deck v4.1', type: 'Deck', date: 'Jun 12', views: 28, status: 'Final', score: 94, file_url: '', file_path: '' },
-  { name: 'FinFlow Executive Summary', type: 'Doc', date: 'Jun 10', views: 14, status: 'Final', score: 88, file_url: '', file_path: '' },
-  { name: 'QuantumGrid Due Diligence Pack', type: 'Bundle', date: 'Jun 8', views: 9, status: 'Final', score: 96, file_url: '', file_path: '' },
-  { name: 'ClimateOS Product Demo v2', type: 'Video', date: 'Jun 5', views: 6, status: 'Review', score: 79, file_url: '', file_path: '' },
-  { name: 'EduSphere Financial Projections', type: 'Sheet', date: 'Jun 1', views: 21, status: 'Final', score: 85, file_url: '', file_path: '' },
-  { name: 'BioWeave Cap Table Structure', type: 'Sheet', date: 'May 28', views: 3, status: 'Draft', score: 71, file_url: '', file_path: '' },
+  { name: 'NeuralKit_Public_Vault', type: 'Deck', date: 'Jun 12', views: 28, status: 'Final', score: 94, file_url: '', file_path: '' },
+  { name: 'FinFlow_Public_Vault', type: 'Doc', date: 'Jun 10', views: 14, status: 'Final', score: 88, file_url: '', file_path: '' },
+  { name: 'QuantumGrid_Public_Vault', type: 'Bundle', date: 'Jun 8', views: 9, status: 'Final', score: 96, file_url: '', file_path: '' },
+  { name: 'ClimateOS_Public_Vault', type: 'Video', date: 'Jun 5', views: 6, status: 'Review', score: 79, file_url: '', file_path: '' },
+  { name: 'EduSphere_Public_Vault', type: 'Sheet', date: 'Jun 1', views: 21, status: 'Final', score: 85, file_url: '', file_path: '' },
+  { name: 'BioWeave_Public_Vault', type: 'Sheet', date: 'May 28', views: 3, status: 'Draft', score: 71, file_url: '', file_path: '' },
 ];
 
 const INVESTORS = [
@@ -692,7 +692,7 @@ function AsteroidKPIRow({ stats }: { stats: { total: number; raised: number; fun
   const cards = [
     { label: 'Total Portfolios', val: stats.total, change: '+2 this month', sub: 'Active companies', icon: Building2, color: ASTEROID_COLORS[0] },
     { label: 'Capital Raised', val: `₹${(stats.raised / 1e6).toFixed(1)}M`, change: '↑ +₹32.5M', sub: 'Total deployed', icon: Wallet, color: ASTEROID_COLORS[1] },
-    { label: 'Funded / Exited', val: stats.funded, change: '2 this cohort', sub: 'Successful exits', icon: Award, color: ASTEROID_COLORS[2] },
+    { label: 'Funded / Exited', val: stats.funded, change: '+2 this quarter', sub: 'Successful exits', icon: Award, color: ASTEROID_COLORS[2] },
     { label: 'Avg IncuScore™', val: stats.avgScore, change: '↑ +3.2 pts', sub: 'Quality index', icon: Target, color: ASTEROID_COLORS[3] },
   ];
 
@@ -841,7 +841,11 @@ function HubPage() {
   const [notifAllRead, setNotifAllRead] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-  // Result picked from global search → surface (and highlight) that item in its tab
+  // Result picked from global search → surface (and highlight) that item in its tab.
+  // `pinned` controls ORDER (stays at top until the next search). `focus` controls the
+  // one-time glow animation only and auto-clears — keeping the two separate is what makes
+  // the surfaced item STAY at the top instead of dropping back after the glow ends.
+  const [pinned, setPinned] = useState<{ kind: string; key: string } | null>(null);
   const [focus, setFocus] = useState<{ kind: string; key: string } | null>(null);
   // Modals
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -1308,10 +1312,15 @@ function HubPage() {
   // Route a chosen result to its tab and flag it to be surfaced/highlighted there
   const handleSearchPick = (kind: string, item: any) => {
     setSearch(''); setSearchOpen(false);
-    if (kind === 'startup') { setPipelineSector('All'); setFocus({ kind, key: item.id }); setTab('pipeline'); }
-    else if (kind === 'doc') { setVaultBrand(null); setVaultType('All'); setFocus({ kind, key: item.name }); setTab('vault'); }
-    else if (kind === 'mentor') { setMentorFilter('All'); setFocus({ kind, key: item.id }); setTab('network'); }
-    else if (kind === 'event') { setEventType('All'); setFocus({ kind, key: item.id }); setTab('events'); }
+    // The key identifies the item within its list. `pinned` keeps it at the top until the
+    // NEXT pick replaces it; `focus` fires the glow once and then clears itself.
+    const key = kind === 'doc' ? item.name : item.id;
+    setPinned({ kind, key });
+    setFocus({ kind, key });
+    if (kind === 'startup') { setPipelineSector('All'); setTab('pipeline'); }
+    else if (kind === 'doc') { setVaultBrand(null); setVaultType('All'); setTab('vault'); }
+    else if (kind === 'mentor') { setMentorFilter('All'); setTab('network'); }
+    else if (kind === 'event') { setEventType('All'); setTab('events'); }
   };
 
   // Move a focused item to the front of its list so it shows first in the target tab
@@ -1680,7 +1689,7 @@ function HubPage() {
             </button>
             <div>
               <h2 className="hub-topbar-title text-base font-semibold text-white">{navItems.find(n => n.id === tab)?.label}</h2>
-              <p className="text-[11px] text-white/25 mt-0.5">{tab === 'funding' ? 'Live Cross-Border Matchmaking & Capital Activity' : 'Cohort 12 · Incutrack National Program · Live'}</p>
+              <p className="text-[11px] text-white/25 mt-0.5">{tab === 'funding' ? 'Live Cross-Border Matchmaking & Capital Activity' : 'Incutrack Marketplace · Live'}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -1821,7 +1830,7 @@ function HubPage() {
               <div className="lp-two-col" style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 296px', gap: 16 }}>
 
                 {/* Portfolio table */}
-                <div className="hub-table-wrap" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div className="hub-table-wrap hub-leaderboard" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
                   {/* Table header */}
                   <div style={{ flexShrink: 0, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2231,7 +2240,7 @@ function HubPage() {
                   {STAGE_ORDER.map((stage, stageIdx) => {
                     const sc = STAGE_COLORS[stage];
                     const stageCards = filteredPipeline.filter(s => s.stage === stage);
-                    const cards = focus?.kind === 'startup' ? bringToFront(stageCards, s => s.id === focus.key) : stageCards;
+                    const cards = pinned?.kind === 'startup' ? bringToFront(stageCards, s => s.id === pinned.key) : stageCards;
                     const icon = STAGE_ICONS[stage]; const desc = STAGE_DESC[stage];
                     const isLast = stageIdx === STAGE_ORDER.length - 1;
                     return (
@@ -2387,7 +2396,20 @@ function HubPage() {
                   <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Filter style={{ width: 12, height: 12 }} />Type:
                   </span>
-                  <FilterPills options={['All', 'Deck', 'Doc', 'Sheet', 'Video', 'Bundle']} value={vaultType} onChange={setVaultType} />
+                  <div className="bv-filter-pills">
+                    <FilterPills options={['All', 'Deck', 'Doc', 'Sheet', 'Video', 'Bundle']} value={vaultType} onChange={setVaultType} />
+                  </div>
+                  {/* Mobile dropdown — replaces the type chips on small screens */}
+                  <select
+                    value={vaultType}
+                    onChange={e => setVaultType(e.target.value)}
+                    className="bv-filter-select"
+                    style={{ display: 'none', flex: '1 1 100%', minWidth: 0, padding: '10px 34px 10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: 'white', fontSize: 13, fontWeight: 600, outline: 'none', WebkitAppearance: 'none', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                  >
+                    {['All', 'Deck', 'Doc', 'Sheet', 'Video', 'Bundle'].map(t => (
+                      <option key={t} value={t} style={{ background: '#0a0a16', color: 'white' }}>{t === 'All' ? 'All types' : t}</option>
+                    ))}
+                  </select>
                   {vaultBrand && (
                     <span style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 10px 5px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700, color: '#a78bfa', background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(139,92,246,0.35)' }}>
                       <FolderKey style={{ width: 11, height: 11 }} />Viewing: {vaultBrand}
@@ -2435,7 +2457,7 @@ function HubPage() {
               )}
               <div className="analytics-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
                 <div className="hub-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
-                  {(focus?.kind === 'doc' ? bringToFront(filteredDocs, d => d.name === focus.key) : filteredDocs).map(d => {
+                  {(pinned?.kind === 'doc' ? bringToFront(filteredDocs, d => d.name === pinned.key) : filteredDocs).map(d => {
                     const tc = TYPE_COLOR[d.type] || '#8b5cf6';
                     const sc = STAT_COLOR[d.status];
                     const scoreCol = d.score >= 90 ? '#10b981' : d.score >= 75 ? '#06b6d4' : '#f59e0b';
@@ -2831,12 +2853,25 @@ function HubPage() {
               </div>
 
               {/* ── Filter bar ── */}
-              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px 16px', position: 'relative', zIndex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div className="hub-mentor-filterbar" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px 16px', position: 'relative', zIndex: 1 }}>
+                <div className="hub-mentor-filterbar-left" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                     <Filter style={{ width: 12, height: 12 }} />Filter:
                   </span>
-                  <FilterPills options={['All', 'Available', 'SaaS', 'FinTech', 'DeepTech']} value={mentorFilter} onChange={setMentorFilter} />
+                  <div className="bv-filter-pills">
+                    <FilterPills options={['All', 'Available', 'SaaS', 'FinTech', 'DeepTech']} value={mentorFilter} onChange={setMentorFilter} />
+                  </div>
+                  {/* Mobile dropdown — replaces the chips on small screens */}
+                  <select
+                    value={mentorFilter}
+                    onChange={e => setMentorFilter(e.target.value)}
+                    className="bv-filter-select"
+                    style={{ display: 'none', flex: '1 1 100%', minWidth: 0, padding: '10px 34px 10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: 'white', fontSize: 13, fontWeight: 600, outline: 'none', WebkitAppearance: 'none', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                  >
+                    {['All', 'Available', 'SaaS', 'FinTech', 'DeepTech'].map(t => (
+                      <option key={t} value={t} style={{ background: '#0a0a16', color: 'white' }}>{t === 'All' ? 'All mentors' : t}</option>
+                    ))}
+                  </select>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.9)' }} />
@@ -2854,7 +2889,7 @@ function HubPage() {
               )}
               <div className="analytics-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 28px 24px', position: 'relative', zIndex: 1 }}>
                 <div className="hub-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
-                  {(focus?.kind === 'mentor' ? bringToFront(filteredMentors, m => m.id === focus.key) : filteredMentors).map(m => {
+                  {(pinned?.kind === 'mentor' ? bringToFront(filteredMentors, m => m.id === pinned.key) : filteredMentors).map(m => {
                     const mc = MENTOR_COLORS[m.id] || '#8b5cf6';
                     return (
                       <div key={m.id}
@@ -2988,10 +3023,10 @@ function HubPage() {
                 </div>
 
                 {/* ── Header ── */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: 2 }}>
+                <div className="ea-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: 2 }}>
 
                   {/* Filter pill group */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="bv-filter-pills" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Filter style={{ width: 12, height: 12, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
                     <div style={{ display: 'flex', padding: '3px', borderRadius: 999, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', gap: 3 }}>
                       {TYPES.map(t => {
@@ -3006,8 +3041,20 @@ function HubPage() {
                     </div>
                   </div>
 
+                  {/* Mobile dropdown — replaces the filter pills on small screens */}
+                  <select
+                    value={eventType}
+                    onChange={e => setEventType(e.target.value)}
+                    className="bv-filter-select"
+                    style={{ display: 'none', flex: '1 1 100%', minWidth: 0, padding: '10px 34px 10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: 'white', fontSize: 13, fontWeight: 600, outline: 'none', WebkitAppearance: 'none', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                  >
+                    {TYPES.map(t => (
+                      <option key={t} value={t} style={{ background: '#0a0a16', color: 'white' }}>{t === 'All' ? 'All event types' : t}</option>
+                    ))}
+                  </select>
+
                   {/* Stats + CTA */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="ea-stats-cta" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {([[String(allEvents.length), 'Events', '#8b5cf6'], [String(rsvpedIds.length), 'RSVPd', '#10b981'], ['₹5L', 'Prize', '#f59e0b']] as [string,string,string][]).map(([val, lbl, col]) => (
                       <div key={lbl} style={{ padding: '5px 13px', borderRadius: 10, background: `${col}0d`, border: `1px solid ${col}22`, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${col}80,transparent)` }} />
@@ -3016,7 +3063,8 @@ function HubPage() {
                       </div>
                     ))}
                     <button onClick={openAddEvent}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 22px rgba(124,58,237,0.45)', letterSpacing: '.03em', transition: 'all .18s' }}
+                      className="ea-add-event"
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 18px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 22px rgba(124,58,237,0.45)', letterSpacing: '.03em', transition: 'all .18s' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 30px rgba(124,58,237,0.65)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 22px rgba(124,58,237,0.45)'; (e.currentTarget as HTMLButtonElement).style.transform = ''; }}
                     ><Plus style={{ width: 13, height: 13 }} />Add Event</button>
@@ -3047,7 +3095,7 @@ function HubPage() {
                           <span style={{ fontSize: 13, color: 'white' }}>No events match this filter</span>
                         </div>
                       )}
-                      {(focus?.kind === 'event' ? bringToFront(filteredEvents, ev => ev.id === focus.key) : filteredEvents).map(ev => {
+                      {(pinned?.kind === 'event' ? bringToFront(filteredEvents, ev => ev.id === pinned.key) : filteredEvents).map(ev => {
                         const ec = TYPE_META[ev.type]?.color || '#8b5cf6';
                         const dp = parseDate(ev.date);
                         const isRsvpd = rsvpedIds.includes(ev.id);
@@ -3073,7 +3121,7 @@ function HubPage() {
 
                               {/* Content */}
                               <div style={{ minWidth: 0, paddingRight: 14 }}>
-                                <h3 style={{ fontSize: 13.5, fontWeight: 700, color: 'white', margin: '0 0 5px', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</h3>
+                                <h3 className="hub-event-title" style={{ fontSize: 13.5, fontWeight: 700, color: 'white', margin: '0 0 5px', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</h3>
                                 <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', lineHeight: 1.6, margin: '0 0 9px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{ev.description}</p>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14 }}>
                                   <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'rgba(255,255,255,0.32)' }}>
@@ -3296,7 +3344,7 @@ function HubPage() {
                 {[
                   { label: 'Total MRR', val: mrrLatest >= 1000 ? `₹${(mrrLatest / 1000).toFixed(1)}M` : `₹${mrrLatest}K`, change: `+${mrrPct}%`, period: 'vs last month', color: '#8b5cf6' },
                   { label: 'Active Users', val: usrLatest >= 1000 ? `${(usrLatest / 1000).toFixed(1)}K` : String(usrLatest), change: `+${usrPct}%`, period: 'vs last month', color: '#06b6d4' },
-                  { label: 'Avg IncuScore™', val: String(stats.avgScore), change: '+3.2', period: 'pts this cohort', color: '#10b981' },
+                  { label: 'Avg IncuScore™', val: String(stats.avgScore), change: '+3.2', period: 'pts platform avg', color: '#10b981' },
                   { label: 'Burn Multiple', val: burnMultiple === '—' ? '—' : `${burnMultiple}×`, change: '-0.3×', period: 'improving QoQ', color: '#f59e0b' },
                 ].map(k => (
                   <div key={k.label} style={{
@@ -3522,7 +3570,7 @@ function HubPage() {
 
                   {/* Footer */}
                   <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 8, paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Total in cohort</span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Total listed</span>
                     <span style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>{startups.length} startups</span>
                   </div>
                 </div>
@@ -3637,7 +3685,7 @@ function HubPage() {
                 <div className="hub-funding-main" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '320px 1fr 280px', gap: 12, position: 'relative', zIndex: 1 }}>
 
                   {/* ── LEFT: Funding Orb Panel ── */}
-                  <div style={{ borderRadius: 20, border: '1px solid rgba(139,92,246,0.3)', background: 'linear-gradient(160deg,rgba(139,92,246,0.14) 0%,rgba(6,6,18,0.97) 70%)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', userSelect: 'none', WebkitUserSelect: 'none' }}>
+                  <div className="hub-liquidity-panel" style={{ borderRadius: 20, border: '1px solid rgba(139,92,246,0.3)', background: 'linear-gradient(160deg,rgba(139,92,246,0.14) 0%,rgba(6,6,18,0.97) 70%)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', userSelect: 'none', WebkitUserSelect: 'none' }}>
                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,0.9),transparent)', pointerEvents: 'none' }} />
                     <div style={{ position: 'absolute', bottom: -60, left: -60, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,0.1),transparent 70%)', pointerEvents: 'none' }} />
 
