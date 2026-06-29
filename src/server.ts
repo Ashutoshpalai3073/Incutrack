@@ -686,20 +686,23 @@ async function handleStartupInsert(request: Request): Promise<Response> {
     if (body.__dryRun) return jsonRes({ ok: true });
 
     const passwordHash = body.owner_password ? await hashPassword(body.owner_password) : null;
+    const upsertPayload: Record<string, any> = {
+      id: body.id, name: body.name, tagline: body.tagline,
+      description: body.description, founder: body.founder,
+      industry: body.industry, stage: body.stage,
+      funding_goal: body.fundingGoal, raised: body.raised,
+      pitch_score: body.pitchScore, members: body.members,
+      // Creator is fixed to whoever first made it; owner defaults to the
+      // verified caller. Both come from the token, not the request body.
+      created_by_email: existingStartup?.created_by_email ?? authed.email,
+      owner_email: body.owner_email ?? existingStartup?.owner_email ?? authed.email,
+      owner_password_hash: passwordHash,
+    };
+    // New registrations go into the pending queue; edits keep the existing status.
+    if (!existingStartup) upsertPayload.status = 'pending';
     const { data, error } = await admin
       .from('startups')
-      .upsert({
-        id: body.id, name: body.name, tagline: body.tagline,
-        description: body.description, founder: body.founder,
-        industry: body.industry, stage: body.stage,
-        funding_goal: body.fundingGoal, raised: body.raised,
-        pitch_score: body.pitchScore, members: body.members,
-        // Creator is fixed to whoever first made it; owner defaults to the
-        // verified caller. Both come from the token, not the request body.
-        created_by_email: existingStartup?.created_by_email ?? authed.email,
-        owner_email: body.owner_email ?? existingStartup?.owner_email ?? authed.email,
-        owner_password_hash: passwordHash,
-      }, { onConflict: 'id' })
+      .upsert(upsertPayload, { onConflict: 'id' })
       .select().single();
     if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     // Promote the verified caller to 'founder' when they register a new startup
@@ -2020,6 +2023,27 @@ async function handleVCAdminReview(request: Request): Promise<Response> {
   return jsonRes({ ok: true });
 }
 
+// ─── Startup: Admin — get pending registrations ───────────────────────────────
+async function handleStartupAdminPending(request: Request): Promise<Response> {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
+  const db = getVCAdmin();
+  const { data } = await db.from('startups').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+  return jsonRes({ startups: data ?? [] });
+}
+
+// ─── Startup: Admin — approve / reject registration ───────────────────────────
+async function handleStartupAdminReview(request: Request): Promise<Response> {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
+  const db = getVCAdmin();
+  const { id, action } = await request.json() as { id: string; action: 'approve' | 'reject' };
+  if (!id || !['approve', 'reject'].includes(action)) return jsonRes({ error: 'Invalid params.' }, 400);
+  const newStatus = action === 'approve' ? 'approved' : 'rejected';
+  await db.from('startups').update({ status: newStatus, reviewed_at: new Date().toISOString() }).eq('id', id);
+  return jsonRes({ ok: true });
+}
+
 // ─── Contact: submit message ──────────────────────────────────────────────────
 async function handleContactSubmit(request: Request): Promise<Response> {
   try {
@@ -2179,6 +2203,12 @@ export default {
 
     if (pathname === '/api/vc/admin/review' && method === 'POST')
       return handleVCAdminReview(request);
+
+    if (pathname === '/api/startups/admin/pending' && method === 'GET')
+      return handleStartupAdminPending(request);
+
+    if (pathname === '/api/startups/admin/review' && method === 'POST')
+      return handleStartupAdminReview(request);
 
     if (pathname === '/api/contact' && method === 'POST')
       return handleContactSubmit(request);

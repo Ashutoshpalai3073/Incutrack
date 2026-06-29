@@ -848,7 +848,7 @@ function ScoutPage() {
                     .select('*')
                     .order('created_at', { ascending: false });
                 if (!alive || error || !data?.length) return;
-                const loaded = data.map(mapStartupRow);
+                const loaded = data.filter((s: any) => (s.status ?? 'approved') === 'approved').map(mapStartupRow);
                 // Live startups first, then the demo seed (dedupe by name)
                 setStartups(prev => {
                     const seen = new Set(loaded.map(s => s.name.toLowerCase()));

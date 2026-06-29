@@ -898,6 +898,10 @@ function HubPage() {
   const [pendingAdvances, setPendingAdvances] = useState<any[]>([]);
   const [adminAdvancesLoading, setAdminAdvancesLoading] = useState(false);
   const [adminAdvanceAction, setAdminAdvanceAction] = useState<Record<string, 'approving' | 'rejecting'>>({});
+  // ── Startup Registration Approvals ────────────────────────────────────────
+  const [pendingStartupRegs, setPendingStartupRegs] = useState<any[]>([]);
+  const [pendingStartupRegsLoading, setPendingStartupRegsLoading] = useState(false);
+  const [adminStartupRegAction, setAdminStartupRegAction] = useState<Record<string, 'approving' | 'rejecting'>>({});
   // ── VC Admin ───────────────────────────────────────────────────────────────
   const [pendingVCProfiles, setPendingVCProfiles] = useState<any[]>([]);
   const [pendingDealInterests, setPendingDealInterests] = useState<any[]>([]);
@@ -942,6 +946,9 @@ function HubPage() {
           industry: s.industry, stage: s.stage,
           fundingGoal: s.funding_goal, raised: s.raised,
           metrics: { members: s.members, pitchScore: s.pitch_score },
+          status: s.status ?? 'approved',
+          owner_email: s.owner_email ?? null,
+          created_by_email: s.created_by_email ?? null,
         }));
         setStartups(prev => [...loaded, ...EXTENDED_STARTUPS]);
       }
@@ -1220,12 +1227,14 @@ function HubPage() {
       setAdminAdvancesLoading(true);
       setAdminVCLoading(true);
       setContactMsgsLoading(true);
+      setPendingStartupRegsLoading(true);
       try {
-        const [evRes, advRes, vcRes, cmRes] = await Promise.all([
+        const [evRes, advRes, vcRes, cmRes, srRes] = await Promise.all([
           fetch('/api/events/pending', { credentials: 'include' }),
           fetch('/api/startup-advance/pending', { credentials: 'include' }),
           fetch('/api/vc/admin/pending', { credentials: 'include' }),
           fetch('/api/contact/messages', { credentials: 'include' }),
+          fetch('/api/startups/admin/pending', { credentials: 'include' }),
         ]);
         if (evRes.ok) { const d = await evRes.json(); setPendingEvents(Array.isArray(d) ? d : []); }
         if (advRes.ok) { const d = await advRes.json(); setPendingAdvances(Array.isArray(d) ? d : []); }
@@ -1237,11 +1246,13 @@ function HubPage() {
           setShortlistEvents(Array.isArray(d.shortlists) ? d.shortlists : []);
         }
         if (cmRes.ok) { const d = await cmRes.json(); setContactMessages(Array.isArray(d) ? d : []); }
+        if (srRes.ok) { const d = await srRes.json(); setPendingStartupRegs(Array.isArray(d.startups) ? d.startups : []); }
       } catch { /* ignore */ }
       setAdminEventsLoading(false);
       setAdminAdvancesLoading(false);
       setAdminVCLoading(false);
       setContactMsgsLoading(false);
+      setPendingStartupRegsLoading(false);
     };
     load();
   }, [tab, isAdmin]);
@@ -1274,8 +1285,10 @@ function HubPage() {
     const q = search.toLowerCase().trim();
     const matchSearch = !q || s.name.toLowerCase().includes(q);
     const matchSector = pipelineSector === 'All' || s.industry === pipelineSector;
-    return matchSearch && matchSector;
-  }), [startups, search, pipelineSector]);
+    const isOwner = s.owner_email === user?.email || s.created_by_email === user?.email;
+    const visible = (s as any).status !== 'pending' || isOwner || isAdmin;
+    return matchSearch && matchSector && visible;
+  }), [startups, search, pipelineSector, user, isAdmin]);
 
   const filteredDocs = useMemo(() =>
     vaultDocs.filter(d =>
@@ -1486,6 +1499,9 @@ function HubPage() {
         raised: 0,
         fundingGoal: Number(newS.fundingGoal) || 0,
         metrics: { members: 1, pitchScore: result.total ?? 68 },
+        status: 'pending',
+        owner_email: ownerEmail || user?.email || null,
+        created_by_email: user?.email || null,
       };
       setStartups(prev => [newStartup, ...prev]);
       fetch('/api/startups', {
@@ -2285,6 +2301,14 @@ function HubPage() {
                                 onClick={() => { requireOwnership(s.id, () => { const knownIndustries = ['SaaS','FinTech','DeepTech','HealthTech','EdTech','AgriTech','ClimaTech','D2C / Consumer','E-commerce','Logistics & Supply Chain','HRTech','LegalTech','PropTech','SpaceTech','Gaming','Media & Content','Others']; const isKnown = knownIndustries.includes(s.industry); setEditTarget({ ...s, industry: isKnown ? s.industry : 'Others' }); setEditCustomIndustry(isKnown ? '' : s.industry); }); }}>
                                 {/* Top shimmer */}
                                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${sc}65,transparent)` }} />
+
+                                {/* Pending approval banner — owner-only */}
+                                {(s as any).status === 'pending' && (
+                                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 13, background: 'rgba(4,4,14,0.72)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, zIndex: 4, backdropFilter: 'blur(2px)' }}>
+                                    <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 10px', borderRadius: 999, color: '#fbbf24', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', letterSpacing: '.08em' }}>PENDING APPROVAL</span>
+                                    <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'center', lineHeight: 1.5, maxWidth: 140 }}>Awaiting admin review — visible only to you</p>
+                                  </div>
+                                )}
 
                                 {/* Row 1: name + score ring */}
                                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6, flexShrink: 0 }}>
@@ -3998,12 +4022,13 @@ function HubPage() {
                 </div>
                 <button
                   onClick={() => {
-                    setAdminEventsLoading(true); setAdminAdvancesLoading(true); setAdminVCLoading(true);
+                    setAdminEventsLoading(true); setAdminAdvancesLoading(true); setAdminVCLoading(true); setPendingStartupRegsLoading(true);
                     Promise.all([
                       fetch('/api/events/pending', { credentials: 'include' }).then(r => r.json()).then(d => setPendingEvents(Array.isArray(d) ? d : [])),
                       fetch('/api/startup-advance/pending', { credentials: 'include' }).then(r => r.json()).then(d => setPendingAdvances(Array.isArray(d) ? d : [])),
                       fetch('/api/vc/admin/pending', { credentials: 'include' }).then(r => r.json()).then(d => { setPendingVCProfiles(Array.isArray(d?.vc_profiles) ? d.vc_profiles : []); setPendingDealInterests(Array.isArray(d?.deal_interests) ? d.deal_interests : []); setPendingDiligenceReqs(Array.isArray(d?.diligence_requests) ? d.diligence_requests : []); setShortlistEvents(Array.isArray(d?.shortlist_events) ? d.shortlist_events : []); }),
-                    ]).finally(() => { setAdminEventsLoading(false); setAdminAdvancesLoading(false); setAdminVCLoading(false); });
+                      fetch('/api/startups/admin/pending', { credentials: 'include' }).then(r => r.json()).then(d => setPendingStartupRegs(Array.isArray(d?.startups) ? d.startups : [])),
+                    ]).finally(() => { setAdminEventsLoading(false); setAdminAdvancesLoading(false); setAdminVCLoading(false); setPendingStartupRegsLoading(false); });
                   }}
                   style={{ padding: '6px 14px', borderRadius: 8, fontSize: 11, fontWeight: 700, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#a78bfa', cursor: 'pointer' }}
                 >
@@ -4115,6 +4140,42 @@ function HubPage() {
                     </div>
                   ))
                 )}
+              </div>
+
+              {/* Section: Startup Registrations */}
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <Rocket style={{ width: 14, height: 14, color: '#0ea5e9' }} />
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Startup Registrations</p>
+                  {!pendingStartupRegsLoading && (
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: pendingStartupRegs.length > 0 ? 'rgba(14,165,233,0.12)' : 'rgba(255,255,255,0.06)', color: pendingStartupRegs.length > 0 ? '#38bdf8' : 'rgba(255,255,255,0.3)', border: `1px solid ${pendingStartupRegs.length > 0 ? 'rgba(14,165,233,0.35)' : 'rgba(255,255,255,0.1)'}` }}>
+                      {pendingStartupRegs.length} pending
+                    </span>
+                  )}
+                </div>
+                {pendingStartupRegsLoading ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 0' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2.5px solid rgba(14,165,233,0.2)', borderTop: '2.5px solid #38bdf8', animation: 'spin 0.8s linear infinite' }} />
+                  </div>
+                ) : pendingStartupRegs.length === 0 ? (
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.25)', paddingLeft: 22 }}>No pending registrations.</p>
+                ) : pendingStartupRegs.map((sr: any) => (
+                  <div key={sr.id} style={{ background: 'rgba(14,165,233,0.03)', border: '1px solid rgba(14,165,233,0.15)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                      <div>
+                        <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 800, color: '#fff' }}>{sr.name}</p>
+                        <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{sr.founder} · {sr.industry}</p>
+                        {sr.tagline && <p style={{ margin: '4px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>{sr.tagline}</p>}
+                        <p style={{ margin: '4px 0 0', fontSize: 10, color: 'rgba(14,165,233,0.7)' }}>Stage: {sr.stage} · by {sr.created_by_email || sr.owner_email}</p>
+                      </div>
+                      <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 9px', borderRadius: 999, color: '#fbbf24', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', flexShrink: 0 }}>PENDING</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button disabled={!!adminStartupRegAction[sr.id]} onClick={async () => { setAdminStartupRegAction(a => ({ ...a, [sr.id]: 'rejecting' })); await fetch('/api/startups/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: sr.id, action: 'reject' }) }); setPendingStartupRegs(prev => prev.filter(s => s.id !== sr.id)); setAdminStartupRegAction(a => { const n = { ...a }; delete n[sr.id]; return n; }); }} style={{ flex: 1, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', cursor: adminStartupRegAction[sr.id] ? 'wait' : 'pointer', opacity: adminStartupRegAction[sr.id] ? 0.5 : 1 }}>{adminStartupRegAction[sr.id] === 'rejecting' ? 'Rejecting…' : '✕ Reject'}</button>
+                      <button disabled={!!adminStartupRegAction[sr.id]} onClick={async () => { setAdminStartupRegAction(a => ({ ...a, [sr.id]: 'approving' })); await fetch('/api/startups/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: sr.id, action: 'approve' }) }); setPendingStartupRegs(prev => prev.filter(s => s.id !== sr.id)); setStartups(prev => prev.map(s => s.id === sr.id ? { ...s, status: 'approved' } : s)); setAdminStartupRegAction(a => { const n = { ...a }; delete n[sr.id]; return n; }); }} style={{ flex: 2, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,rgba(14,165,233,0.25),rgba(14,165,233,0.1))', border: '1px solid rgba(14,165,233,0.45)', color: '#38bdf8', cursor: adminStartupRegAction[sr.id] ? 'wait' : 'pointer', opacity: adminStartupRegAction[sr.id] ? 0.5 : 1 }}>{adminStartupRegAction[sr.id] === 'approving' ? 'Approving…' : '✓ Approve'}</button>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Section: Stage Advance Requests */}
@@ -5343,7 +5404,17 @@ function HubPage() {
         const sc = STAGE_COLORS[s.stage] ?? '#8b5cf6';
         return (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.87)', backdropFilter: 'blur(16px)' }} onClick={() => !advanceRequestSubmitting && setAdvanceRequestOpen(false)}>
-            <div onClick={e => e.stopPropagation()} style={{ background: '#09090f', border: '1px solid rgba(139,92,246,0.3)', borderTop: '2px solid #8b5cf6', borderRadius: 22, width: '100%', maxWidth: 520, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 0 80px rgba(139,92,246,0.18), 0 40px 80px rgba(0,0,0,0.8)' }}>
+            <style>{`
+              .adv-modal::-webkit-scrollbar { width: 4px; }
+              .adv-modal::-webkit-scrollbar-track { background: transparent; }
+              .adv-modal::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 999px; }
+              .adv-modal::-webkit-scrollbar-thumb:hover { background: #1d4ed8; }
+              .adv-textarea::-webkit-scrollbar { width: 4px; }
+              .adv-textarea::-webkit-scrollbar-track { background: transparent; }
+              .adv-textarea::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 999px; }
+              .adv-textarea::-webkit-scrollbar-thumb:hover { background: #1d4ed8; }
+            `}</style>
+            <div className="adv-modal" onClick={e => e.stopPropagation()} style={{ background: '#09090f', border: '1px solid rgba(139,92,246,0.3)', borderTop: '2px solid #8b5cf6', borderRadius: 22, width: '100%', maxWidth: 520, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 0 80px rgba(139,92,246,0.18), 0 40px 80px rgba(0,0,0,0.8)' }}>
               {/* Header */}
               <div style={{ padding: '22px 26px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#09090f', zIndex: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -5411,6 +5482,7 @@ function HubPage() {
                     <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>Justification / Write-up *</label>
                     <textarea
                       rows={6}
+                      className="adv-textarea"
                       value={advanceRequestForm.justification}
                       onChange={e => { setAdvanceRequestForm(f => ({ ...f, justification: e.target.value })); setAdvanceRequestError(''); }}
                       placeholder={`Explain why ${s.name} is ready for the next stage.\n\nInclude:\n• Key milestones achieved\n• Metrics (users, MRR, contracts, etc.)\n• What changed since the last stage\n• Why now is the right time`}
