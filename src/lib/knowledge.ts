@@ -142,6 +142,44 @@ const TAB_GUIDE: Record<string, { label: string; summary: string; whatItIs: stri
   }
 };
 
+const LANDING_SECTIONS: Record<string, { label: string; summary: string; details: string }> = {
+  home: {
+    label: 'Home',
+    summary: 'Hero and quick platform positioning for founders and investors.',
+    details: 'The Home section (hero) introduces Incutrack with the core value proposition: a single OS for founders and investors to track progress, fundraising readiness, and deal flow.'
+  },
+  features: {
+    label: 'Features',
+    summary: 'High-level list of platform capabilities.',
+    details: 'Features explains Pipeline Management, Growth Analytics, Mentor Network, Investor Matching, Secure Pitch Vault, and Event Arena — how each area helps founders and investors operate.'
+  },
+  founders: {
+    label: 'Founders',
+    summary: 'Founder-facing workflow and benefits.',
+    details: 'Founders view describes the Founder Hub: tracking milestones, MRR, automated reports, IncuScore™ readiness, mentor bookings, and the secure document vault for investor access.'
+  },
+  investors: {
+    label: 'Investors',
+    summary: 'Investor-facing Scout/VC portal features.',
+    details: 'Investors view describes Scout: deal pipeline, diligence workspace, investor matching, insights, and tools to discover and track startups and manage capital deployment.'
+  },
+  testimonials: {
+    label: 'Testimonials',
+    summary: 'Social proof and customer stories.',
+    details: 'Testimonials presents short customer stories and endorsements from founders and ecosystem partners highlighting how Incutrack improved their fundraising and execution.'
+  },
+  about: {
+    label: 'About',
+    summary: 'Team, mission and positioning.',
+    details: 'About explains the company mission, founding team, and long-term vision for building an operating system for startups and ecosystem builders.'
+  },
+  contact: {
+    label: 'Contact',
+    summary: 'Ways to reach the team.',
+    details: 'Contact contains the contact form and pointers to reach the Incutrack team for sales, partnerships, or support.'
+  }
+};
+
 function normalizeTab(tab?: string) {
   return (tab || '').trim().toLowerCase();
 }
@@ -168,7 +206,14 @@ export function getContextualKnowledge(context: ChatContext = {}) {
     tab && TAB_GUIDE[tab]
       ? `WHEN TO USE THIS TAB: ${TAB_GUIDE[tab].whenToUse}`
       : '',
-    section ? `ACTIVE SECTION: ${section}` : ''
+    (section ? (() => {
+      const key = section.toLowerCase();
+      if (LANDING_SECTIONS[key]) {
+        const s = LANDING_SECTIONS[key];
+        return `ACTIVE SECTION: ${s.label} — ${s.summary}\nSECTION DETAILS: ${s.details}`;
+      }
+      return `ACTIVE SECTION: ${section}`;
+    })() : '')
   ].filter(Boolean);
 
   return `${WEBSITE_KNOWLEDGE}

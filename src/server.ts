@@ -911,8 +911,8 @@ async function handleChatRequest(request: Request, _env: unknown): Promise<Respo
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' });
     const knowledge = getContextualKnowledge(context);
     const SYSTEM_PROMPT = `You are a helpful assistant for Incutrack, a platform for startup founders and investors.
-Answer ONLY based on the info below. If unsure, say: "For more details, please reach out to the Incutrack team."
-Be friendly, concise, and helpful.\n\n${knowledge}`;
+  Use the platform knowledge below to answer user questions. If a page/tab context is provided, tailor your reply to that context in addition to the global knowledge, but do not refuse to answer general questions when the user is not on a specific tab.
+  Be friendly, concise, and helpful. If you cannot answer, say: "For more details, please reach out to the Incutrack team."\n\n${knowledge}`;
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       max_tokens: 500,

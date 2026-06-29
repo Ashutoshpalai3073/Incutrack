@@ -1196,12 +1196,18 @@ function Index() {
   const [heroVisible, setHeroVisible] = useState(true)
   const [activeSectionIdx, setActiveSectionIdx] = useState(-1)
   const [isMobile, setIsMobile] = useState(false)
+  const [footerNotice, setFooterNotice] = useState<string | null>(null)
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
+  useEffect(() => {
+    if (!footerNotice) return
+    const timeout = setTimeout(() => setFooterNotice(null), 2400)
+    return () => clearTimeout(timeout)
+  }, [footerNotice])
   // Mobile-aware section padding
   const SS = isMobile
     ? { maxWidth: 1200, margin: "0 auto", padding: "0 16px" }
@@ -1214,6 +1220,45 @@ function Index() {
   const [deleting, setDeleting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const footerLinks = [
+    { heading: 'Platform', links: ['Explore Hub', 'Scout Hub', 'Pipeline', 'Analytics', 'Brand Vault'] },
+    { heading: 'Company', links: ['About Us', 'Careers', 'Blog', 'Press Kit', 'Changelog'] },
+    { heading: 'Legal', links: ['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Security', 'Compliance'] },
+  ];
+
+  const footerLinkUrls: Record<string, string | null> = {
+    'Explore Hub': '/hub',
+    'Scout Hub': '/scout',
+    'Pipeline': '/hub?tab=pipeline',
+    'Analytics': '/hub?tab=analytics',
+    'Brand Vault': '/hub?tab=vault',
+    'About Us': null,
+    'Careers': null,
+    'Blog': null,
+    'Press Kit': null,
+    'Changelog': null,
+    'Privacy Policy': null,
+    'Terms of Service': null,
+    'Cookie Policy': null,
+    'Security': null,
+    'Compliance': null,
+  };
+
+  const handleFooterLink = (label: string) => {
+    if (label === 'About Us') {
+      navigateToSection(4);
+      return;
+    }
+
+    const href = footerLinkUrls[label];
+    if (href) {
+      navigate({ to: href });
+      return;
+    }
+
+    setFooterNotice(`${label} is coming soon`);
+  };
 
   const sectionIndex = useRef(-1)
   const transitioning = useRef(false)
@@ -1381,6 +1426,28 @@ function Index() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Expose the active landing section on document.body so the chatbot
+  // can include section context when asking questions anywhere on the site.
+  useEffect(() => {
+    const map = new Map<number, string>([
+      [-2, 'transition'],
+      [-1, 'home'],
+      [0, 'features'],
+      [1, 'founders'],
+      [2, 'investors'],
+      [3, 'testimonials'],
+      [4, 'about'],
+      [5, 'contact'],
+    ]);
+    const name = map.get(activeSectionIdx) ?? 'unknown';
+    try {
+      document.body.setAttribute('data-active-section', name);
+      document.body.setAttribute('data-active-section-idx', String(activeSectionIdx));
+    } catch (e) {
+      // ignore server-side or restricted environments
+    }
+  }, [activeSectionIdx]);
+
   const handleLogout = async () => {
     setDropdownOpen(false);
     await logout();
@@ -1532,7 +1599,7 @@ function Index() {
           min-height: 100vh;
           display: flex;
           align-items: flex-start;
-          padding: 72px 0 80px;
+          padding: 46px 0 80px;
           position: relative;
           box-sizing: border-box;
         }
@@ -1570,6 +1637,19 @@ function Index() {
           scroll-snap-stop: normal;
         }
 
+        /* Align the home nav + section-overlay nav link clusters into one
+           "linear" position so they don't jump when navigating between pages.
+           Gated to real desktop widths so the centered cluster never overlaps
+           the logo or the right-side actions on narrower screens. */
+        @media (min-width: 1200px) {
+          .lp-nav-centered {
+            position: absolute;
+            left: 50%;
+            top: 24px;
+            transform: translateX(-50%);
+          }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           * { animation: none !important; transition: none !important; }
         }
@@ -1583,18 +1663,18 @@ function Index() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '20px 64px',
+        padding: '20px 40px',
         background: 'linear-gradient(to bottom, rgba(2,2,8,0.92) 0%, transparent 100%)',
         opacity: activeSectionIdx >= 0 ? 1 : 0,
         transition: 'opacity 300ms ease',
         pointerEvents: activeSectionIdx >= 0 ? 'auto' : 'none',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'white' }}>
+        <button type="button" onClick={() => navigateToSection(-1)} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'white', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
           <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#a78bfa', boxShadow: '0 0 12px 2px rgba(167,139,250,0.8)' }} />
           Incutrack
-        </div>
+        </button>
         {/* Desktop nav links */}
-        <div className="lp-section-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 32, fontSize: 13, color: 'rgba(163,163,163,1)' }}>
+        <div className="lp-section-nav-links lp-nav-centered" style={{ display: 'flex', alignItems: 'center', gap: 32, fontSize: 13, color: 'rgba(163,163,163,1)' }}>
           {([['Home', -1], ['Features', 0], ['Founders', 1], ['Investors', 2], ['Testimonials', 3], ['About', 4], ['Contact', 5]] as [string, number][]).map(([label, idx]) => (
             <button
               key={label}
@@ -1696,11 +1776,11 @@ function Index() {
           {!dustDone && <DustCanvas heroRef={heroRef} onDone={() => setDustDone(true)} />}
 
           <nav className="relative z-20 flex items-center justify-between px-6 md:px-16 py-7" style={{ flexWrap: 'wrap' }}>
-            <div className="flex items-center gap-2.5 text-sm font-semibold tracking-widest uppercase">
+            <button type="button" onClick={() => navigateToSection(-1)} className="flex items-center gap-2.5 text-sm font-semibold tracking-widest uppercase" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}>
               <span className="inline-block h-2 w-2 rounded-full bg-violet-400 shadow-[0_0_12px_2px_rgba(167,139,250,0.8)]" />
               Incutrack
-            </div>
-            <div className="hidden md:flex items-center gap-8 text-sm text-neutral-400">
+            </button>
+            <div className="hidden md:flex items-center gap-8 text-neutral-400 lp-nav-centered" style={{ fontSize: 13 }}>
               <button onClick={() => navigateToSection(-1)} className="hover:text-white transition-colors cursor-pointer" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }}>Home</button>
               {["features", "founders", "investors", "testimonials", "about", "contact"].map((l, i) => (
                 <button key={l} onClick={() => navigateToSection(i)} className="hover:text-white transition-colors cursor-pointer capitalize" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }}>{l.charAt(0).toUpperCase() + l.slice(1)}</button>
@@ -2498,16 +2578,24 @@ function Index() {
               </div>
             </div>
             {/* regular columns */}
-            {[
-              { heading: "Platform", links: ["Explore Hub", "Scout Hub", "Pipeline", "Analytics", "Pitch Vault"] },
-              { heading: "Company", links: ["About Us", "Careers", "Blog", "Press Kit", "Changelog"] },
-              { heading: "Legal", links: ["Privacy Policy", "Terms of Service", "Cookie Policy", "Security", "Compliance"] },
-            ].map(col => (
+            {footerLinks.map(col => (
               <div key={col.heading}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.22)", textTransform: "uppercase", letterSpacing: ".1em", margin: "0 0 14px" }}>{col.heading}</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                   {col.links.map(l => (
-                    <a key={l} href="#" style={{ fontSize: 13, color: "rgba(255,255,255,.4)", textDecoration: "none", transition: "color .15s" }} onMouseEnter={e => (e.currentTarget.style.color = "white")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,.4)")}>{l}</a>
+                    <a
+                      key={l}
+                      href={footerLinkUrls[l] ?? '#'}
+                      onClick={e => {
+                        e.preventDefault();
+                        handleFooterLink(l);
+                      }}
+                      style={{ fontSize: 13, color: "rgba(255,255,255,.4)", textDecoration: "none", transition: "color .15s" }}
+                      onMouseEnter={e => (e.currentTarget.style.color = "white")}
+                      onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,.4)")}
+                    >
+                      {l}
+                    </a>
                   ))}
                 </div>
               </div>
@@ -2523,6 +2611,11 @@ function Index() {
               ))}
             </div>
           </div>
+          {footerNotice && (
+            <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 60, padding: '12px 18px', borderRadius: 14, background: 'rgba(15,15,25,0.95)', border: '1px solid rgba(124,58,237,0.35)', boxShadow: '0 24px 64px rgba(0,0,0,0.45)', color: 'white', fontSize: 13, pointerEvents: 'none', maxWidth: 'min(90vw, 340px)', textAlign: 'center' }}>
+              {footerNotice}
+            </div>
+          )}
         </div>
       </footer>
       </div>
