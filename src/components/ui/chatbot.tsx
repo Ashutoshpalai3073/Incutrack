@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useLocation } from '@tanstack/react-router'
 
 interface Message {
     role: 'user' | 'assistant'
@@ -8,6 +9,7 @@ interface Message {
 }
 
 export function Chatbot() {
+    const location = useLocation()
     const [open, setOpen] = useState(false)
     const [messages, setMessages] = useState<Message[]>([
         { role: 'assistant', content: "Hey founder! 👋 Ask me anything about Incutrack." }
@@ -44,7 +46,18 @@ export function Chatbot() {
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: newMessages })
+                body: JSON.stringify({
+                    messages: newMessages,
+                    context: {
+                        pathname: location.pathname,
+                        tab: typeof window !== 'undefined'
+                            ? (document.querySelector('[data-active-tab]')?.getAttribute('data-active-tab') || document.body.getAttribute('data-active-tab') || undefined)
+                            : undefined,
+                        section: typeof window !== 'undefined'
+                            ? (document.querySelector('[data-active-section]')?.getAttribute('data-active-section') || document.body.getAttribute('data-active-section') || undefined)
+                            : undefined
+                    }
+                })
             })
             const data = await res.json()
             setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])

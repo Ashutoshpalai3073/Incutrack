@@ -1297,20 +1297,18 @@ function Index() {
   useEffect(() => {
     let touchStartX = 0
     let touchStartY = 0
-    let lastX = 0
-    // When a swipe begins inside a horizontal carousel (marked [data-hscroll]),
-    // we drive the scroll ourselves rather than relying on native overflow scroll.
-    // Native horizontal scroll is unreliable here: these carousels live inside
-    // position:fixed, overflow-y:auto wrappers (which swallow the horizontal pan)
-    // and the cards contain form fields/links that hijack the drag. JS-driving
-    // every horizontal swipe makes all carousels reliably slidable.
+    // A swipe that begins inside a horizontal carousel (marked [data-hscroll]) is
+    // handed to the browser to scroll natively — native touch momentum + CSS
+    // scroll-snap give the smoothest possible feel (far better than JS-driving the
+    // scrollLeft). We only step in to (a) drag-scroll a section taller than the
+    // screen and (b) page between sections on a vertical flick.
     let scroller: HTMLElement | null = null
     let vscroller: HTMLElement | null = null   // the active fixed section (vertical scroll container)
     let verticalNative = false                 // true once we've drag-scrolled the section
     let lastY = 0
     let axis: 'h' | 'v' | null = null
     const onTouchStart = (e: TouchEvent) => {
-      touchStartX = lastX = e.touches[0].clientX
+      touchStartX = e.touches[0].clientX
       touchStartY = lastY = e.touches[0].clientY
       axis = null
       verticalNative = false
@@ -1327,11 +1325,8 @@ function Index() {
         axis = dx > dy ? 'h' : 'v'
       }
       if (scroller && axis === 'h') {
-        // pan the carousel ourselves — prevent the page/section from reacting
-        const x = e.touches[0].clientX
-        scroller.scrollLeft -= x - lastX
-        lastX = x
-        e.preventDefault()
+        // Let the browser scroll the carousel natively — do NOT preventDefault.
+        // Native momentum + CSS scroll-snap handle the slide and the settle.
         return
       }
       // Vertical: if the section's content is taller than the screen, drag-scroll
@@ -1354,27 +1349,13 @@ function Index() {
       e.preventDefault()
     }
     const onTouchEnd = (e: TouchEvent) => {
-      const s = scroller
-      const wasHorizontal = s && axis === 'h'
+      const wasHorizontal = scroller && axis === 'h'
       const didVScroll = verticalNative
       scroller = null
       vscroller = null
       axis = null
       verticalNative = false
-      if (didVScroll) return // user scrolled within the section — don't page
-      if (wasHorizontal && s) {
-        // snap to whichever card is nearest the carousel's left edge
-        const srect = s.getBoundingClientRect()
-        const padLeft = parseFloat(getComputedStyle(s).scrollPaddingLeft) || 0
-        const kids = Array.from(s.children).filter(c => c.nodeType === 1) as HTMLElement[]
-        let best = Infinity, delta = 0
-        for (const c of kids) {
-          const d = c.getBoundingClientRect().left - srect.left - padLeft
-          if (Math.abs(d) < best) { best = Math.abs(d); delta = d }
-        }
-        if (kids.length) s.scrollBy({ left: delta, behavior: 'smooth' })
-        return // handled by the carousel — do not page the section
-      }
+      if (wasHorizontal || didVScroll) return // native carousel scroll / section drag handled it
       const diff = touchStartY - e.changedTouches[0].clientY
       if (Math.abs(diff) < 40) return
       window.dispatchEvent(new WheelEvent('wheel', { deltaY: diff, bubbles: true }))
@@ -2092,7 +2073,7 @@ function Index() {
                     <p style={{ fontSize: 17, fontWeight: 800, color: "white", margin: "0 0 3px" }}>Aryan Mehta</p>
                     <p style={{ fontSize: 12, color: "#22d3ee", margin: "0 0 7px", fontWeight: 600 }}>Partner · Nexus Ventures</p>
                     <div style={{ display: "flex", gap: 5 }}>
-                      {["₹200Cr AUM", "Seed", "Series A"].map(t => (
+                      {["₹200Cr Mandate", "Seed", "Series A"].map(t => (
                         <span key={t} style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 999, background: "rgba(6,182,212,.1)", color: "#22d3ee", border: "1px solid rgba(6,182,212,.25)" }}>{t}</span>
                       ))}
                     </div>
@@ -2107,7 +2088,7 @@ function Index() {
                   </div>
                 </blockquote>
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 8, marginTop: 12 }}>
-                  {[["14", "Deals Tracked"], ["+40%", "Portfolio ROI"], ["95%", "Speed"]].map(([val, label]) => (
+                  {[["14", "Deals Tracked"], ["+40%", "Sourced Yield"], ["95%", "Speed"]].map(([val, label]) => (
                     <div key={label} style={{ textAlign: "center", padding: "8px 0", borderRadius: 8, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)" }}>
                       <p style={{ fontSize: 16, fontWeight: 900, color: "white", margin: 0 }}>{val}</p>
                       <p style={{ fontSize: 9, color: "rgba(255,255,255,.3)", margin: "2px 0 0", textTransform: "uppercase", letterSpacing: ".06em" }}>{label}</p>
@@ -2144,10 +2125,10 @@ function Index() {
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
-                  { Icon: Target, color: "#8b5cf6", title: "Investment Cockpit", desc: "AUM, dry powder, deployed capital and shortlisted deals at a glance." },
+                  { Icon: Target, color: "#8b5cf6", title: "Investment Cockpit", desc: "Capital mandate, dry powder, capital deployed via Incutrack and shortlisted startups at a glance." },
                   { Icon: GitBranch, color: "#06b6d4", title: "Deal Flow Kanban", desc: "Track every deal across all stages with sector filtering and scoring." },
                   { Icon: Shield, color: "#10b981", title: "Diligence Room", desc: "Encrypted vault with view tracking and audit log." },
-                  { Icon: PieChart, color: "#f59e0b", title: "Market Insights", desc: "Sector breakdown, ROI trends, thesis alignment and score distribution." },
+                  { Icon: PieChart, color: "#f59e0b", title: "Market Insights", desc: "Sector momentum, sourced-deal yield, thesis match and score distribution." },
                 ].map(({ Icon, color, title, desc }) => (
                   <div key={title} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 12px", borderRadius: 10, background: `${color}07`, border: `1px solid ${color}15` }}>
                     <div style={{ width: 32, height: 32, borderRadius: 9, background: `${color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -2259,28 +2240,30 @@ function Index() {
         <div style={{ position: "absolute", top: "10%", left: "-8%", width: 560, height: 560, borderRadius: "50%", background: "radial-gradient(circle,rgba(139,92,246,0.06),transparent 70%)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: "8%", right: "-4%", width: 420, height: 420, borderRadius: "50%", background: "radial-gradient(circle,rgba(16,185,129,0.05),transparent 70%)", pointerEvents: "none" }} />
 
-        <div className={`section-inner ${SC}`} style={{ ...SS, display: "flex", flexDirection: "column", justifyContent: "center", gap: isMobile ? 36 : 48 }}>
+        <div className={`section-inner ${SC}`} style={{ ...SS, display: "flex", flexDirection: "column", justifyContent: "center", gap: isMobile ? 12 : 48 }}>
 
           {/* ── Top: headline left / principles right ── */}
-          <div className="ab-top-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 28 : 64, alignItems: "start" }}>
+          <div className="ab-top-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 16 : 64, alignItems: "start" }}>
 
             {/* LEFT */}
             <div style={{ animation: "ab-in .6s ease both" }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 16px", borderRadius: 999, background: "rgba(139,92,246,.08)", border: "1px solid rgba(139,92,246,.2)", marginBottom: 22 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 16px", borderRadius: 999, background: "rgba(139,92,246,.08)", border: "1px solid rgba(139,92,246,.2)", marginBottom: isMobile ? 12 : 22 }}>
                 <Award style={{ width: 11, height: 11, color: "#a78bfa" }} />
                 <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", letterSpacing: ".12em", textTransform: "uppercase" }}>About Incutrack</span>
               </div>
 
-              <h2 style={{ fontSize: isMobile ? 28 : 42, fontWeight: 900, letterSpacing: "-.025em", margin: "0 0 22px", lineHeight: 1.12, background: "linear-gradient(150deg,#fff 30%,rgba(255,255,255,.4))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              <h2 style={{ fontSize: isMobile ? 24 : 42, fontWeight: 900, letterSpacing: "-.025em", margin: isMobile ? "0 0 12px" : "0 0 22px", lineHeight: 1.12, background: "linear-gradient(150deg,#fff 30%,rgba(255,255,255,.4))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 Built for the next generation of companies.
               </h2>
 
-              <p style={{ fontSize: 15, color: "rgba(255,255,255,.38)", lineHeight: 1.85, margin: "0 0 28px", maxWidth: 440 }}>
-                We watched founders drown in spreadsheets and investors miss great deals in broken workflows — so we built the platform both sides wished existed.
+              <p style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,.38)", lineHeight: isMobile ? 1.55 : 1.85, margin: isMobile ? "0 0 12px" : "0 0 28px", maxWidth: 440 }}>
+                {isMobile
+                  ? "Founders drowned in spreadsheets; investors missed great deals — so we built the platform both sides wished existed."
+                  : "We watched founders drown in spreadsheets and investors miss great deals in broken workflows — so we built the platform both sides wished existed."}
               </p>
 
               {/* Divider rule */}
-              <div style={{ width: 40, height: 1, background: "linear-gradient(90deg,rgba(139,92,246,.6),transparent)", marginBottom: 22 }} />
+              <div style={{ width: 40, height: 1, background: "linear-gradient(90deg,rgba(139,92,246,.6),transparent)", marginBottom: isMobile ? 12 : 22 }} />
 
               {/* Origin detail */}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

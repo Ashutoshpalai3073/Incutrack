@@ -5,7 +5,7 @@ import { renderErrorPage } from "./lib/error-page";
 import Groq from 'groq-sdk';
 import { createClient } from '@supabase/supabase-js';
 import type { ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions';
-import { WEBSITE_KNOWLEDGE } from './lib/knowledge';
+import { getContextualKnowledge } from './lib/knowledge';
 
 interface Env {
   GROQ_API_KEY?: string;
@@ -907,11 +907,12 @@ async function handleDocumentInsert(request: Request): Promise<Response> {
 // ─── Chatbot ──────────────────────────────────────────────────────────────────
 async function handleChatRequest(request: Request, _env: unknown): Promise<Response> {
   try {
-    const { messages } = await request.json() as { messages: ChatCompletionMessageParam[] };
+    const { messages, context } = await request.json() as { messages: ChatCompletionMessageParam[]; context?: { pathname?: string; tab?: string; section?: string } };
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' });
-    const SYSTEM_PROMPT = `You are a helpful assistant for Incutrack, a platform for startup founders.
+    const knowledge = getContextualKnowledge(context);
+    const SYSTEM_PROMPT = `You are a helpful assistant for Incutrack, a platform for startup founders and investors.
 Answer ONLY based on the info below. If unsure, say: "For more details, please reach out to the Incutrack team."
-Be friendly, concise, and helpful.\n\n${WEBSITE_KNOWLEDGE}`;
+Be friendly, concise, and helpful.\n\n${knowledge}`;
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       max_tokens: 500,
@@ -1882,6 +1883,80 @@ async function handleVCShortlist(request: Request): Promise<Response> {
   } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
 }
 
+// ─── VC → Founder: send a message to the founder's registered email ──────────
+async function sendFounderMessageEmail(opts: {
+  to: string; founderName: string; startup: string;
+  vcName: string; vcFirm: string; vcEmail: string; message: string; apiKey: string;
+}): Promise<void> {
+  const { to, founderName, startup, vcName, vcFirm, vcEmail, message, apiKey } = opts;
+  const from = vcFirm ? `${vcName} (${vcFirm})` : vcName;
+  if (!apiKey) {
+    console.log(`[DEV — no RESEND_API_KEY] Message to ${to} from ${vcEmail} re ${startup}:\n${message}`);
+    return;
+  }
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const htmlMsg = esc(message).replace(/\n/g, '<br>');
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'Incutrack <notify@drusti.online>',
+      to: [to],
+      reply_to: vcEmail,
+      subject: `${from} messaged you on Incutrack`,
+      text: `${from} reached out to you about ${startup} via Incutrack Scout Hub:\n\n"${message}"\n\nReply to this email to respond directly to ${vcEmail}.`,
+      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a14;font-family:Inter,Arial,sans-serif"><div style="max-width:520px;margin:32px auto;background:#0d0d1f;border-radius:16px;overflow:hidden;border:1px solid rgba(139,92,246,.2)"><div style="padding:22px 28px;border-bottom:1px solid rgba(255,255,255,.07)"><div style="display:inline-flex;align-items:center;gap:8px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22d3ee"></span><span style="color:#9ca3af;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase">Incutrack · Scout Hub</span></div></div><div style="padding:28px"><p style="color:#fff;font-size:16px;font-weight:700;margin:0 0 4px">Hi ${esc(founderName)},</p><p style="color:#9ca3af;font-size:14px;margin:0 0 20px;line-height:1.6"><strong style="color:#c4b5fd">${esc(from)}</strong> sent you a message about <strong style="color:#fff">${esc(startup)}</strong> on Incutrack.</p><div style="background:rgba(6,182,212,.07);border:1px solid rgba(6,182,212,.22);border-left:3px solid #22d3ee;border-radius:10px;padding:16px 18px;margin-bottom:22px"><p style="color:#e5e7eb;font-size:14px;line-height:1.65;margin:0;font-style:italic">${htmlMsg}</p></div><a href="mailto:${esc(vcEmail)}" style="display:inline-block;background:linear-gradient(90deg,#0e7490,#06b6d4);color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:11px 24px;border-radius:999px">Reply to ${esc(vcName)}</a><p style="color:#6b7280;font-size:12px;margin:22px 0 0">Or just reply to this email — it goes straight to ${esc(vcEmail)}.</p></div></div></body></html>`,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    console.error('[vc/message] Resend error:', err);
+    throw new Error('Failed to deliver the message email.');
+  }
+}
+
+async function handleVCMessage(request: Request): Promise<Response> {
+  const authed = await getAuthedUser(request);
+  if (!authed) return jsonRes({ error: 'Not authenticated.' }, 401);
+  const db = getVCAdmin();
+  try {
+    const body = await request.json() as {
+      startup?: string; recipient_name?: string; message?: string; vc_firm?: string; vc_name?: string;
+    };
+    const message = (body.message || '').trim();
+    const startup = (body.startup || '').trim();
+    if (!message) return jsonRes({ error: 'Message cannot be empty.' }, 400);
+    if (!startup) return jsonRes({ error: 'Missing startup.' }, 400);
+
+    // The founder's registered email lives on their startup row (looked up by name).
+    const { data: st } = await db
+      .from('startups')
+      .select('created_by_email, owner_email, founder')
+      .ilike('name', startup)
+      .maybeSingle();
+    const founderEmail = (st?.owner_email || st?.created_by_email || '').trim();
+
+    // No registered email (e.g. a demo/sample founder) — acknowledged in-app but
+    // there's nowhere to deliver it.
+    if (!founderEmail) return jsonRes({ ok: true, delivered: false, reason: 'no_email' });
+
+    await sendFounderMessageEmail({
+      to: founderEmail,
+      founderName: body.recipient_name || st?.founder || 'Founder',
+      startup,
+      vcName: body.vc_name || 'A verified investor',
+      vcFirm: body.vc_firm || '',
+      vcEmail: authed.email,
+      message,
+      apiKey: process.env.RESEND_API_KEY || '',
+    });
+    return jsonRes({ ok: true, delivered: true });
+  } catch (e) {
+    console.error('[vc/message] error:', e);
+    return jsonRes({ error: e instanceof Error ? e.message : 'Failed to send message.' }, 500);
+  }
+}
+
 // ─── VC: Diligence audit log — record a live action ──────────────────────────
 async function handleVCAuditLog(request: Request): Promise<Response> {
   const email = await extractVCEmail(request);
@@ -2089,6 +2164,9 @@ export default {
 
     if (pathname === '/api/vc/shortlist' && method === 'POST')
       return handleVCShortlist(request);
+
+    if (pathname === '/api/vc/message' && method === 'POST')
+      return handleVCMessage(request);
 
     if (pathname === '/api/vc/audit' && method === 'POST')
       return handleVCAuditLog(request);

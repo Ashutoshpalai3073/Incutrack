@@ -545,8 +545,8 @@ img, video { max-width: 100%; height: auto; }
     flex: 0 0 62%;
     scroll-snap-align: start;
     scroll-snap-stop: always;
-    min-height: 116px;
-    padding: 15px 16px !important;
+    min-height: 88px;
+    padding: 12px 16px !important;
   }
   .ab-principle-grid > * p:first-of-type { font-size: 13px !important; margin-bottom: 4px !important; }
   .ab-principle-grid > * p:last-of-type { font-size: 11px !important; }
@@ -570,9 +570,9 @@ img, video { max-width: 100%; height: auto; }
     flex: 0 0 60%;
     scroll-snap-align: start;
     scroll-snap-stop: always;
-    padding: 16px 18px !important;
+    padding: 13px 18px !important;
   }
-  .ab-stats-grid > * p:nth-of-type(1) { font-size: 30px !important; }
+  .ab-stats-grid > * p:nth-of-type(1) { font-size: 27px !important; margin-top: 8px !important; }
 
   /* Contact → the two boxes (message form + contact info) become a full-width
      swipe carousel: one box per screen, slide to reveal the other. */
@@ -919,13 +919,18 @@ img, video { max-width: 100%; height: auto; }
      Remove height constraints so they grow naturally.
      Exclude .lp-contact-cols — it's a horizontal swipe carousel, so it needs
      overflow-x:auto and full-width (flex:0 0 100%) slides, not the stacking
-     clobber this rule applies. ── */
+     clobber this rule applies.
+     Exclude .hub-table-wrap — the command-centre Portfolio Leaderboard is a
+     horizontally-scrollable table (its own .hub-table-wrap rule sets
+     overflow-x:auto); the `:not(.lp-contact-cols)` here raises specificity to
+     (0,2,0), so without this exclusion the child rule's overflow-x:hidden would
+     win and freeze the table's horizontal scroll. ── */
   .lp-two-col:not(.lp-contact-cols) {
     height: auto !important;
     overflow-x: hidden !important;
     overflow-y: visible !important;
   }
-  .lp-two-col:not(.lp-contact-cols) > * {
+  .lp-two-col:not(.lp-contact-cols) > *:not(.hub-table-wrap) {
     flex: none !important;
     height: auto !important;
     overflow-x: hidden !important;

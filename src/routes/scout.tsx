@@ -1035,6 +1035,16 @@ function ScoutPage() {
         { id: 'deployment', label: 'Deployment Tracker', icon: DollarSign },
     ];
 
+    useEffect(() => {
+        const activeLabel = TABS.find(t => t.id === tab)?.label || 'Overview';
+        document.body.setAttribute('data-active-tab', tab);
+        document.body.setAttribute('data-active-section', activeLabel);
+        return () => {
+            document.body.removeAttribute('data-active-tab');
+            document.body.removeAttribute('data-active-section');
+        };
+    }, [tab]);
+
     if (!authLoading && !user) return <AuthGate />;
 
     return (
@@ -1374,9 +1384,9 @@ function ScoutPage() {
                                 {/* ── Row 1: KPI strip ── */}
                                 <div className="hub-kpi-5col" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                                     {[
-                                        { label: 'AUM', val: fmt(VC_PROFILE.aum), sub: 'Total fund size', color: '#8b5cf6', Icon: Building2 },
+                                        { label: 'Capital Mandate', val: fmt(VC_PROFILE.aum), sub: 'Deployable on Incutrack', color: '#8b5cf6', Icon: Building2 },
                                         { label: 'Dry Powder', val: fmt(dryPowder), sub: 'Available to deploy', color: '#10b981', Icon: Zap },
-                                        { label: 'Deployed', val: fmt(totalDeployed), sub: `${(deployedPct * 100).toFixed(0)}% of fund`, color: '#06b6d4', Icon: TrendingUp },
+                                        { label: 'Deployed', val: fmt(totalDeployed), sub: `${(deployedPct * 100).toFixed(0)}% of mandate`, color: '#06b6d4', Icon: TrendingUp },
                                         { label: 'Shortlisted', val: shortlisted.length, sub: 'Active pipeline', color: '#f59e0b', Icon: Star },
                                         { label: 'Target MOIC', val: VC_PROFILE.targetReturn, sub: 'Min. return target', color: '#f472b6', Icon: Target },
                                     ].map(k => (
@@ -1481,7 +1491,7 @@ function ScoutPage() {
                                                 {/* ROI sparkline */}
                                                 <div style={{ marginTop: 8, padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', flexShrink: 0 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                                        <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.28)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Portfolio ROI Trend</span>
+                                                        <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.28)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Sourced Deal Yield</span>
                                                         <span style={{ fontSize: 11, fontWeight: 800, color: '#10b981' }}>+52%</span>
                                                     </div>
                                                     <AreaChart data={ROI_DATA} color="#10b981" h={55} />
@@ -1502,7 +1512,7 @@ function ScoutPage() {
                                     <div style={{ ...G(), display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                                         <div style={{ padding: '11px 14px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                                             <Activity style={{ width: 13, height: 13, color: '#f59e0b' }} />
-                                            <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Action Feed</span>
+                                            <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Marketplace Activity</span>
                                             <span style={{ marginLeft: 'auto', width: 18, height: 18, borderRadius: '50%', background: 'rgba(239,68,68,.2)', border: '1px solid rgba(239,68,68,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: '#ef4444' }}>{actionFeed.length}</span>
                                         </div>
                                         <div className="sc-scroll" style={{ flex: 1, overflowY: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: 5, minHeight: 0 }}>
@@ -3090,10 +3100,10 @@ function ScoutPage() {
                             {/* ── KPI strip ── */}
                             <div className="sc-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                                 {[
-                                    { label: 'Total Deployed', val: fmt(deployedVal), sub: isAll ? 'Across all sectors' : sectorLabel, color: '#8b5cf6', Icon: TrendingUp },
-                                    { label: 'Portfolio ROI', val: `+${roiPct}%`, sub: isAll ? 'H1 2026 average' : `${sectorLabel} growth`, color: '#10b981', Icon: BarChart3 },
+                                    { label: 'Capital Transacted', val: fmt(deployedVal), sub: isAll ? 'Closed via Incutrack' : sectorLabel, color: '#8b5cf6', Icon: TrendingUp },
+                                    { label: 'Sourced Yield', val: `+${roiPct}%`, sub: isAll ? 'H1 2026 average' : `${sectorLabel} growth`, color: '#10b981', Icon: BarChart3 },
                                     { label: 'Active Deals', val: `${dealsVal}`, sub: 'In pipeline', color: '#06b6d4', Icon: Target },
-                                    { label: 'Avg Score', val: `${avgScore}`, sub: isAll ? 'Portfolio quality' : `${insightStartups.length} ${insightStartups.length === 1 ? 'company' : 'companies'}`, color: '#f59e0b', Icon: Star },
+                                    { label: 'Avg Score', val: `${avgScore}`, sub: isAll ? 'Match quality' : `${insightStartups.length} ${insightStartups.length === 1 ? 'company' : 'companies'}`, color: '#f59e0b', Icon: Star },
                                 ].map(k => (
                                     <div key={k.label} className="sc-card" style={{ borderRadius: 16, border: `1px solid ${k.color}25`, background: `linear-gradient(135deg,${k.color}10 0%,rgba(5,5,9,.9) 70%)`, padding: '14px 16px', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
                                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${k.color}80,transparent)` }} />
@@ -3118,7 +3128,7 @@ function ScoutPage() {
                                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,.7),transparent)' }} />
                                     <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                                         <PieChart style={{ width: 13, height: 13, color: '#a78bfa' }} />
-                                        <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Sector Breakdown</span>
+                                        <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>Sector Momentum</span>
                                         <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,.28)' }}>{isAll ? `${visibleSectors.length} sectors` : sectorLabel}</span>
                                     </div>
 
@@ -3167,7 +3177,7 @@ function ScoutPage() {
                                                     <div style={{ flex: 1, minWidth: 0 }}>
                                                         <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>{s.sector}</span>
                                                         <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
-                                                            <span style={{ fontSize: 9, color: 'rgba(255,255,255,.3)' }}>{s.pct}% of AUM</span>
+                                                            <span style={{ fontSize: 9, color: 'rgba(255,255,255,.3)' }}>{s.pct}% of capital</span>
                                                             <span style={{ fontSize: 9, color: 'rgba(255,255,255,.3)' }}>{s.deals} deals</span>
                                                         </div>
                                                     </div>
@@ -3189,7 +3199,7 @@ function ScoutPage() {
                                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(16,185,129,.7),transparent)' }} />
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
                                         <div>
-                                            <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Portfolio ROI</p>
+                                            <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Sourced Deal Yield</p>
                                             <p style={{ fontSize: 10, color: 'rgba(255,255,255,.28)', margin: '2px 0 0' }}>Jan – Jun 2026</p>
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
@@ -3276,7 +3286,7 @@ function ScoutPage() {
                                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(245,158,11,.7),transparent)' }} />
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexShrink: 0 }}>
                                         <Target style={{ width: 13, height: 13, color: '#f59e0b' }} />
-                                        <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Thesis Alignment</p>
+                                        <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Thesis Match</p>
                                         <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,.28)' }}>4 criteria</span>
                                     </div>
                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0, justifyContent: 'space-around' }}>
@@ -3402,10 +3412,10 @@ function ScoutPage() {
             {/* ── KPI strip ── */}
             <div className="sc-stat-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, position: 'relative', zIndex: 1 }}>
                 {[
-                    { label: 'Total AUM', val: fmt(VC_PROFILE.aum), sub: 'Fund size', color: '#8b5cf6', Icon: Building2 },
-                    { label: 'Deployed', val: fmt(totalD), sub: `${((totalD / fundTotal) * 100).toFixed(0)}% of fund`, color: '#10b981', Icon: TrendingUp },
+                    { label: 'Capital Mandate', val: fmt(VC_PROFILE.aum), sub: 'Deployable capital', color: '#8b5cf6', Icon: Building2 },
+                    { label: 'Deployed', val: fmt(totalD), sub: `${((totalD / fundTotal) * 100).toFixed(0)}% of mandate`, color: '#10b981', Icon: TrendingUp },
                     { label: 'Dry Powder', val: fmt(dryPowder), sub: `${(((dryPowder) / fundTotal) * 100).toFixed(0)}% available`, color: '#06b6d4', Icon: Wallet },
-                    { label: 'Avg Portfolio ROI', val: '+40%', sub: 'Across positions', color: '#f59e0b', Icon: BarChart3 },
+                    { label: 'Avg Sourced Yield', val: '+40%', sub: 'Across positions', color: '#f59e0b', Icon: BarChart3 },
                 ].map(k => (
                     <div key={k.label} className="dp-card" style={{ borderRadius: 16, border: `1px solid ${k.color}25`, background: `linear-gradient(135deg,${k.color}10 0%,rgba(5,5,9,.92) 70%)`, padding: '14px 16px', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${k.color}80,transparent)` }} />
@@ -3435,7 +3445,7 @@ function ScoutPage() {
                             <Wallet style={{ width: 14, height: 14, color: '#10b981', filter: 'drop-shadow(0 0 4px #10b981)' }} />
                         </div>
                         <div>
-                            <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0 }}>Active Deployments</p>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0 }}>Sourced Allocations</p>
                             <p style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', margin: 0 }}>{DEPLOYMENTS.length} positions · {fmt(totalD)} deployed</p>
                         </div>
                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', borderRadius: 999, background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.28)' }}>
@@ -3448,7 +3458,7 @@ function ScoutPage() {
                     <div style={{ padding: '12px 18px 0', flexShrink: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                             <span style={{ fontSize: 10, color: 'rgba(255,255,255,.3)' }}>Capital Deployed</span>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: 'white' }}>{((totalD / fundTotal) * 100).toFixed(0)}% of {fmt(fundTotal)} fund</span>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: 'white' }}>{((totalD / fundTotal) * 100).toFixed(0)}% of {fmt(fundTotal)} mandate</span>
                         </div>
                         <div style={{ height: 6, borderRadius: 4, background: 'rgba(255,255,255,.06)', overflow: 'hidden', position: 'relative' }}>
                             {DEPLOYMENTS.map((d, i) => {
@@ -3558,7 +3568,7 @@ function ScoutPage() {
                     <div style={{ flexShrink: 0, borderRadius: 18, border: '1px solid rgba(139,92,246,.28)', background: 'linear-gradient(160deg,rgba(139,92,246,.12) 0%,rgba(5,5,9,.97) 70%)', padding: '16px', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(139,92,246,.85),transparent)' }} />
                         <div style={{ position: 'absolute', top: -30, right: -30, width: 130, height: 130, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,.12),transparent 70%)', pointerEvents: 'none' }} />
-                        <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: '0 0 12px' }}>Portfolio Allocation</p>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: '0 0 12px' }}>Marketplace Allocation</p>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                             {/* SVG donut */}
@@ -3613,7 +3623,7 @@ function ScoutPage() {
                         {/* deployed vs dry powder bar */}
                         <div style={{ marginTop: 12 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                                <span style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Fund Utilisation</span>
+                                <span style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Mandate Utilisation</span>
                                 <span style={{ fontSize: 10, fontWeight: 800, background: 'linear-gradient(90deg,#a78bfa,#34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{((totalD / fundTotal) * 100).toFixed(0)}% deployed</span>
                             </div>
                             <div style={{ height: 7, borderRadius: 4, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
@@ -3626,7 +3636,7 @@ function ScoutPage() {
                         </div>
                     </div>
 
-                    {/* ── Dry Powder Scenarios ── */}
+                    {/* ── Deployment Capacity ── */}
                     <div style={{ flexShrink: 0, minWidth: 0, width: '100%', boxSizing: 'border-box', borderRadius: 18, border: '1px solid rgba(245,158,11,.22)', background: 'linear-gradient(160deg,rgba(245,158,11,.08) 0%,rgba(5,5,9,.97) 70%)', padding: '14px 16px', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(245,158,11,.8),transparent)' }} />
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
@@ -3634,8 +3644,8 @@ function ScoutPage() {
                                 <Zap style={{ width: 12, height: 12, color: '#f59e0b', filter: 'drop-shadow(0 0 3px #f59e0b)' }} />
                             </div>
                             <div style={{ minWidth: 0 }}>
-                                <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Dry Powder Scenarios</p>
-                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: 0 }}>Available: {fmt(dryPowder)}</p>
+                                <p style={{ fontSize: 12, fontWeight: 700, color: 'white', margin: 0 }}>Deployment Capacity</p>
+                                <p style={{ fontSize: 9, color: 'rgba(255,255,255,.28)', margin: 0 }}>Ready to deploy: {fmt(dryPowder)}</p>
                             </div>
                         </div>
 
@@ -3655,7 +3665,7 @@ function ScoutPage() {
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
                                             <span style={{ fontSize: 10, color: 'rgba(255,255,255,.3)' }}>{fmt(s.cost)} used</span>
-                                            <span style={{ fontSize: 9, color: s.color, fontWeight: 700 }}>{usePct.toFixed(0)}% of powder</span>
+                                            <span style={{ fontSize: 9, color: s.color, fontWeight: 700 }}>{usePct.toFixed(0)}% of capacity</span>
                                         </div>
                                         <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,.05)', marginTop: 6, overflow: 'hidden' }}>
                                             <div style={{ height: '100%', borderRadius: 2, width: `${usePct}%`, background: `linear-gradient(90deg,${s.color},${s.color}70)`, boxShadow: `0 0 6px ${s.color}55` }} />
@@ -3952,7 +3962,21 @@ function ScoutPage() {
                                 <div style={{ display: 'flex', gap: 10 }}>
                                     <button onClick={() => { setMsgOpen(null); setMsgText(''); }} style={{ flex: 1, padding: '10px', borderRadius: 12, background: 'rgba(255,255,255,.05)', color: 'rgba(255,255,255,.45)', border: '1px solid rgba(255,255,255,.08)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Cancel</button>
                                     <button
-                                        onClick={() => { const to = msgOpen?.name; setMsgOpen(null); setMsgText(''); showToast(`Message sent to ${to}`, '#06b6d4'); }}
+                                        onClick={async () => {
+                                            const to = msgOpen?.name; const company = msgOpen?.company; const text = msgText.trim();
+                                            if (!text) return;
+                                            setMsgOpen(null); setMsgText('');
+                                            try {
+                                                const res = await fetch('/api/vc/message', {
+                                                    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                                                    body: JSON.stringify({ startup: company, recipient_name: to, message: text, vc_firm: myProfile?.firm_name ?? VC_PROFILE.firm, vc_name: myProfile?.partner_name ?? user?.name ?? 'A verified investor' }),
+                                                });
+                                                const d = await res.json().catch(() => ({} as any));
+                                                if (res.ok && d.delivered) showToast(`Message emailed to ${to}`, '#06b6d4');
+                                                else if (res.ok) showToast(`Sent — ${to} hasn't linked an email yet`, '#f59e0b');
+                                                else showToast((d as any)?.error || 'Could not send message', '#f87171');
+                                            } catch { showToast('Network error — message not sent', '#f87171'); }
+                                        }}
                                         disabled={!msgText.trim()}
                                         className="sc-btn"
                                         style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px', borderRadius: 12, background: 'linear-gradient(90deg,#0e7490,#06b6d4)', color: 'white', border: 'none', cursor: msgText.trim() ? 'pointer' : 'not-allowed', opacity: msgText.trim() ? 1 : 0.5, fontSize: 13, fontWeight: 700, boxShadow: '0 4px 18px rgba(6,182,212,.4)' }}>
