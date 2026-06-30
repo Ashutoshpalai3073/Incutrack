@@ -1211,8 +1211,11 @@ function HubPage() {
   }), [startups]);
 
   const userStartups = useMemo(() =>
-    startups.filter(s => !EXTENDED_STARTUPS.find(es => es.id === s.id)),
-    [startups]);
+    startups.filter(s =>
+      !EXTENDED_STARTUPS.find(es => es.id === s.id) &&
+      (s.owner_email === user?.email || s.created_by_email === user?.email)
+    ),
+    [startups, user?.email]);
   const hasUserStartup = userStartups.length > 0;
   const userRole = user?.role ?? 'visitor';
   const isVC = userRole === 'vc' || userRole === 'admin';
@@ -1266,6 +1269,9 @@ function HubPage() {
   // Session is STARTUP-SCOPED — confirming password for Startup A never unlocks Startup B.
   const requireOwnership = (startupId: string, then: () => void) => {
     if (isAdmin) { then(); return; } // admin always passes
+    if (!user) { setSignInPromptMsg('Sign in to manage your startup.'); setSignInPromptOpen(true); return; }
+    // Only the startup's registered owner may proceed — silently block everyone else
+    if (!userStartups.some(us => us.id === startupId)) return;
     const expiry = ownershipSessions[startupId] ?? 0;
     if (Date.now() < expiry) { then(); return; } // valid 30-min session for THIS startup
     setOwnershipConfirmStartupId(startupId);
@@ -1274,6 +1280,8 @@ function HubPage() {
     setOwnershipConfirmError('');
     setOwnershipConfirmOpen(true);
   };
+  // Clear all ownership sessions whenever the logged-in account changes (login / logout)
+  useEffect(() => { setOwnershipSessions({}); }, [user?.email]);
 
   const totalCommitted = INVESTORS.filter(i => i.status === 'Committed').reduce((a, c) => a + c.amount, 0);
   const totalTarget = 60000000;
@@ -2352,7 +2360,7 @@ function HubPage() {
                                     />
                                     <div className="vault-menu" style={{ display: 'none', position: 'absolute', right: 0, bottom: 20, background: '#0d0d18', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, overflow: 'hidden', zIndex: 50, minWidth: 130, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
                                       <button
-                                        onClick={e => { e.stopPropagation(); const knownIndustries = ['SaaS','FinTech','DeepTech','HealthTech','EdTech','AgriTech','ClimaTech','D2C / Consumer','E-commerce','Logistics & Supply Chain','HRTech','LegalTech','PropTech','SpaceTech','Gaming','Media & Content','Others']; const isKnown = knownIndustries.includes(s.industry); setEditTarget({ ...s, industry: isKnown ? s.industry : 'Others' }); setEditCustomIndustry(isKnown ? '' : s.industry); }}
+                                        onClick={e => { e.stopPropagation(); requireOwnership(s.id, () => { const knownIndustries = ['SaaS','FinTech','DeepTech','HealthTech','EdTech','AgriTech','ClimaTech','D2C / Consumer','E-commerce','Logistics & Supply Chain','HRTech','LegalTech','PropTech','SpaceTech','Gaming','Media & Content','Others']; const isKnown = knownIndustries.includes(s.industry); setEditTarget({ ...s, industry: isKnown ? s.industry : 'Others' }); setEditCustomIndustry(isKnown ? '' : s.industry); }); }}
                                         style={{ width: '100%', padding: '9px 14px', background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#a78bfa', textAlign: 'left' }}
                                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(167,139,250,0.1)')}
                                         onMouseLeave={e => (e.currentTarget.style.background = 'none')}
