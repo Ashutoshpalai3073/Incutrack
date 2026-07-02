@@ -607,8 +607,9 @@ async function handleDocumentDelete(request: Request): Promise<Response> {
     // Identity + ownership: only the owning founder (or admin) may delete a doc.
     const authed = await getAuthedUser(request);
     if (!authed) return jsonRes({ error: 'Not authenticated.' }, 401);
+    // Fetch the doc once — used for both the ownership check and the activity log.
+    const { data: doc } = await admin.from('documents').select('id, deck_type, startup_name').eq('name', name).maybeSingle();
     if (authed.role !== 'admin') {
-      const { data: doc } = await admin.from('documents').select('startup_name').eq('name', name).maybeSingle();
       let owners: string[] = [];
       if (doc?.startup_name) {
         const { data: st } = await admin.from('startups').select('created_by_email, owner_email').eq('name', doc.startup_name).maybeSingle();
@@ -626,6 +627,16 @@ async function handleDocumentDelete(request: Request): Promise<Response> {
       console.error('[documents/delete]', error);
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
+    // Record the removal so the activity feed keeps the timeline (added → removed)
+    // instead of the upload entry silently disappearing.
+    await logActivity({
+      type: 'doc_removed',
+      actor_email: authed.email,
+      title: name,
+      detail: (doc?.deck_type === 'investor' ? 'Private investor / pitch deck' : 'Public brand deck')
+        + (doc?.startup_name ? ` · ${doc.startup_name}` : ''),
+      meta: { doc_id: doc?.id, startup_name: doc?.startup_name, deck_type: doc?.deck_type },
+    });
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     console.error('[documents/delete] unexpected:', err);
@@ -705,6 +716,16 @@ async function handleStartupInsert(request: Request): Promise<Response> {
       .upsert(upsertPayload, { onConflict: 'id' })
       .select().single();
     if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    // Record the registration in the append-only activity log (new regs only, not edits).
+    if (!existingStartup) {
+      await logActivity({
+        type: 'startup_registered',
+        actor_email: authed.email,
+        title: body.name,
+        detail: [body.industry, body.stage].filter(Boolean).join(' · ') || null,
+        meta: { startup_id: body.id },
+      });
+    }
     // Promote the verified caller to 'founder' when they register a new startup
     if (!existingStartup && authed.email !== PERMANENT_ADMIN_EMAIL) {
       const { data: currentUser } = await admin.from('users').select('role').eq('email', authed.email).maybeSingle();
@@ -724,17 +745,27 @@ async function handleStartupDelete(request: Request): Promise<Response> {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
   const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
-    const { id, startupName } = await request.json() as { id: string; startupName: string };
+    const { id, startupName, reason } = await request.json() as { id: string; startupName: string; reason?: string };
     // Identity + ownership: only the verified owner (or admin) may delete a startup.
     const authed = await getAuthedUser(request);
     if (!authed) return jsonRes({ error: 'Not authenticated.' }, 401);
     if (!(await canManageStartup(admin, id, authed))) return jsonRes({ error: 'You can only delete your own startup.' }, 403);
+    // Audit the reason the founder gave for removal (re-adding later requires fresh admin approval).
+    console.log(`[startups/delete] "${startupName}" (${id}) removed by ${(authed as any)?.email ?? 'unknown'} — reason: ${reason?.trim() || '(none given)'}`);
     // Delete linked documents first using startup_name
     if (startupName) {
       await admin.from('documents').delete().eq('startup_name', startupName);
     }
     // Then delete the startup
     await admin.from('startups').delete().eq('id', id);
+    // Log the removal with the founder's stated reason for the admin activity feed.
+    await logActivity({
+      type: 'startup_removed',
+      actor_email: (authed as any)?.email ?? null,
+      title: startupName || id,
+      detail: reason?.trim() || 'No reason given',
+      meta: { startup_id: id },
+    });
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     console.error('[startups/delete]', err);
@@ -898,6 +929,17 @@ async function handleDocumentInsert(request: Request): Promise<Response> {
       console.error('[documents] DB insert error:', error);
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
+
+    // Record the upload in the append-only activity log (survives startup deletion).
+    await logActivity({
+      type: 'doc_uploaded',
+      actor_email: authed.email,
+      title: name,
+      detail: deck_type === 'investor'
+        ? `Private investor / pitch deck${startupName ? ` · ${startupName}` : ''}`
+        : `Public brand deck${startupName ? ` · ${startupName}` : ''}`,
+      meta: { doc_id: data.id, startup_name: startupName, deck_type, doc_type: type },
+    });
 
     return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
@@ -1698,6 +1740,119 @@ function getVCAdmin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
+
+// ─── Activity feed — append-only log surfaced in the admin panel ──────────────
+// Fire-and-forget: a logging failure (e.g. the table isn't created yet) must
+// never break the primary action, so everything is wrapped and swallowed.
+type ActivityType =
+  | 'startup_registered' | 'startup_approved' | 'startup_rejected'
+  | 'doc_uploaded' | 'doc_removed' | 'startup_removed';
+async function logActivity(ev: {
+  type: ActivityType;
+  actor_email?: string | null;
+  title: string;
+  detail?: string | null;
+  meta?: Record<string, unknown> | null;
+}): Promise<void> {
+  try {
+    const db = getVCAdmin();
+    const { error } = await db.from('activity_events').insert({
+      type: ev.type,
+      actor_email: ev.actor_email ?? null,
+      title: ev.title,
+      detail: ev.detail ?? null,
+      meta: ev.meta ?? null,
+    });
+    if (error) console.error('[activity] insert error:', error.code, error.message, '(run migration 017 if permission denied)');
+  } catch (err) {
+    console.error('[activity] failed to log:', err);
+  }
+}
+
+// ─── Admin: platform activity feed ────────────────────────────────────────────
+// The append-only activity_events log is the source of truth, so a startup's full
+// history (registered → approved → deck added → removed) survives even after the
+// startup and its documents are deleted. We ALSO backfill from the live
+// startups/documents tables for anything registered/uploaded before logging
+// existed — deduplicated by natural key so nothing is counted twice.
+async function handleAdminActivity(request: Request): Promise<Response> {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
+  const db = getVCAdmin();
+
+  // 1. Authoritative append-only log (persists through deletion).
+  let logged: any[] = [];
+  try {
+    const { data, error } = await db
+      .from('activity_events')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    // Surface (don't swallow) real problems like a missing GRANT (42501) or a
+    // missing table (42P01) — these leave the feed empty and are easy to miss.
+    if (error) console.error('[activity] read error:', error.code, error.message, '(run migration 017 if this is a permission/relation error)');
+    logged = data ?? [];
+  } catch (err) { console.error('[activity] read threw:', err); logged = []; }
+
+  // Track which entities the log already covers, so backfill doesn't duplicate them.
+  const seen = new Set<string>();
+  for (const e of logged) {
+    const sid = e?.meta?.startup_id;
+    const did = e?.meta?.doc_id;
+    if (sid && e.type === 'startup_registered') seen.add(`reg:${sid}`);
+    if (sid && (e.type === 'startup_approved' || e.type === 'startup_rejected')) seen.add(`rev:${sid}`);
+    if (did && e.type === 'doc_uploaded') seen.add(`doc:${did}`);
+  }
+
+  const events: any[] = [...logged];
+
+  // 2. Backfill from still-existing rows not yet represented in the log.
+  const { data: startups } = await db
+    .from('startups')
+    .select('id, name, industry, stage, status, reviewed_at, created_at, created_by_email, owner_email')
+    .order('created_at', { ascending: false })
+    .limit(300);
+  for (const s of startups ?? []) {
+    if (!seen.has(`reg:${s.id}`)) {
+      events.push({
+        id: `reg-${s.id}`, type: 'startup_registered',
+        actor_email: s.created_by_email || s.owner_email || null,
+        title: s.name,
+        detail: [s.industry, s.stage].filter(Boolean).join(' · ') || null,
+        created_at: s.created_at,
+      });
+    }
+    if (s.reviewed_at && (s.status === 'approved' || s.status === 'rejected') && !seen.has(`rev:${s.id}`)) {
+      events.push({
+        id: `rev-${s.id}`,
+        type: s.status === 'approved' ? 'startup_approved' : 'startup_rejected',
+        actor_email: null, title: s.name,
+        detail: `Founder: ${s.created_by_email || s.owner_email || '—'}`,
+        created_at: s.reviewed_at,
+      });
+    }
+  }
+
+  const { data: docs } = await db
+    .from('documents')
+    .select('id, name, type, deck_type, startup_name, created_at')
+    .order('created_at', { ascending: false })
+    .limit(300);
+  for (const d of docs ?? []) {
+    if (!seen.has(`doc:${d.id}`)) {
+      events.push({
+        id: `doc-${d.id}`, type: 'doc_uploaded', actor_email: null, title: d.name,
+        detail: (d.deck_type === 'investor' ? 'Private investor / pitch deck' : 'Public brand deck')
+          + (d.startup_name ? ` · ${d.startup_name}` : ''),
+        created_at: d.created_at,
+      });
+    }
+  }
+
+  events.sort((a, b) =>
+    new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+  return jsonRes({ events: events.slice(0, 200) });
+}
 // ─── Verified identity — the ONLY trustworthy way to know who is calling ───────
 // Reads the jwt cookie and cryptographically verifies its HMAC signature with
 // JWT_SECRET. Anything that decodes the token WITHOUT this is forgeable, so every
@@ -2040,7 +2195,15 @@ async function handleStartupAdminReview(request: Request): Promise<Response> {
   const { id, action } = await request.json() as { id: string; action: 'approve' | 'reject' };
   if (!id || !['approve', 'reject'].includes(action)) return jsonRes({ error: 'Invalid params.' }, 400);
   const newStatus = action === 'approve' ? 'approved' : 'rejected';
+  const { data: st } = await db.from('startups').select('name, created_by_email, owner_email').eq('id', id).maybeSingle();
   await db.from('startups').update({ status: newStatus, reviewed_at: new Date().toISOString() }).eq('id', id);
+  await logActivity({
+    type: action === 'approve' ? 'startup_approved' : 'startup_rejected',
+    actor_email: await extractVCEmail(request),
+    title: st?.name || id,
+    detail: st ? `Founder: ${st.created_by_email || st.owner_email || '—'}` : null,
+    meta: { startup_id: id },
+  });
   return jsonRes({ ok: true });
 }
 
@@ -2209,6 +2372,9 @@ export default {
 
     if (pathname === '/api/startups/admin/review' && method === 'POST')
       return handleStartupAdminReview(request);
+
+    if (pathname === '/api/admin/activity' && method === 'GET')
+      return handleAdminActivity(request);
 
     if (pathname === '/api/contact' && method === 'POST')
       return handleContactSubmit(request);

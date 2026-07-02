@@ -6,172 +6,234 @@ export interface ChatContext {
 
 export const WEBSITE_KNOWLEDGE = `
 PLATFORM: Incutrack
-TAGLINE: The common OS for startup founders and investors.
+WHAT IT IS: Incutrack is a two-sided MARKETPLACE that connects startup founders
+with investors — venture capital firms (VCs) and angel investors. Founders get
+discovered and raise capital; investors source, evaluate, and back deals. It is
+NOT a chatbot product, NOT a back-office VC fund/portfolio-management tool, and NOT
+a founder-only tracker. Every feature and metric is framed around activity
+happening ON the platform between the two sides.
 
-OVERVIEW:
-Incutrack is a startup operating system that helps founders move from raw idea to shipped product, traction, fundraising readiness, and investor visibility. It combines planning, tracking, evidence collection, networking, and deal intelligence in one place so users do not need to juggle spreadsheets, notes, decks, and scattered tools.
+TAGLINE / POSITIONING: The marketplace where startups and capital meet — founders
+build and get discovered; investors scout, evaluate, and deploy with conviction.
 
-WHAT INCUTRACK IS:
-- A workspace for founders to manage ideas, execution, traction, and fundraising.
-- A VC portal for investors to scout startups, review diligence materials, manage deal flow, and track opportunities.
-- A growth layer for startup ecosystems, mentors, events, and communities to stay connected.
+WHO IT IS FOR (and how it benefits them):
+- FOUNDERS / STARTUPS: Register a startup, earn an AI-generated IncuScore™, build a
+  Brand Vault of pitch materials, get discovered by verified investors, share
+  confidential decks only with investors they approve, raise capital, and tap
+  mentors and events. Benefit: real visibility to capital + a structured path to
+  becoming investor-ready.
+- INVESTORS (VCs & ANGELS): Register a fund/mandate (admin-verified), scout a live,
+  pre-scored pipeline of startups, shortlist, run secure diligence, message
+  founders, and track capital deployed through Incutrack matches. Benefit:
+  higher-quality deal flow with far less manual effort.
+- ADMIN / PLATFORM TEAM: Curate quality and trust — approve startup registrations,
+  verify investor funds, and moderate events.
+- VISITORS: Browse public directories (verified funds, public startup brand decks)
+  before signing up.
 
-WHO IT BENEFITS:
-- Founders: early-stage and growth-stage founders who want better visibility into progress and stronger fundraising readiness.
-- Investors and VCs: professionals who want to discover startups, evaluate them, review documents, and manage opportunities.
-- Ecosystem partners: mentors, accelerators, operators, and event organizers who need a structured way to engage with startups.
+TWO PORTALS:
+1. EXPLORE HUB (founder side, route /hub): the founder's workspace — Command
+   Center, Pipeline, Brand Vault, Mentor Network, Event Arena, Analytics, National
+   Capital Matrix, and (admins only) the Admin Panel.
+2. SCOUT HUB (investor side, route /scout, "VC Portal"): the investor's command
+   center — Investment Cockpit, Deal Flow, Diligence Room, Startup Network, Investor
+   Network, Demo Days, Market Insights, Deployment Tracker.
 
-PRIMARY BENEFITS:
-- Gives founders one place to track progress and traction.
-- Helps turn ideas into structured execution with playbooks and next steps.
-- Makes fundraising and investor communication more data-driven.
-- Gives investors a centralized place to evaluate startups and monitor deals.
-- Improves visibility across milestones, documents, events, and relationships.
+ACCOUNTS & ROLES: Roles are founder, vc, admin, and visitor. Users sign up / log in
+(email-based auth). All changes are ownership-checked on the server — a founder can
+only manage their own startup; an investor only their own mandate.
 
-CORE PLATFORM AREAS:
-1. Founder Hub
-   - A command center for startup founders.
-   - Helps them monitor progress, track milestones, manage key docs, and stay aligned with growth goals.
-   - Useful for founders who want to organize their journey from concept to traction.
+CORE CONCEPTS:
+- IncuScore™: an AI-generated quality/readiness score (0–100) for a startup and its
+  pitch materials, used to rank and surface promising companies to investors.
+- Brand Vault: a founder's document vault. A PUBLIC ("brand") deck is visible to all
+  and feeds the IncuScore and investor interest; a PRIVATE ("investor"/corporate)
+  deck is confidential and only reaches investors the founder approves.
+- Startup approval gate: a newly registered startup is 'pending' and visible only to
+  its owner and admins until an admin approves it. Uploading to the Brand Vault is
+  also locked until the startup is approved — before then the app shows a polite
+  "approval pending" message.
+- Verified funds: investor mandates are admin-verified before appearing in the
+  public Investor Network.
 
-2. Scout / VC Portal
-   - A dedicated investor workspace with deal flow, diligence, network, insights, and deployment tools.
-   - Helps investors evaluate startups using structured data and shared documents.
-   - Supports discovery, screening, due diligence, and portfolio tracking.
+KEY MARKETPLACE INTERACTIONS (the two sides in motion):
+- Investors browse and shortlist startups; shortlisting or revoking (revoke needs a
+  reason) notifies the admin.
+- Investors request access to a startup's confidential deck; the founder approves or
+  denies — denied investors never even see the deck exists.
+- Approved corporate decks surface to verified investors in the Scout Hub Diligence
+  Room, with view tracking and an audit log.
+- Investors can "Message" a founder from the Scout Hub; this emails the founder's
+  registered email with the investor as reply-to.
+- Founders raise, investors deploy — capital moved through platform matches is
+  tracked as marketplace-sourced activity.
 
-3. Startup Intelligence and Evidence
-   - Allows teams to upload and organize decks, documents, and evidence.
-   - Helps founders and investors evaluate readiness, progress, and credibility.
-
-4. Community and Network Layer
-   - Supports events, founder introductions, mentor sessions, and relationship management.
-   - Useful for both founders and investors looking to build trust and momentum.
-
-HOW FOUNDERS SHOULD USE IT PROPERLY:
-- Start by defining the startup concept, goals, and core traction metrics.
-- Use the platform to capture progress regularly instead of relying on memory or scattered files.
-- Keep documents, decks, and updates organized so fundraising conversations become easier.
-- Review playbooks and milestones to ensure the company is building with focus.
-- Use insights from the platform to understand what is working and what needs attention.
-
-HOW INVESTORS SHOULD USE IT PROPERLY:
-- Use Scout to discover startups that match sector, stage, and check size preferences.
-- Review startup materials, diligence documents, and signals before moving forward.
-- Track deal progress, evaluate readiness, and maintain a clear decision pipeline.
-- Use network and event sections to build relationships and spot opportunities early.
-
-TYPICAL USE CASES:
-- A founder wants to track traction and prepare for their next funding round.
-- A VC wants to review a startup's progress, docs, and market fit before investing.
-- A startup team wants to organize materials for a pitch, diligence request, or mentor session.
-- An investor wants to compare sectors, deal flow, and portfolio performance from one dashboard.
-
-KEY WORDS TO KNOW:
-- Traction: evidence that the startup is gaining momentum.
-- Diligence: the review process for understanding a startup before making a decision.
-- Deal flow: the pipeline of startups or opportunities under review.
-- Scout: the investor-focused experience inside Incutrack.
-- Hub: the founder-facing workspace for execution and visibility.
-
-IMPORTANT POSITIONING:
-Incutrack is not just a simple dashboard. It is an operating system that helps startups and investors make better decisions with clearer evidence and better organization.
+GETTING STARTED:
+- Founders: sign up → open the Explore Hub → register your startup in the Pipeline →
+  get your IncuScore → once approved, upload decks to your Brand Vault → get
+  discovered by investors.
+- Investors: sign up → open the Scout Hub → register your fund/mandate (Add Mandate /
+  Register Your Fund) → once verified, scout the pipeline, shortlist, and request
+  diligence.
 
 FAQ:
 Q: What is Incutrack?
-A: Incutrack is a startup operating system for founders and investors that helps teams track progress, manage execution, organize documents, and improve fundraising and deal decisions.
-Q: Who is Incutrack for?
-A: It is built for startup founders, investors, VCs, mentors, and ecosystem partners.
-Q: What does it help founders do?
-A: It helps founders organize their journey from idea to product, track traction, review playbooks, and prepare for fundraising.
-Q: What does it help investors do?
-A: It helps investors discover startups, evaluate them, manage deal flow, review diligence materials, and track opportunities.
-Q: How should I use it properly?
-A: Use it as your operating layer for execution, evidence, and decision-making rather than as a passive storage space.
-Q: Is it only for founders?
-A: No. It also supports investors and ecosystem participants through the Scout experience.
+A: A two-sided marketplace connecting startup founders with VCs and angel investors —
+   founders get discovered and raise; investors source, evaluate, and deploy capital.
+Q: Is it a portfolio-management tool for VCs?
+A: No. It's a marketplace. Investor dashboards focus on deals sourced and capital
+   deployed THROUGH Incutrack, not back-office fund accounting.
+Q: How do founders get discovered?
+A: Register your startup, earn an IncuScore, and publish a public brand deck. Verified
+   investors browse and shortlist you from the Scout Hub.
+Q: Why can't I upload to my Brand Vault yet?
+A: Uploads unlock only after an admin approves your startup registration. Until then
+   your startup is visible only to you, and the app asks for a little patience.
+Q: How do investors join?
+A: Sign up, open the Scout Hub, and register your fund/mandate. An admin verifies it
+   before it appears in the public Investor Network.
+Q: Are my confidential documents safe?
+A: Yes. Private/corporate decks are shared only with investors you explicitly approve,
+   with view tracking and an audit trail. Denied investors can't see them.
+Q: Is it free?
+A: Please check the pricing section or contact the Incutrack team for details.
 `;
 
+// Per-tab guides, scoped by portal ("hub" = founder Explore Hub, "scout" = investor
+// Scout Hub) so shared tab ids (e.g. "network") resolve to the right section.
 const TAB_GUIDE: Record<string, { label: string; summary: string; whatItIs: string; whenToUse: string }> = {
-  cockpit: {
+  // ── EXPLORE HUB (founders) ──────────────────────────────────────────────
+  'hub:overview': {
+    label: 'Command Center',
+    summary: "The founder's home dashboard in the Explore Hub.",
+    whatItIs: 'Command Center gives founders an at-a-glance view of their marketplace presence — headline stats like companies, capital raised, funded/exited, and average IncuScore™ — plus quick jumps into the Pipeline, Brand Vault, and other sections.',
+    whenToUse: 'Use it as your daily starting point to see where your startup stands and jump into the right workspace.'
+  },
+  'hub:pipeline': {
+    label: 'Pipeline',
+    summary: 'A kanban of startups across their journey stages.',
+    whatItIs: 'Pipeline is a board of startups across stages (Ideation, MVP Built, Validation, Growth, Funding Secured). Founders register a startup here; a new startup is "pending" and visible only to its owner until an admin approves it, after which it appears across the marketplace. Cards show IncuScore, sector, and traction.',
+    whenToUse: 'Use it to register your startup, move it through stages, and track where every company sits.'
+  },
+  'hub:vault': {
+    label: 'Brand Vault',
+    summary: "The founder's pitch-document vault.",
+    whatItIs: 'Brand Vault holds a founder\'s pitch materials. A PUBLIC brand deck is visible to everyone and feeds the IncuScore and investor interest; a PRIVATE investor/corporate deck is confidential and shared only with investors the founder approves. Documents fall into five categories (Deck, Doc, Sheet, Video, Bundle) and filenames follow the _public_vault / _private_vault pattern. Uploading is locked until an admin approves the startup — before then a polite "approval pending" message appears.',
+    whenToUse: 'Use it to publish your public deck for discovery and to store confidential decks you selectively share with investors.'
+  },
+  'hub:network': {
+    label: 'Mentor Network',
+    summary: 'A directory of mentors founders can connect with.',
+    whatItIs: 'Mentor Network is where founders find and connect with mentors for guidance, filtered by focus area — the founder-support layer of the marketplace.',
+    whenToUse: 'Use it when you want expert guidance or introductions to mentors relevant to your stage and sector.'
+  },
+  'hub:events': {
+    label: 'Event Arena',
+    summary: 'Startup ecosystem events and RSVPs.',
+    whatItIs: 'Event Arena surfaces demo days, workshops, hackathons, and office hours. Founders can RSVP and submit their own events, which go to the Incutrack admin team for approval before appearing publicly.',
+    whenToUse: 'Use it to find events to attend or to submit an event for the community.'
+  },
+  'hub:analytics': {
+    label: 'Analytics',
+    summary: 'Data-driven insights on presence and the ecosystem.',
+    whatItIs: 'Analytics shows sector breakdowns, score trends, and traction/funding metrics so founders understand how they are tracking and where they stand in the marketplace.',
+    whenToUse: 'Use it to measure progress and spot what needs attention before your next raise.'
+  },
+  'hub:funding': {
+    label: 'National Capital Matrix',
+    summary: 'Live cross-border matchmaking and capital activity.',
+    whatItIs: 'National Capital Matrix surfaces investors and their status (Committed, In Diligence, In Discussion) and capital flowing toward startups — framed as live marketplace matchmaking between founders and funds.',
+    whenToUse: 'Use it to see which investors are active and how capital is moving across the ecosystem.'
+  },
+  'hub:admin': {
+    label: 'Admin Panel',
+    summary: 'The quality-control cockpit (admins only).',
+    whatItIs: 'Admin Panel is where admins keep the marketplace trustworthy: approve or reject startup registrations (which unlocks their visibility and Brand Vault uploads), verify investor funds/mandates, and moderate submitted events, stage-advance requests, deal-interest and diligence requests, and contact messages.',
+    whenToUse: 'Use it (as an admin) to review and approve everything entering the marketplace.'
+  },
+
+  // ── SCOUT HUB (investors) ───────────────────────────────────────────────
+  'scout:cockpit': {
     label: 'Investment Cockpit',
-    summary: 'A high-level overview of the investor workspace.',
-    whatItIs: 'The Investment Cockpit is the main overview tab for investors. It shows a live snapshot of priorities, opportunities, pipeline movement, and important startup signals.',
-    whenToUse: 'Use this tab when you want a quick, strategic overview of the current investment landscape.'
+    summary: "The investor's command center.",
+    whatItIs: 'Investment Cockpit surfaces the fund\'s Capital Mandate (capital deployable on Incutrack), Dry Powder, capital Deployed via the platform, shortlisted deals, and Target MOIC, alongside a Deal Radar, shortlisted deals, "Sourced Deal Yield" (performance of deals sourced through Incutrack), a live Marketplace Activity feed, and Pipeline Health. It is framed around marketplace-sourced dealmaking, not back-office fund accounting.',
+    whenToUse: 'Use it for a strategic, at-a-glance overview of your deal activity and deployable capital.'
   },
-  dealflow: {
+  'scout:dealflow': {
     label: 'Deal Flow',
-    summary: 'The pipeline of startups and opportunities under review.',
-    whatItIs: 'Deal Flow is where investors review startups, filter matches, and move promising opportunities through the evaluation process.',
-    whenToUse: 'Use this tab when you want to browse, screen, and organize startups in the investment pipeline.'
+    summary: 'A kanban pipeline of live deals from the marketplace.',
+    whatItIs: 'Deal Flow tracks each marketplace-sourced opportunity across stages from first look through diligence, with sector filtering and scoring.',
+    whenToUse: 'Use it to browse, screen, and move promising startups through your evaluation pipeline.'
   },
-  diligence: {
-    label: 'Diligence',
-    summary: 'The deep review and document evaluation workspace.',
-    whatItIs: 'Diligence is for inspecting startup evidence, reviewing decks and materials, and understanding the quality and readiness of a company before moving forward.',
-    whenToUse: 'Use this tab when you are reviewing documents, assessing readiness, and preparing a decision.'
+  'scout:diligence': {
+    label: 'Diligence Room',
+    summary: 'A secure space to review confidential founder decks.',
+    whatItIs: 'Diligence Room is an access-controlled space where verified investors review confidential corporate/investor decks founders have shared, with view tracking and an audit log. Investors can request access to a private deck; the founder approves or denies, and denied investors never see the deck exists.',
+    whenToUse: 'Use it to run due diligence on shared materials before making a decision.'
   },
-  network: {
+  'scout:network': {
     label: 'Startup Network',
-    summary: 'The relationship and founder connection layer.',
-    whatItIs: 'The Startup Network helps investors and founders discover and manage relationships, communications, and engagement with relevant people.',
-    whenToUse: 'Use this tab when you want to explore founder relationships, contacts, and partnership opportunities.'
+    summary: 'A directory of founders and startups on the marketplace.',
+    whatItIs: 'Startup Network lets investors discover founders and their companies and reach out to those that fit their thesis.',
+    whenToUse: 'Use it to find and connect with startups matching your sector, stage, and check size.'
   },
-  demodays: {
+  'scout:vcnetwork': {
+    label: 'Investor Network',
+    summary: 'The public directory of every verified fund.',
+    whatItIs: 'Investor Network is the public directory of verified funds on Incutrack, visible to founders, investors, and visitors. Investors register their own fund here ("Register Your Fund"); an admin verifies it before it appears.',
+    whenToUse: 'Use it to list your fund publicly or to see the other investors active on the platform.'
+  },
+  'scout:demodays': {
     label: 'Demo Days',
-    summary: 'The events and showcase experience.',
-    whatItIs: 'Demo Days is where startup showcases, events, and investor-facing sessions are surfaced so users can engage with upcoming opportunities.',
-    whenToUse: 'Use this tab when you want to find events, sessions, or pitch moments.'
+    summary: 'Curated events where investors meet pitching startups.',
+    whatItIs: 'Demo Days surfaces curated events where investors meet startups pitching live — a direct founder-investor interaction channel in the marketplace.',
+    whenToUse: 'Use it to find live pitch events and showcases to attend.'
   },
-  insights: {
-    label: 'Insights',
-    summary: 'The analytics and market intelligence workspace.',
-    whatItIs: 'Insights highlights sector trends, deal performance, signals, and strategic data that help investors make more informed decisions.',
-    whenToUse: 'Use this tab when you need data, trends, or market analysis.'
+  'scout:insights': {
+    label: 'Market Insights',
+    summary: 'Ecosystem-level market intelligence for investors.',
+    whatItIs: 'Market Insights shows Sector Momentum (how verticals are performing), Sourced Deal Yield, a Deal Pipeline trend, Score Distribution of startups, and Thesis Match (how well marketplace startups align to the investor\'s thesis on sector fit, stage, check size, and geography). It is about spotting macro marketplace trends, not internal fund metrics.',
+    whenToUse: 'Use it to read the market, compare sectors, and see which startups fit your thesis.'
   },
-  deployment: {
-    label: 'Deployment',
-    summary: 'The portfolio and capital deployment view.',
-    whatItIs: 'Deployment is where invested startups, capital allocation, and funding progress are tracked in a structured way.',
-    whenToUse: 'Use this tab when you want to understand funded deals, outcomes, and deployment progress.'
-  },
-  vcnetwork: {
-    label: 'VC Network',
-    summary: 'The investor network and partner discovery layer.',
-    whatItIs: 'VC Network helps users discover and interact with other investors, firms, and partners relevant to the startup ecosystem.',
-    whenToUse: 'Use this tab when you want to explore investor relationships or partner networks.'
+  'scout:deployment': {
+    label: 'Deployment Tracker',
+    summary: 'A log of capital deployed through Incutrack matches.',
+    whatItIs: 'Deployment Tracker shows Sourced Allocations (each marketplace-driven position with ROI), the Marketplace Allocation mix, Mandate Utilisation (deployed vs. ready), a Deployment Capacity simulator (how many more marketplace startups the remaining dry powder can back), and Return Targets. It reframes deployment as marketplace-driven investment wins.',
+    whenToUse: 'Use it to track what you have deployed through the platform and how much capacity remains.'
   }
 };
 
+// Landing-page section guides (route "/").
 const LANDING_SECTIONS: Record<string, { label: string; summary: string; details: string }> = {
   home: {
     label: 'Home',
-    summary: 'Hero and quick platform positioning for founders and investors.',
-    details: 'The Home section (hero) introduces Incutrack with the core value proposition: a single OS for founders and investors to track progress, fundraising readiness, and deal flow.'
+    summary: 'Hero and marketplace positioning for both sides.',
+    details: 'The Home hero introduces Incutrack as the marketplace where startups and capital meet, with a "For Founders" path (build, track, get discovered) and a "For Investors" path ("Scout smarter. Deploy with conviction.").'
   },
   features: {
     label: 'Features',
     summary: 'High-level list of platform capabilities.',
-    details: 'Features explains Pipeline Management, Growth Analytics, Mentor Network, Investor Matching, Secure Pitch Vault, and Event Arena — how each area helps founders and investors operate.'
+    details: 'Features covers Pipeline, Brand Vault, Mentor Network, Investor Matching, Diligence, Market Insights, and the Event Arena — how each helps founders get discovered and investors source deals.'
   },
   founders: {
     label: 'Founders',
     summary: 'Founder-facing workflow and benefits.',
-    details: 'Founders view describes the Founder Hub: tracking milestones, MRR, automated reports, IncuScore™ readiness, mentor bookings, and the secure document vault for investor access.'
+    details: 'The Founders view describes the Explore Hub: register a startup, earn an IncuScore™, build a Brand Vault, get discovered by verified investors, and share confidential decks only with approved investors.'
   },
   investors: {
     label: 'Investors',
-    summary: 'Investor-facing Scout/VC portal features.',
-    details: 'Investors view describes Scout: deal pipeline, diligence workspace, investor matching, insights, and tools to discover and track startups and manage capital deployment.'
+    summary: 'Investor-facing Scout Hub features.',
+    details: 'The Investors view describes the Scout Hub: scout a pre-scored pipeline, shortlist, run diligence, message founders, and track capital deployed through Incutrack matches.'
   },
   testimonials: {
     label: 'Testimonials',
-    summary: 'Social proof and customer stories.',
-    details: 'Testimonials presents short customer stories and endorsements from founders and ecosystem partners highlighting how Incutrack improved their fundraising and execution.'
+    summary: 'Social proof from founders and investors.',
+    details: 'Testimonials presents short stories from founders and investors on how Incutrack improved discovery, diligence, and fundraising.'
   },
   about: {
     label: 'About',
     summary: 'Team, mission and positioning.',
-    details: 'About explains the company mission, founding team, and long-term vision for building an operating system for startups and ecosystem builders.'
+    details: 'About explains the mission and vision for building the marketplace connecting startups and capital.'
   },
   contact: {
     label: 'Contact',
@@ -184,28 +246,42 @@ function normalizeTab(tab?: string) {
   return (tab || '').trim().toLowerCase();
 }
 
+// Which portal is the user in, based on the route.
+function hubKeyFor(pathname: string): 'scout' | 'hub' | null {
+  if (pathname.includes('/scout')) return 'scout';
+  if (pathname.includes('/hub')) return 'hub';
+  return null;
+}
+
+// Resolve the tab guide, preferring the portal-scoped key ("hub:pipeline") and
+// falling back to a bare tab id for safety.
+function resolveTabGuide(hub: 'scout' | 'hub' | null, tab: string) {
+  if (!tab) return undefined;
+  if (hub && TAB_GUIDE[`${hub}:${tab}`]) return TAB_GUIDE[`${hub}:${tab}`];
+  return TAB_GUIDE[tab] ?? TAB_GUIDE[`scout:${tab}`] ?? TAB_GUIDE[`hub:${tab}`];
+}
+
 export function getContextualKnowledge(context: ChatContext = {}) {
   const pathname = context.pathname || '';
   const tab = normalizeTab(context.tab);
   const section = context.section?.trim();
+  const hub = hubKeyFor(pathname);
 
-  const routeLabel = pathname.includes('/scout')
-    ? 'Scout / VC portal'
-    : pathname.includes('/hub')
-      ? 'Founder Hub'
-      : 'General website / landing experience';
+  const routeLabel = hub === 'scout'
+    ? 'Scout Hub (investor / VC portal)'
+    : hub === 'hub'
+      ? 'Explore Hub (founder workspace)'
+      : 'Landing page / general marketplace experience';
+
+  const guide = resolveTabGuide(hub, tab);
 
   const contextLines = [
     `CURRENT VIEW: ${routeLabel}`,
-    tab && TAB_GUIDE[tab]
-      ? `ACTIVE TAB: ${TAB_GUIDE[tab].label} — ${TAB_GUIDE[tab].summary}`
+    guide
+      ? `ACTIVE TAB: ${guide.label} — ${guide.summary}`
       : 'ACTIVE TAB: None or unknown',
-    tab && TAB_GUIDE[tab]
-      ? `TAB DETAILS: ${TAB_GUIDE[tab].whatItIs}`
-      : '',
-    tab && TAB_GUIDE[tab]
-      ? `WHEN TO USE THIS TAB: ${TAB_GUIDE[tab].whenToUse}`
-      : '',
+    guide ? `TAB DETAILS: ${guide.whatItIs}` : '',
+    guide ? `WHEN TO USE THIS TAB: ${guide.whenToUse}` : '',
     (section ? (() => {
       const key = section.toLowerCase();
       if (LANDING_SECTIONS[key]) {
@@ -222,9 +298,10 @@ CURRENT CHAT CONTEXT:
 ${contextLines.join('\n')}
 
 RESPONSE RULES:
-- If the user is asking about a specific tab or section, answer using the active context.
-- If the user asks what a tab is, explain it clearly in plain language.
-- If the user asks how to use Incutrack, describe it as a platform for founders and investors to organize execution, evidence, and decisions.
-- Keep answers concise, helpful, and grounded in this knowledge base.
+- Incutrack is a MARKETPLACE connecting founders with investors. Always answer from that framing.
+- If the user asks about a specific tab or section, answer using the active context above.
+- If the user asks what a tab is, explain it clearly and plainly, including who it's for.
+- If the user asks how to use Incutrack, describe it as a marketplace where founders get discovered and investors source, evaluate, and deploy capital.
+- Keep answers concise, helpful, and grounded in this knowledge base. If unsure, tell them to reach out to the Incutrack team.
 `;
 }

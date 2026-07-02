@@ -12,7 +12,7 @@ export function Chatbot() {
     const location = useLocation()
     const [open, setOpen] = useState(false)
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'assistant', content: "Hey founder! 👋 Ask me anything about Incutrack." }
+        { role: 'assistant', content: "Hey there! 👋 Ask me anything about Incutrack — whether you're a founder or an investor." }
     ])
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)

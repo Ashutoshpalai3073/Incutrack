@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AuthGate } from '../components/AuthGate';
 import * as THREE from 'three';
@@ -829,6 +829,8 @@ function HubPage() {
   } | null>(null);
   const [docStartupLinks, setDocStartupLinks] = useState<Record<string, string>>({});
   const [uploadGuardOpen, setUploadGuardOpen] = useState(false);
+  // Shown when the founder has registered but is still awaiting admin approval.
+  const [uploadPendingGuardOpen, setUploadPendingGuardOpen] = useState(false);
 
   // Per-tab filter states — each isolated
   const [pipelineSector, setPipelineSector] = useState('All');
@@ -850,6 +852,11 @@ function HubPage() {
   // Modals
   const [registerOpen, setRegisterOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  // Reason-gated startup removal — founder must state why before a startup can be
+  // deleted, and re-adding afterwards goes back through admin approval.
+  const [removeTarget, setRemoveTarget] = useState<any | null>(null);
+  const [removeReason, setRemoveReason] = useState('');
+  const [removeError, setRemoveError] = useState('');
   const [newS, setNewS] = useState({ name: '', tagline: '', description: '', founder: '', industry: 'SaaS', fundingGoal: '' });
   const [newSCustomIndustry, setNewSCustomIndustry] = useState('');
   const [editCustomIndustry, setEditCustomIndustry] = useState('');
@@ -902,6 +909,9 @@ function HubPage() {
   const [pendingStartupRegs, setPendingStartupRegs] = useState<any[]>([]);
   const [pendingStartupRegsLoading, setPendingStartupRegsLoading] = useState(false);
   const [adminStartupRegAction, setAdminStartupRegAction] = useState<Record<string, 'approving' | 'rejecting'>>({});
+  // ── Platform Activity Feed (admin) ─────────────────────────────────────────
+  const [activityEvents, setActivityEvents] = useState<any[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
   // ── VC Admin ───────────────────────────────────────────────────────────────
   const [pendingVCProfiles, setPendingVCProfiles] = useState<any[]>([]);
   const [pendingDealInterests, setPendingDealInterests] = useState<any[]>([]);
@@ -933,28 +943,56 @@ function HubPage() {
   const [vaultDocs, setVaultDocs] = useState<VaultDoc[]>(VAULT_DOCS as unknown as VaultDoc[]);
   const [vaultLoading, setVaultLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchStartups = async () => {
-      const { data, error } = await supabase
-        .from('startups')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (!error && data && data.length > 0) {
-        const loaded = data.map(s => ({
-          id: s.id, name: s.name, tagline: s.tagline,
-          description: s.description, founder: s.founder,
-          industry: s.industry, stage: s.stage,
-          fundingGoal: s.funding_goal, raised: s.raised,
-          metrics: { members: s.members, pitchScore: s.pitch_score },
-          status: s.status ?? 'approved',
-          owner_email: s.owner_email ?? null,
-          created_by_email: s.created_by_email ?? null,
-        }));
-        setStartups(prev => [...loaded, ...EXTENDED_STARTUPS]);
-      }
-    };
-    fetchStartups();
+  // Pull the authoritative startup list from the server. Kept callable so we can
+  // re-sync after an admin approves a registration in another session — otherwise
+  // the client holds stale 'pending'/ownership data and the upload guard wrongly
+  // asks an already-approved founder to register again.
+  const refreshStartups = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('startups')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data && data.length > 0) {
+      const loaded = data.map(s => ({
+        id: s.id, name: s.name, tagline: s.tagline,
+        description: s.description, founder: s.founder,
+        industry: s.industry, stage: s.stage,
+        fundingGoal: s.funding_goal, raised: s.raised,
+        metrics: { members: s.members, pitchScore: s.pitch_score },
+        status: s.status ?? 'approved',
+        owner_email: s.owner_email ?? null,
+        created_by_email: s.created_by_email ?? null,
+      }));
+      setStartups(prev => {
+        // Preserve any just-registered local startup whose POST may not be
+        // queryable yet, so an in-flight registration is never dropped.
+        const loadedIds = new Set(loaded.map(l => l.id));
+        const localPending = prev.filter(p =>
+          !EXTENDED_STARTUPS.find(es => es.id === p.id) && !loadedIds.has(p.id)
+        );
+        return [...localPending, ...loaded, ...EXTENDED_STARTUPS];
+      });
+      // Return the authoritative server list so callers (e.g. the upload guard)
+      // can decide against fresh approval status without waiting for a re-render.
+      return loaded;
+    }
+    return null;
   }, []);
+
+  useEffect(() => { refreshStartups(); }, [refreshStartups]);
+
+  // Re-sync approval status right when the founder heads to the Brand Vault to
+  // upload, and whenever they return to the tab, so a fresh admin approval is
+  // reflected without a manual reload.
+  useEffect(() => {
+    if (tab === 'vault') refreshStartups();
+  }, [tab, refreshStartups]);
+
+  useEffect(() => {
+    const onFocus = () => refreshStartups();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refreshStartups]);
 
   useEffect(() => {
     const fetchDocs = async () => {
@@ -1216,7 +1254,6 @@ function HubPage() {
       (s.owner_email === user?.email || s.created_by_email === user?.email)
     ),
     [startups, user?.email]);
-  const hasUserStartup = userStartups.length > 0;
   const userRole = user?.role ?? 'visitor';
   const isVC = userRole === 'vc' || userRole === 'admin';
   const isFounder = userRole === 'founder' || userRole === 'admin';
@@ -1231,14 +1268,17 @@ function HubPage() {
       setAdminVCLoading(true);
       setContactMsgsLoading(true);
       setPendingStartupRegsLoading(true);
+      setActivityLoading(true);
       try {
-        const [evRes, advRes, vcRes, cmRes, srRes] = await Promise.all([
+        const [evRes, advRes, vcRes, cmRes, srRes, actRes] = await Promise.all([
           fetch('/api/events/pending', { credentials: 'include' }),
           fetch('/api/startup-advance/pending', { credentials: 'include' }),
           fetch('/api/vc/admin/pending', { credentials: 'include' }),
           fetch('/api/contact/messages', { credentials: 'include' }),
           fetch('/api/startups/admin/pending', { credentials: 'include' }),
+          fetch('/api/admin/activity', { credentials: 'include' }),
         ]);
+        if (actRes.ok) { const d = await actRes.json(); setActivityEvents(Array.isArray(d.events) ? d.events : []); }
         if (evRes.ok) { const d = await evRes.json(); setPendingEvents(Array.isArray(d) ? d : []); }
         if (advRes.ok) { const d = await advRes.json(); setPendingAdvances(Array.isArray(d) ? d : []); }
         if (vcRes.ok) {
@@ -1256,6 +1296,7 @@ function HubPage() {
       setAdminVCLoading(false);
       setContactMsgsLoading(false);
       setPendingStartupRegsLoading(false);
+      setActivityLoading(false);
     };
     load();
   }, [tab, isAdmin]);
@@ -1407,9 +1448,10 @@ function HubPage() {
     }
   };
 
-  const removeStartup = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const startup = startups.find(s => s.id === id);
+  // Actually deletes the startup after the reason has been captured. Re-adding the
+  // same startup later creates a fresh 'pending' record that needs admin approval
+  // again — the server sets status='pending' for any startup id it hasn't seen.
+  const performRemoveStartup = (startup: any, reason: string) => {
     if (!startup) return;
 
     // Find linked docs by startup NAME — works after refresh because
@@ -1428,7 +1470,7 @@ function HubPage() {
     }
 
     // Remove startup from local state
-    setStartups(prev => prev.filter(s => s.id !== id));
+    setStartups(prev => prev.filter(s => s.id !== startup.id));
 
     // Clean up link state
     setDocStartupLinks(prev => {
@@ -1437,13 +1479,25 @@ function HubPage() {
       return updated;
     });
 
-    // Persist deletion to Supabase — passes startupName so server
-    // can delete linked documents by startup_name column
+    // Persist deletion to Supabase — passes startupName so server can delete
+    // linked documents by startup_name column, plus the founder's removal reason.
     fetch('/api/startups/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, startupName: startup.name }),
+      body: JSON.stringify({ id: startup.id, startupName: startup.name, reason }),
     }).catch(console.error);
+  };
+
+  // Opens the reason-gated confirmation modal (ownership already verified).
+  const removeStartup = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const startup = startups.find(s => s.id === id);
+    if (!startup) return;
+    requireOwnership(id, () => {
+      setRemoveReason('');
+      setRemoveError('');
+      setRemoveTarget(startup);
+    });
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -1586,6 +1640,18 @@ function HubPage() {
     { id: 'funding', label: 'National Capital Matrix', icon: DollarSign },
     ...(isAdmin ? [{ id: 'admin', label: 'Admin Panel', icon: Shield }] : []),
   ];
+
+  // Broadcast the active Explore Hub tab so the AI assistant can answer
+  // "what is this section?" with the right founder-side context.
+  useEffect(() => {
+    const activeLabel = navItems.find(t => t.id === tab)?.label || 'Command Center';
+    document.body.setAttribute('data-active-tab', tab);
+    document.body.setAttribute('data-active-section', activeLabel);
+    return () => {
+      document.body.removeAttribute('data-active-tab');
+      document.body.removeAttribute('data-active-section');
+    };
+  }, [tab]);
 
   const STATUS_COLOR = { Committed: '#10b981', 'In Diligence': '#f59e0b', 'In Discussion': '#06b6d4' };
   const TYPE_COLOR = { Deck: '#8b5cf6', Doc: '#06b6d4', Sheet: '#10b981', Video: '#f59e0b', Bundle: '#f472b6' };
@@ -2451,7 +2517,18 @@ function HubPage() {
                     </span>
                   )}
                 </div>
-                <button onClick={() => requireAuth('Sign in to upload your deck to the Brand Vault.', () => hasUserStartup ? setUploadChoiceOpen(true) : setUploadGuardOpen(true))}
+                <button onClick={() => requireAuth('Sign in to upload your deck to the Brand Vault.', async () => {
+                  // Decide from FRESH server truth so a founder who was just approved
+                  // (possibly by an admin in another session) is never wrongly asked
+                  // to register again. Falls back to current state if the fetch fails.
+                  const fresh = await refreshStartups();
+                  const mine = (fresh ?? userStartups).filter(s =>
+                    !EXTENDED_STARTUPS.find(es => es.id === s.id) &&
+                    (s.owner_email === user?.email || s.created_by_email === user?.email));
+                  if (mine.length === 0) setUploadGuardOpen(true);
+                  else if (!mine.some(s => (s as any).status !== 'pending')) setUploadPendingGuardOpen(true);
+                  else setUploadChoiceOpen(true);
+                })}
                   style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 18px', borderRadius: 999, fontSize: 12, fontWeight: 600, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', transition: 'all 0.2s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(139,92,246,0.5)'; (e.currentTarget as HTMLButtonElement).style.color = '#c4b5fd'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.6)'; }}>
@@ -4030,13 +4107,14 @@ function HubPage() {
                 </div>
                 <button
                   onClick={() => {
-                    setAdminEventsLoading(true); setAdminAdvancesLoading(true); setAdminVCLoading(true); setPendingStartupRegsLoading(true);
+                    setAdminEventsLoading(true); setAdminAdvancesLoading(true); setAdminVCLoading(true); setPendingStartupRegsLoading(true); setActivityLoading(true);
                     Promise.all([
                       fetch('/api/events/pending', { credentials: 'include' }).then(r => r.json()).then(d => setPendingEvents(Array.isArray(d) ? d : [])),
                       fetch('/api/startup-advance/pending', { credentials: 'include' }).then(r => r.json()).then(d => setPendingAdvances(Array.isArray(d) ? d : [])),
                       fetch('/api/vc/admin/pending', { credentials: 'include' }).then(r => r.json()).then(d => { setPendingVCProfiles(Array.isArray(d?.vc_profiles) ? d.vc_profiles : []); setPendingDealInterests(Array.isArray(d?.deal_interests) ? d.deal_interests : []); setPendingDiligenceReqs(Array.isArray(d?.diligence_requests) ? d.diligence_requests : []); setShortlistEvents(Array.isArray(d?.shortlist_events) ? d.shortlist_events : []); }),
                       fetch('/api/startups/admin/pending', { credentials: 'include' }).then(r => r.json()).then(d => setPendingStartupRegs(Array.isArray(d?.startups) ? d.startups : [])),
-                    ]).finally(() => { setAdminEventsLoading(false); setAdminAdvancesLoading(false); setAdminVCLoading(false); setPendingStartupRegsLoading(false); });
+                      fetch('/api/admin/activity', { credentials: 'include' }).then(r => r.json()).then(d => setActivityEvents(Array.isArray(d?.events) ? d.events : [])),
+                    ]).finally(() => { setAdminEventsLoading(false); setAdminAdvancesLoading(false); setAdminVCLoading(false); setPendingStartupRegsLoading(false); setActivityLoading(false); });
                   }}
                   style={{ padding: '6px 14px', borderRadius: 8, fontSize: 11, fontWeight: 700, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#a78bfa', cursor: 'pointer' }}
                 >
@@ -4046,6 +4124,66 @@ function HubPage() {
 
               {/* Single scrollable body — all sections flow naturally */}
               <div className="admin-scroll-body" style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+
+              {/* Section: Platform Activity — live audit feed of everything happening on the marketplace */}
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, marginBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <Activity style={{ width: 14, height: 14, color: '#34d399' }} />
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#fff' }}>Platform Activity</p>
+                  {!activityLoading && (
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: activityEvents.length > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.06)', color: activityEvents.length > 0 ? '#34d399' : 'rgba(255,255,255,0.3)', border: `1px solid ${activityEvents.length > 0 ? 'rgba(16,185,129,0.35)' : 'rgba(255,255,255,0.1)'}` }}>
+                      {activityEvents.length}
+                    </span>
+                  )}
+                  <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, fontWeight: 700, color: 'rgba(52,211,153,0.7)', letterSpacing: '.04em' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399', boxShadow: '0 0 6px #34d399' }} /> LIVE
+                  </span>
+                </div>
+
+                {activityLoading ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2.5px solid rgba(16,185,129,0.2)', borderTop: '2.5px solid #10b981', animation: 'spin 0.8s linear infinite' }} />
+                  </div>
+                ) : activityEvents.length === 0 ? (
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.25)', paddingLeft: 22 }}>No activity yet — registrations, approvals, uploads and removals will stream in here.</p>
+                ) : (
+                  <div className="admin-activity-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 380, overflowY: 'auto', paddingRight: 4 }}>
+                    {activityEvents.map((ev: any) => {
+                      const META: Record<string, { label: string; color: string; Icon: any }> = {
+                        startup_registered: { label: 'Registered', color: '#06b6d4', Icon: Building2 },
+                        startup_approved: { label: 'Approved', color: '#10b981', Icon: CheckCircle },
+                        startup_rejected: { label: 'Rejected', color: '#f87171', Icon: X },
+                        doc_uploaded: { label: 'Uploaded', color: '#8b5cf6', Icon: Upload },
+                        doc_removed: { label: 'Deck Removed', color: '#fb7185', Icon: Trash2 },
+                        startup_removed: { label: 'Removed', color: '#f59e0b', Icon: Trash2 },
+                      };
+                      const m = META[ev.type] || { label: ev.type, color: '#94a3b8', Icon: Activity };
+                      const when = ev.created_at ? new Date(ev.created_at) : null;
+                      return (
+                        <div key={ev.id} style={{ background: `${m.color}08`, border: `1px solid ${m.color}1f`, borderLeft: `2px solid ${m.color}80`, borderRadius: 12, padding: '11px 14px', display: 'flex', alignItems: 'flex-start', gap: 11, flexShrink: 0 }}>
+                          <div style={{ width: 30, height: 30, borderRadius: 9, background: `${m.color}18`, border: `1px solid ${m.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <m.Icon style={{ width: 14, height: 14, color: m.color }} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
+                              <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, color: m.color, background: `${m.color}1a`, border: `1px solid ${m.color}40`, textTransform: 'uppercase', letterSpacing: '.05em' }}>{m.label}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</span>
+                            </div>
+                            {ev.detail && (
+                              <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+                                {ev.type === 'startup_removed' ? <span style={{ color: '#fbbf24', fontWeight: 700 }}>Reason: </span> : null}{ev.detail}
+                              </p>
+                            )}
+                            <p style={{ margin: '4px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.32)' }}>
+                              {ev.actor_email ? `by ${ev.actor_email}` : ''}{ev.actor_email && when ? ' · ' : ''}{when ? when.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               {/* Section: Event Submissions */}
               <div style={{ marginBottom: 32 }}>
@@ -4179,8 +4317,8 @@ function HubPage() {
                       <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 9px', borderRadius: 999, color: '#fbbf24', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', flexShrink: 0 }}>PENDING</span>
                     </div>
                     <div style={{ display: 'flex', gap: 10 }}>
-                      <button disabled={!!adminStartupRegAction[sr.id]} onClick={async () => { setAdminStartupRegAction(a => ({ ...a, [sr.id]: 'rejecting' })); await fetch('/api/startups/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: sr.id, action: 'reject' }) }); setPendingStartupRegs(prev => prev.filter(s => s.id !== sr.id)); setAdminStartupRegAction(a => { const n = { ...a }; delete n[sr.id]; return n; }); }} style={{ flex: 1, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', cursor: adminStartupRegAction[sr.id] ? 'wait' : 'pointer', opacity: adminStartupRegAction[sr.id] ? 0.5 : 1 }}>{adminStartupRegAction[sr.id] === 'rejecting' ? 'Rejecting…' : '✕ Reject'}</button>
-                      <button disabled={!!adminStartupRegAction[sr.id]} onClick={async () => { setAdminStartupRegAction(a => ({ ...a, [sr.id]: 'approving' })); await fetch('/api/startups/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: sr.id, action: 'approve' }) }); setPendingStartupRegs(prev => prev.filter(s => s.id !== sr.id)); setStartups(prev => prev.map(s => s.id === sr.id ? { ...s, status: 'approved' } : s)); setAdminStartupRegAction(a => { const n = { ...a }; delete n[sr.id]; return n; }); }} style={{ flex: 2, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,rgba(14,165,233,0.25),rgba(14,165,233,0.1))', border: '1px solid rgba(14,165,233,0.45)', color: '#38bdf8', cursor: adminStartupRegAction[sr.id] ? 'wait' : 'pointer', opacity: adminStartupRegAction[sr.id] ? 0.5 : 1 }}>{adminStartupRegAction[sr.id] === 'approving' ? 'Approving…' : '✓ Approve'}</button>
+                      <button disabled={!!adminStartupRegAction[sr.id]} onClick={async () => { setAdminStartupRegAction(a => ({ ...a, [sr.id]: 'rejecting' })); await fetch('/api/startups/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: sr.id, action: 'reject' }) }); setPendingStartupRegs(prev => prev.filter(s => s.id !== sr.id)); fetch('/api/admin/activity', { credentials: 'include' }).then(r => r.json()).then(d => setActivityEvents(Array.isArray(d?.events) ? d.events : [])).catch(() => {}); setAdminStartupRegAction(a => { const n = { ...a }; delete n[sr.id]; return n; }); }} style={{ flex: 1, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', cursor: adminStartupRegAction[sr.id] ? 'wait' : 'pointer', opacity: adminStartupRegAction[sr.id] ? 0.5 : 1 }}>{adminStartupRegAction[sr.id] === 'rejecting' ? 'Rejecting…' : '✕ Reject'}</button>
+                      <button disabled={!!adminStartupRegAction[sr.id]} onClick={async () => { setAdminStartupRegAction(a => ({ ...a, [sr.id]: 'approving' })); await fetch('/api/startups/admin/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: sr.id, action: 'approve' }) }); setPendingStartupRegs(prev => prev.filter(s => s.id !== sr.id)); setStartups(prev => prev.map(s => s.id === sr.id ? { ...s, status: 'approved' } : s)); fetch('/api/admin/activity', { credentials: 'include' }).then(r => r.json()).then(d => setActivityEvents(Array.isArray(d?.events) ? d.events : [])).catch(() => {}); setAdminStartupRegAction(a => { const n = { ...a }; delete n[sr.id]; return n; }); }} style={{ flex: 2, padding: '8px 0', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,rgba(14,165,233,0.25),rgba(14,165,233,0.1))', border: '1px solid rgba(14,165,233,0.45)', color: '#38bdf8', cursor: adminStartupRegAction[sr.id] ? 'wait' : 'pointer', opacity: adminStartupRegAction[sr.id] ? 0.5 : 1 }}>{adminStartupRegAction[sr.id] === 'approving' ? 'Approving…' : '✓ Approve'}</button>
                     </div>
                   </div>
                 ))}
@@ -5939,6 +6077,52 @@ function HubPage() {
           </div>
         );
       })()}
+      {/* Remove Startup — reason-gated confirmation */}
+      {removeTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }} onClick={() => setRemoveTarget(null)}>
+          <div className="hub-modal-wrap" style={{ background: '#08080f', border: '1px solid rgba(248,113,113,0.3)', borderTop: '2px solid #f87171', borderRadius: 20, width: '100%', maxWidth: 440, padding: 28 }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Trash2 style={{ width: 18, height: 18, color: '#f87171' }} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: 16, fontWeight: 700, color: 'white', margin: 0 }}>Remove “{removeTarget.name}”?</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>This deletes the startup and its linked documents.</p>
+              </div>
+            </div>
+            <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: '0 0 14px' }}>
+              Please tell us why you're removing this startup. If you register it again later, it will need to go through admin approval from scratch.
+            </p>
+            <textarea
+              value={removeReason}
+              onChange={e => { setRemoveReason(e.target.value); if (removeError) setRemoveError(''); }}
+              placeholder="Reason for removal (required) — e.g. shutting down, duplicate entry, pivoting…"
+              rows={3}
+              style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', background: 'rgba(255,255,255,0.04)', border: `1px solid ${removeError ? 'rgba(248,113,113,0.6)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 12, padding: '10px 12px', color: 'white', fontSize: 13, outline: 'none', fontFamily: 'inherit', lineHeight: 1.5 }}
+            />
+            {removeError && <p style={{ fontSize: 11, color: '#f87171', margin: '8px 0 0' }}>{removeError}</p>}
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <button
+                onClick={() => setRemoveTarget(null)}
+                style={{ flex: 1, padding: '10px', borderRadius: 999, fontSize: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
+                Keep it
+              </button>
+              <button
+                onClick={() => {
+                  const reason = removeReason.trim();
+                  if (reason.length < 4) { setRemoveError('Please add a short reason before removing.'); return; }
+                  performRemoveStartup(removeTarget, reason);
+                  setRemoveTarget(null);
+                  setRemoveReason('');
+                }}
+                style={{ flex: 2, padding: '10px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: 'linear-gradient(90deg,#dc2626,#f87171)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(220,38,38,0.35)' }}>
+                Remove Startup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Upload Guard Modal */}
       {uploadGuardOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
@@ -5960,6 +6144,23 @@ function HubPage() {
                 Register Startup →
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {uploadPendingGuardOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
+          <div className="hub-modal-wrap" style={{ background: '#08080f', border: '1px solid rgba(245,158,11,0.3)', borderTop: '2px solid #f59e0b', borderRadius: 20, width: '100%', maxWidth: 420, padding: 32, textAlign: 'center' }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 24 }}>⏳</div>
+            <p style={{ fontSize: 18, fontWeight: 700, color: 'white', margin: '0 0 10px' }}>Approval Pending</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.65, margin: '0 0 24px' }}>
+              Your startup is registered, but our admin team hasn't approved it just yet. Uploads to the Brand Vault open up the moment you're approved — we'd love your patience in the meantime. 🙏
+            </p>
+            <button
+              onClick={() => setUploadPendingGuardOpen(false)}
+              style={{ width: '100%', padding: '10px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: 'linear-gradient(90deg,#d97706,#f59e0b)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(245,158,11,0.35)' }}>
+              Got it
+            </button>
           </div>
         </div>
       )}
