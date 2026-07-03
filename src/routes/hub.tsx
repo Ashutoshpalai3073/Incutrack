@@ -4156,6 +4156,7 @@ function HubPage() {
                         doc_uploaded: { label: 'Uploaded', color: '#8b5cf6', Icon: Upload },
                         doc_removed: { label: 'Deck Removed', color: '#fb7185', Icon: Trash2 },
                         startup_removed: { label: 'Removed', color: '#f59e0b', Icon: Trash2 },
+                        investor_removed: { label: 'Investor Removed', color: '#f59e0b', Icon: Trash2 },
                       };
                       const m = META[ev.type] || { label: ev.type, color: '#94a3b8', Icon: Activity };
                       const when = ev.created_at ? new Date(ev.created_at) : null;
@@ -4171,7 +4172,7 @@ function HubPage() {
                             </div>
                             {ev.detail && (
                               <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
-                                {ev.type === 'startup_removed' ? <span style={{ color: '#fbbf24', fontWeight: 700 }}>Reason: </span> : null}{ev.detail}
+                                {(ev.type === 'startup_removed' || ev.type === 'investor_removed') ? <span style={{ color: '#fbbf24', fontWeight: 700 }}>Reason: </span> : null}{ev.detail}
                               </p>
                             )}
                             <p style={{ margin: '4px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.32)' }}>

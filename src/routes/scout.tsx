@@ -11,7 +11,7 @@ import {
     Filter, Star, Building2, Activity, Wallet, CheckCircle,
     ChevronRight, Target, Telescope, Eye, Download, MessageSquare, FileText,
     Globe, Lock, UserPlus, Bookmark, Send, MoreHorizontal,
-    Award, Zap, Shield, PieChart
+    Award, Zap, Shield, PieChart, Trash2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -654,6 +654,7 @@ const G = (extra?: React.CSSProperties): React.CSSProperties => ({
 // ─── Main Scout Page ───────────────────────────────────────────────────────────
 function ScoutPage() {
     const { user, isLoading: authLoading } = useAuth();
+    const isAdmin = user?.role === 'admin';
     const navigate = useNavigate();
     const [tab, setTab] = useState('cockpit');
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -709,6 +710,9 @@ function ScoutPage() {
     const [mandateSubmitting, setMandateSubmitting] = useState(false);
     const [mandateErr, setMandateErr] = useState<Record<string, string>>({});
     const [vcList, setVcList] = useState<any[]>(VC_SEED);
+    const [vcRemoveTarget, setVcRemoveTarget] = useState<any | null>(null);
+    const [vcRemoveReason, setVcRemoveReason] = useState('');
+    const [vcRemoveError, setVcRemoveError] = useState('');
     const [insightSectors, setInsightSectors] = useState<string[]>([]); // empty = all sectors
     const [insightSectorOpen, setInsightSectorOpen] = useState(false);
     const insightSectorRef = useRef<HTMLDivElement>(null);
@@ -819,6 +823,31 @@ function ScoutPage() {
         } catch { /* keep seed */ }
     };
     useEffect(() => { loadVCs(); }, []);
+
+    // Close any open investor-card menu when clicking elsewhere on the page.
+    useEffect(() => {
+        const closeMenus = (e: MouseEvent) => {
+            if ((e.target as HTMLElement).closest('.iv-menu-trigger')) return;
+            document.querySelectorAll('.iv-menu').forEach(m => { (m as HTMLElement).style.display = 'none'; });
+        };
+        document.addEventListener('click', closeMenus);
+        return () => document.removeEventListener('click', closeMenus);
+    }, []);
+
+    // Removes a fund from the Investor Network — self-removal by the owning investor,
+    // or by an admin acting on anyone's listing. Both require a stated reason.
+    const performRemoveVC = (vc: any, reason: string) => {
+        setVcList(prev => prev.filter(v => (v.firm_name || '').toLowerCase() !== (vc.firm_name || '').toLowerCase()));
+        fetch('/api/vc/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email: vc.email, firm_name: vc.firm_name, reason }),
+        }).then(async res => {
+            if (!res.ok) { showToast('Could not remove that listing.', '#f87171'); loadVCs(); }
+            else showToast(`Removed ${vc.firm_name} from the Investor Network`, '#f59e0b');
+        }).catch(() => { showToast('Could not remove that listing.', '#f87171'); loadVCs(); });
+    };
 
     // Gate check — user must have a registered VC mandate to use elite investor actions
     const [hasMandate, setHasMandate] = useState(false);
@@ -1165,12 +1194,32 @@ function ScoutPage() {
                         </div>
                     ))}
 
-                    {/* VC Profile card — shows the signed-in user's registered mandate when present */}
+                    {/* Identity card — Hub Admin gets an admin card; investors see their registered mandate */}
                     {(() => {
-                        const pname = myProfile?.partner_name || VC_PROFILE.name;
-                        const pfirm = myProfile?.firm_name || VC_PROFILE.firm;
+                        // The Hub Admin is not a VC, so never show a mandate/Register prompt for them.
+                        if (isAdmin) {
+                            return (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, padding: '10px 11px', borderRadius: 13, background: 'rgba(139,92,246,.08)', border: '1px solid rgba(139,92,246,.22)' }}>
+                                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#7c3aed,#0ea5e9)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 12px rgba(124,58,237,.4)' }}>
+                                            <Shield style={{ width: 17, height: 17 }} />
+                                        </div>
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p style={{ fontSize: 12.5, fontWeight: 700, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-.01em' }}>Hub Admin</p>
+                                        <p style={{ fontSize: 10, color: 'rgba(255,255,255,.42)', margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || user?.email || 'Administrator'}</p>
+                                    </div>
+                                    <span style={{ background: 'rgba(139,92,246,.18)', border: '1px solid rgba(139,92,246,.3)', borderRadius: 7, padding: '4px 8px', color: '#a78bfa', fontSize: 10, fontWeight: 700, flexShrink: 0, letterSpacing: '.05em' }}>ADMIN</span>
+                                </div>
+                            );
+                        }
+                        // A plain visitor (signed in but not a registered VC) should NOT see this
+                        // card — it's the fund identity, reserved for VCs who've registered a mandate.
+                        if (!myProfile) return null;
+                        const pname = myProfile.partner_name || VC_PROFILE.name;
+                        const pfirm = myProfile.firm_name || VC_PROFILE.firm;
                         // Avatar carries the FIRM/brand initials (e.g. "Bade bhai" → BB)
-                        const pavatar = (myProfile ? (myProfile.firm_name || myProfile.partner_name || '?') : VC_PROFILE.firm)
+                        const pavatar = (myProfile.firm_name || myProfile.partner_name || '?')
                             .split(' ').map((w: string) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
                         const statusMeta: Record<string, { label: string; color: string }> = {
                             approved: { label: 'Verified', color: '#34d399' },
@@ -3841,6 +3890,12 @@ function ScoutPage() {
                                             const col = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#f472b6'][i % 5];
                                             const sectors = (vc.sectors || '').split(',').map((s: string) => s.trim()).filter(Boolean);
                                             const vcFocused = focus?.kind === 'investor' && focus.key === (vc.firm_name || '').toLowerCase();
+                                            // Prefer matching by email (works once the list API returns it); fall back to
+                                            // firm name against the signed-in investor's own loaded profile so self-removal
+                                            // still works even if `vc.email` isn't present on this card yet.
+                                            const isOwnCard = (!!user?.email && !!vc.email && user.email.toLowerCase() === vc.email.toLowerCase())
+                                                || (!!myProfile && !!vc.firm_name && (myProfile.firm_name || '').toLowerCase() === vc.firm_name.toLowerCase());
+                                            const canRemoveVC = isAdmin || isOwnCard;
                                             return (
                                                 <div key={(vc.firm_name || '') + i} className={`iv-card${vcFocused ? ' search-focus' : ''}`} style={{ borderRadius: 18, border: `1px solid ${col}2e`, background: `linear-gradient(150deg,${col}12 0%,rgba(7,7,13,.94) 62%)`, padding: '17px 17px 15px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 12, animationDelay: `${i * 0.07}s`, cursor: 'default', backdropFilter: 'blur(2px)' }}>
                                                     {/* animated top accent */}
@@ -3852,6 +3907,39 @@ function ScoutPage() {
                                                         <polyline points="6,54 30,22 56,40 84,12" fill="none" stroke={col} strokeWidth="1" />
                                                         {[[6, 54], [30, 22], [56, 40], [84, 12]].map(([x, y], k) => <circle key={k} cx={x} cy={y} r="1.8" fill={col} />)}
                                                     </svg>
+
+                                                    {/* Three-dot menu — investor can remove their own listing; admin can remove any */}
+                                                    {canRemoveVC && (
+                                                        <div className="iv-menu-trigger" style={{ position: 'absolute', top: 10, right: 10, zIndex: 2 }}>
+                                                            <MoreHorizontal
+                                                                style={{ width: 15, height: 15, color: 'rgba(255,255,255,.35)', cursor: 'pointer', transition: 'color 0.2s' }}
+                                                                onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.85)')}
+                                                                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,.35)')}
+                                                                onClick={e => {
+                                                                    e.stopPropagation();
+                                                                    document.querySelectorAll('.iv-menu').forEach(m => (m as HTMLElement).style.display = 'none');
+                                                                    const menu = e.currentTarget.nextSibling as HTMLElement;
+                                                                    if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                                                                }}
+                                                            />
+                                                            <div className="iv-menu" style={{ display: 'none', position: 'absolute', right: 0, top: 20, background: '#0d0d18', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, overflow: 'hidden', zIndex: 50, minWidth: 130, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
+                                                                <button
+                                                                    onClick={e => {
+                                                                        e.stopPropagation();
+                                                                        setVcRemoveReason(''); setVcRemoveError('');
+                                                                        // vc.email may be missing (e.g. list API not yet returning it) — for a
+                                                                        // self-removal we can safely fall back to the signed-in user's own email.
+                                                                        setVcRemoveTarget(vc.email ? vc : { ...vc, email: user?.email });
+                                                                    }}
+                                                                    style={{ width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#f87171', textAlign: 'left' }}
+                                                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.1)')}
+                                                                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                                                                >
+                                                                    <Trash2 style={{ width: 12, height: 12 }} /> Remove
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
 
                                                     {/* header row: orb + identity */}
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 13, position: 'relative', zIndex: 1 }}>
@@ -4074,6 +4162,55 @@ function ScoutPage() {
                                         <X style={{ width: 13, height: 13 }} />Confirm Removal
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* ══ MODAL: Remove Investor — reason-gated confirmation ══ */}
+            {
+                vcRemoveTarget && (
+                    <div onClick={() => setVcRemoveTarget(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
+                        <div onClick={e => e.stopPropagation()} className="hub-modal-wrap" style={{ background: '#08080f', border: '1px solid rgba(248,113,113,0.3)', borderTop: '2px solid #f87171', borderRadius: 20, width: '100%', maxWidth: 440, padding: 28 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <Trash2 style={{ width: 18, height: 18, color: '#f87171' }} />
+                                </div>
+                                <div style={{ minWidth: 0 }}>
+                                    <p style={{ fontSize: 16, fontWeight: 700, color: 'white', margin: 0 }}>Remove “{vcRemoveTarget.firm_name}”?</p>
+                                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>This removes the fund from the Investor Network.</p>
+                                </div>
+                            </div>
+                            <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: '0 0 14px' }}>
+                                Please tell us why this listing is being removed. Re-registering later will need fresh admin approval.
+                            </p>
+                            <textarea
+                                autoFocus
+                                value={vcRemoveReason}
+                                onChange={e => { setVcRemoveReason(e.target.value); if (vcRemoveError) setVcRemoveError(''); }}
+                                placeholder="Reason for removal (required) — e.g. no longer investing, duplicate entry…"
+                                rows={3}
+                                style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', background: 'rgba(255,255,255,0.04)', border: `1px solid ${vcRemoveError ? 'rgba(248,113,113,0.6)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 12, padding: '10px 12px', color: 'white', fontSize: 13, outline: 'none', fontFamily: 'inherit', lineHeight: 1.5 }}
+                            />
+                            {vcRemoveError && <p style={{ fontSize: 11, color: '#f87171', margin: '8px 0 0' }}>{vcRemoveError}</p>}
+                            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+                                <button
+                                    onClick={() => setVcRemoveTarget(null)}
+                                    style={{ flex: 1, padding: '10px', borderRadius: 999, fontSize: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
+                                    Keep it
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const reason = vcRemoveReason.trim();
+                                        if (reason.length < 4) { setVcRemoveError('Please add a short reason before removing.'); return; }
+                                        performRemoveVC(vcRemoveTarget, reason);
+                                        setVcRemoveTarget(null);
+                                        setVcRemoveReason('');
+                                    }}
+                                    style={{ flex: 2, padding: '10px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: 'linear-gradient(90deg,#dc2626,#f87171)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(220,38,38,0.35)' }}>
+                                    Remove Investor
+                                </button>
                             </div>
                         </div>
                     </div>

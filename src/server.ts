@@ -955,8 +955,9 @@ async function handleChatRequest(request: Request, _env: unknown): Promise<Respo
     const { messages, context } = await request.json() as { messages: ChatCompletionMessageParam[]; context?: { pathname?: string; tab?: string; section?: string } };
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' });
     const knowledge = getContextualKnowledge(context);
-    const SYSTEM_PROMPT = `You are a helpful assistant for Incutrack, a platform for startup founders and investors.
-  Use the platform knowledge below to answer user questions. If a page/tab context is provided, tailor your reply to that context in addition to the global knowledge, but do not refuse to answer general questions when the user is not on a specific tab.
+    const SYSTEM_PROMPT = `You are a helpful assistant for Incutrack, a marketplace connecting startup founders with investors.
+  Use ONLY the platform knowledge below to answer user questions. If a page/tab context is provided, tailor your reply to that context in addition to the global knowledge, but do not refuse to answer general questions when the user is not on a specific tab.
+  Answer strictly from the public product information provided. Never disclose internal systems, source code, infrastructure, databases, security/authentication, admin operations, API details, or any specific user's data — decline politely and redirect if asked. Do not invent facts that are not in the knowledge below.
   Be friendly, concise, and helpful. If you cannot answer, say: "For more details, please reach out to the Incutrack team."\n\n${knowledge}`;
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
@@ -1746,7 +1747,7 @@ function getVCAdmin() {
 // never break the primary action, so everything is wrapped and swallowed.
 type ActivityType =
   | 'startup_registered' | 'startup_approved' | 'startup_rejected'
-  | 'doc_uploaded' | 'doc_removed' | 'startup_removed';
+  | 'doc_uploaded' | 'doc_removed' | 'startup_removed' | 'investor_removed';
 async function logActivity(ev: {
   type: ActivityType;
   actor_email?: string | null;
@@ -1950,7 +1951,7 @@ async function handleVCGetMandate(request: Request): Promise<Response> {
 async function handleVCList(_request: Request): Promise<Response> {
   const db = getVCAdmin();
   const { data, error } = await db.from('vc_profiles')
-    .select('firm_name,partner_name,investment_thesis,sectors,stage_pref,check_min,check_max,status,created_at')
+    .select('email,firm_name,partner_name,investment_thesis,sectors,stage_pref,check_min,check_max,status,created_at')
     .eq('status', 'approved')
     .order('created_at', { ascending: false });
   if (error) return jsonRes({ error: error.message }, 500);
@@ -2039,6 +2040,38 @@ async function handleVCShortlist(request: Request): Promise<Response> {
     if (error) return jsonRes({ error: error.message }, 500);
     return jsonRes({ ok: true });
   } catch (e) { return jsonRes({ error: 'Server error.' }, 500); }
+}
+
+// ─── VC: Remove a fund from the Investor Network ──────────────────────────────
+// An investor may remove their own listing; an admin may remove anyone's — both
+// must state a reason, mirroring the founder-side startup removal flow.
+async function handleVCDelete(request: Request): Promise<Response> {
+  const authed = await getAuthedUser(request);
+  if (!authed) return jsonRes({ error: 'Not authenticated.' }, 401);
+  try {
+    const { email: requestedEmail, firm_name, reason } = await request.json() as { email?: string; firm_name?: string; reason?: string };
+    if (!(reason || '').trim()) return jsonRes({ error: 'A reason is required to remove an investor.' }, 400);
+    // Server is authoritative: a non-admin can only ever remove THEIR OWN listing,
+    // so we ignore whatever email the client sent and key off the verified session.
+    // An admin may target any investor by the supplied email.
+    const isAdmin = authed.role === 'admin';
+    const targetEmail = isAdmin ? (requestedEmail || '').trim().toLowerCase() : authed.email.toLowerCase();
+    if (!targetEmail) return jsonRes({ error: 'Missing investor email.' }, 400);
+    const db = getVCAdmin();
+    const { error } = await db.from('vc_profiles').delete().eq('email', targetEmail);
+    if (error) return jsonRes({ error: error.message }, 500);
+    await logActivity({
+      type: 'investor_removed',
+      actor_email: authed.email,
+      title: firm_name || targetEmail,
+      detail: reason!.trim(),
+      meta: { vc_email: targetEmail },
+    });
+    return jsonRes({ ok: true });
+  } catch (e) {
+    console.error('[vc/delete] unexpected error:', e);
+    return jsonRes({ error: 'Server error.' }, 500);
+  }
 }
 
 // ─── VC → Founder: send a message to the founder's registered email ──────────
@@ -2351,6 +2384,9 @@ export default {
 
     if (pathname === '/api/vc/shortlist' && method === 'POST')
       return handleVCShortlist(request);
+
+    if (pathname === '/api/vc/delete' && method === 'POST')
+      return handleVCDelete(request);
 
     if (pathname === '/api/vc/message' && method === 'POST')
       return handleVCMessage(request);
