@@ -1637,6 +1637,28 @@ function Index() {
           scroll-snap-stop: normal;
         }
 
+        /* On mobile the testimonial cards become a horizontal swipe carousel
+           (one card per view) instead of a tall vertical stack. This keeps the
+           section to a single viewport so a vertical swipe pages rigidly to the
+           next section rather than loosely drag-scrolling the content. */
+        @media (max-width: 767px) {
+          .lp-mobile-carousel {
+            display: flex !important;
+            grid-template-columns: none !important;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            scroll-padding-left: 16px;
+            padding-bottom: 4px;
+          }
+          .lp-mobile-carousel::-webkit-scrollbar { display: none; }
+          .lp-mobile-carousel > * {
+            flex: 0 0 86% !important;
+            scroll-snap-align: center;
+          }
+        }
+
         /* Align the home nav + section-overlay nav link clusters into one
            "linear" position so they don't jump when navigating between pages.
            Gated to real desktop widths so the centered cluster never overlaps
@@ -2249,7 +2271,7 @@ function Index() {
         background: '#020208'
       }}>
       <TestimonialsWebGLCanvas />
-      <section id="testimonials" className="snap-section section-full" style={{ background: "linear-gradient(180deg, rgba(2,5,12,1) 0%, rgba(5,4,16,1) 100%)" }}>
+      <section id="testimonials" className="snap-section section-full" style={{ background: "linear-gradient(180deg, rgba(2,5,12,1) 0%, rgba(5,4,16,1) 100%)", overflow: "hidden" }}>
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#f59e0b", top: "10%", right: "5%", opacity: 0.04 }} />
         <div className="ambient-blob" style={{ width: 600, height: 600, background: "#8b5cf6", bottom: "-10%", left: "-5%", opacity: 0.05 }} />
 
@@ -2263,7 +2285,7 @@ function Index() {
               Loved by builders &amp; backers
             </h2>
           </div>
-          <div className="lp-features-grid" data-hscroll style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
+          <div className="lp-features-grid lp-mobile-carousel" data-hscroll style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
             {[
               { name: "Meera Iyer", role: "Founder · ClimateOS", initials: "MI", gradient: "linear-gradient(135deg,#064e3b,#065f46,#34d399)", ring: "#10b981", text: "IncuScore™ told us exactly what investors would push back on before we walked into the room. Fixed those gaps, raised ₹3Cr in 6 weeks.", rating: 5 },
               { name: "Pawan Kumar", role: "CTO · QuantumGrid", initials: "PK", gradient: "linear-gradient(135deg,#0c4a6e,#0369a1,#38bdf8)", ring: "#06b6d4", text: "Our lead investor said it was the most professional due diligence process they'd ever seen from a seed-stage company.", rating: 5 },
