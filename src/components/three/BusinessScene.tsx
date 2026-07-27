@@ -266,10 +266,13 @@ function SceneTilt({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function BusinessScene({ className }: { className?: string }) {
+export function BusinessScene({ className, active = true }: { className?: string; active?: boolean }) {
   return (
     <Canvas
       className={className}
+      // Pause the render loop entirely when the hero is off-screen — freezes the
+      // last frame at zero GPU cost instead of animating behind other sections.
+      frameloop={active ? 'always' : 'never'}
       dpr={[1, 2]}
       camera={{ position: [0, 1.4, 6], fov: 45 }}
       gl={{ alpha: true, antialias: true }}

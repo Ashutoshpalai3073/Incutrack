@@ -1912,7 +1912,7 @@ function Index() {
 
           <div className="absolute inset-0 z-0">
             <ClientOnly fallback={<div className="w-full h-full" />}>
-              <BusinessScene3D className="w-full h-full" />
+              <BusinessScene3D className="w-full h-full" active={activeSectionIdx === -1} />
             </ClientOnly>
             <div className="pointer-events-none absolute inset-0 scene-blend" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 scene-blend-bottom" />
@@ -2016,7 +2016,7 @@ function Index() {
         pointerEvents: activeSectionIdx === 0 ? 'auto' : 'none',
         background: '#020208'
       }}>
-      <OrbitingSystemCanvas />
+      {Math.abs(activeSectionIdx - 0) <= 1 && <OrbitingSystemCanvas />}
       <section id="features" className="section-full" style={{ background: "linear-gradient(180deg, rgba(8,6,20,1) 0%, rgba(4,4,14,1) 60%, rgba(2,4,14,1) 100%)" }}>
         <div className="ambient-blob" style={{ width: 600, height: 600, background: "#8b5cf6", top: "-10%", left: "-5%", opacity: 0.07 }} />
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#06b6d4", bottom: "5%", right: "0%", opacity: 0.06 }} />
@@ -2076,7 +2076,7 @@ function Index() {
         pointerEvents: activeSectionIdx === 1 ? 'auto' : 'none',
         background: '#020208'
       }}>
-      <PulsarCanvas />
+      {Math.abs(activeSectionIdx - 1) <= 1 && <PulsarCanvas />}
       <section id="founders" className="snap-section section-full" style={{ background: "linear-gradient(180deg, rgba(2,4,14,1) 0%, rgba(6,3,18,1) 50%, rgba(3,3,14,1) 100%)" }}>
         <div className="ambient-blob" style={{ width: 700, height: 700, background: "#8b5cf6", top: "-15%", right: "-10%", opacity: 0.06 }} />
         <div className="ambient-blob" style={{ width: 400, height: 400, background: "#a78bfa", bottom: "0%", left: "5%", opacity: 0.05 }} />
@@ -2183,7 +2183,7 @@ function Index() {
         pointerEvents: activeSectionIdx === 2 ? 'auto' : 'none',
         background: '#020208'
       }}>
-      <WormholeCanvas />
+      {Math.abs(activeSectionIdx - 2) <= 1 && <WormholeCanvas />}
       <section id="investors" className="section-full" style={{ background: "linear-gradient(180deg, rgba(3,3,14,1) 0%, rgba(2,6,14,1) 50%, rgba(2,5,12,1) 100%)" }}>
         <div className="ambient-blob" style={{ width: 600, height: 600, background: "#06b6d4", top: "-10%", left: "-8%", opacity: 0.06 }} />
         <div className="ambient-blob" style={{ width: 450, height: 450, background: "#10b981", bottom: "0%", right: "5%", opacity: 0.05 }} />
@@ -2294,7 +2294,7 @@ function Index() {
         pointerEvents: activeSectionIdx === 3 ? 'auto' : 'none',
         background: '#020208'
       }}>
-      <TestimonialsWebGLCanvas />
+      {Math.abs(activeSectionIdx - 3) <= 1 && <TestimonialsWebGLCanvas />}
       <section id="testimonials" className="snap-section section-full" style={{ background: "linear-gradient(180deg, rgba(2,5,12,1) 0%, rgba(5,4,16,1) 100%)", overflow: "hidden" }}>
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#f59e0b", top: "10%", right: "5%", opacity: 0.04 }} />
         <div className="ambient-blob" style={{ width: 600, height: 600, background: "#8b5cf6", bottom: "-10%", left: "-5%", opacity: 0.05 }} />
@@ -2350,7 +2350,7 @@ function Index() {
         pointerEvents: activeSectionIdx === 4 ? 'auto' : 'none',
         background: '#020208'
       }}>
-      <AboutWebGLCanvas />
+      {Math.abs(activeSectionIdx - 4) <= 1 && <AboutWebGLCanvas />}
       <section id="about" className="snap-section section-full" style={{ background: "linear-gradient(180deg, rgba(5,4,16,1) 0%, rgba(4,4,14,1) 100%)" }}>
 
         <style>{`
@@ -2468,7 +2468,7 @@ function Index() {
         pointerEvents: activeSectionIdx === 5 ? 'auto' : 'none',
         background: '#020208'
       }}>
-      <ContactWebGLCanvas />
+      {Math.abs(activeSectionIdx - 5) <= 1 && <ContactWebGLCanvas />}
       <section id="contact" className="section-full" style={{ background: "linear-gradient(180deg, rgba(4,4,14,1) 0%, rgba(2,2,10,1) 100%)" }}>
         <div className="ambient-blob" style={{ width: 500, height: 500, background: "#06b6d4", top: "-5%", right: "0%", opacity: 0.05 }} />
         <div className="ambient-blob" style={{ width: 400, height: 400, background: "#8b5cf6", bottom: "10%", left: "5%", opacity: 0.05 }} />
@@ -2608,7 +2608,7 @@ function Index() {
         pointerEvents: activeSectionIdx === 6 ? 'auto' : 'none',
         background: '#020208'
       }}>
-      <StarFieldCanvas />
+      {Math.abs(activeSectionIdx - 6) <= 1 && <StarFieldCanvas />}
       <footer style={{ borderTop: "1px solid rgba(255,255,255,.05)", padding: "50px 0 36px", background: "rgba(2,2,8,1)" }}>
         <div style={{ ...SS }}>
           <div className="lp-footer-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "2fr 1fr 1fr 1fr", gap: isMobile ? 24 : 48, marginBottom: 48 }}>

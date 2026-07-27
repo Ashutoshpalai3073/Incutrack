@@ -4,7 +4,7 @@ import { Suspense, lazy } from 'react'
 
 const Scene = lazy(() => import('@/components/three/BusinessScene'))
 
-export function BusinessScene3D({ className }: { className?: string }) {
+export function BusinessScene3D({ className, active = true }: { className?: string; active?: boolean }) {
   return (
     <Suspense
       fallback={
@@ -13,7 +13,7 @@ export function BusinessScene3D({ className }: { className?: string }) {
         </div>
       }
     >
-      <Scene className={className} />
+      <Scene className={className} active={active} />
     </Suspense>
   )
 }
