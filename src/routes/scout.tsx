@@ -11,7 +11,7 @@ import {
     Filter, Star, Building2, Activity, Wallet, CheckCircle,
     ChevronRight, Target, Telescope, Eye, Download, MessageSquare, FileText,
     Globe, Lock, UserPlus, Bookmark, Send, MoreHorizontal,
-    Award, Zap, Shield, PieChart, Trash2
+    Award, Zap, Shield, PieChart, Trash2, Check
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
