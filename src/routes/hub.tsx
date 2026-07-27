@@ -2039,7 +2039,7 @@ function HubPage() {
                           <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.38)', fontWeight: 500 }}>{s.industry}</span>
 
                           {/* score */}
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
                             <span style={{ fontSize: 15, fontWeight: 800, color: scoreCol, filter: `drop-shadow(0 0 6px ${scoreCol}90)`, lineHeight: 1 }}>
                               {s.metrics.pitchScore}
                             </span>
