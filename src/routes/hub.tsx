@@ -847,6 +847,10 @@ function HubPage() {
   const pipelineSectorRef = useRef<HTMLDivElement>(null);
   const [vaultTypeOpen, setVaultTypeOpen] = useState(false);
   const vaultTypeRef = useRef<HTMLDivElement>(null);
+  const [mentorFilterOpen, setMentorFilterOpen] = useState(false);
+  const mentorFilterRef = useRef<HTMLDivElement>(null);
+  const [eventTypeOpen, setEventTypeOpen] = useState(false);
+  const eventTypeRef = useRef<HTMLDivElement>(null);
   // Result picked from global search → surface (and highlight) that item in its tab.
   // `pinned` controls ORDER (stays at top until the next search). `focus` controls the
   // one-time glow animation only and auto-clears — keeping the two separate is what makes
@@ -1408,17 +1412,19 @@ function HubPage() {
     return () => document.removeEventListener('mousedown', onDown);
   }, [searchOpen]);
 
-  // close the custom filter dropdowns (pipeline sector, vault type) on outside click
+  // close the custom filter dropdowns (pipeline sector, vault type, mentor, events) on outside click
   useEffect(() => {
-    if (!pipelineSectorOpen && !vaultTypeOpen) return;
+    if (!pipelineSectorOpen && !vaultTypeOpen && !mentorFilterOpen && !eventTypeOpen) return;
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node;
       if (pipelineSectorOpen && pipelineSectorRef.current && !pipelineSectorRef.current.contains(t)) setPipelineSectorOpen(false);
       if (vaultTypeOpen && vaultTypeRef.current && !vaultTypeRef.current.contains(t)) setVaultTypeOpen(false);
+      if (mentorFilterOpen && mentorFilterRef.current && !mentorFilterRef.current.contains(t)) setMentorFilterOpen(false);
+      if (eventTypeOpen && eventTypeRef.current && !eventTypeRef.current.contains(t)) setEventTypeOpen(false);
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
-  }, [pipelineSectorOpen, vaultTypeOpen]);
+  }, [pipelineSectorOpen, vaultTypeOpen, mentorFilterOpen, eventTypeOpen]);
 
   // clear the search-focus highlight after it has played
   useEffect(() => {
@@ -3026,7 +3032,7 @@ function HubPage() {
               </div>
 
               {/* ── Filter bar ── */}
-              <div className="hub-mentor-filterbar" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px 16px', position: 'relative', zIndex: 1 }}>
+              <div className="hub-mentor-filterbar" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px 16px', position: 'relative', zIndex: mentorFilterOpen ? 30 : 1 }}>
                 <div className="hub-mentor-filterbar-left" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                     <Filter style={{ width: 12, height: 12 }} />Filter:
@@ -3034,17 +3040,36 @@ function HubPage() {
                   <div className="bv-filter-pills">
                     <FilterPills options={['All', 'Available', 'SaaS', 'FinTech', 'DeepTech']} value={mentorFilter} onChange={setMentorFilter} />
                   </div>
-                  {/* Mobile dropdown — replaces the chips on small screens */}
-                  <select
-                    value={mentorFilter}
-                    onChange={e => setMentorFilter(e.target.value)}
-                    className="bv-filter-select"
-                    style={{ display: 'none', flex: '1 1 100%', minWidth: 0, padding: '10px 34px 10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: 'white', fontSize: 13, fontWeight: 600, outline: 'none', WebkitAppearance: 'none', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                  >
-                    {['All', 'Available', 'SaaS', 'FinTech', 'DeepTech'].map(t => (
-                      <option key={t} value={t} style={{ background: '#0a0a16', color: 'white' }}>{t === 'All' ? 'All mentors' : t}</option>
-                    ))}
-                  </select>
+                  {/* Mobile picker — custom themed dropdown (replaces the native <select> on small screens) */}
+                  <div className="bv-filter-select" ref={mentorFilterRef} style={{ display: 'none', position: 'relative', flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => setMentorFilterOpen(o => !o)}
+                      aria-haspopup="listbox"
+                      aria-expanded={mentorFilterOpen}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10, minWidth: 140, background: mentorFilter !== 'All' ? 'rgba(139,92,246,0.22)' : 'rgba(255,255,255,0.05)', border: `1px solid ${mentorFilter !== 'All' || mentorFilterOpen ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.14)'}`, color: mentorFilter !== 'All' ? '#c4b5fd' : 'white', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      <span style={{ flex: 1, textAlign: 'left', whiteSpace: 'nowrap' }}>{mentorFilter === 'All' ? 'All mentors' : mentorFilter}</span>
+                      <ChevronRight style={{ width: 13, height: 13, opacity: 0.7, transform: mentorFilterOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .18s', flexShrink: 0 }} />
+                    </button>
+                    {mentorFilterOpen && (
+                      <div role="listbox" style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, minWidth: 184, zIndex: 60, background: 'rgba(8,8,16,.97)', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(139,92,246,.55)', borderRadius: 14, boxShadow: '0 24px 70px rgba(0,0,0,.7)', backdropFilter: 'blur(14px)', padding: 8 }}>
+                        {['All', 'Available', 'SaaS', 'FinTech', 'DeepTech'].map(t => {
+                          const active = mentorFilter === t;
+                          const dot = t === 'Available' ? '#10b981' : '#a78bfa';
+                          return (
+                            <button key={t} role="option" aria-selected={active} onClick={() => { setMentorFilter(t); setMentorFilterOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, marginBottom: 2, background: active ? 'rgba(139,92,246,.14)' : 'transparent', border: `1px solid ${active ? 'rgba(139,92,246,.34)' : 'transparent'}`, cursor: 'pointer', transition: 'background .15s' }}
+                              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.05)'; }}
+                              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                            >
+                              <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: active || t === 'Available' ? dot : 'rgba(255,255,255,.25)', boxShadow: active || t === 'Available' ? `0 0 7px ${dot}` : 'none' }} />
+                              <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 600, color: active ? 'white' : 'rgba(255,255,255,.62)' }}>{t === 'All' ? 'All mentors' : t}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.9)' }} />
@@ -3196,7 +3221,7 @@ function HubPage() {
                 </div>
 
                 {/* ── Header ── */}
-                <div className="ea-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: 2 }}>
+                <div className="ea-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: eventTypeOpen ? 30 : 2 }}>
 
                   {/* Filter pill group */}
                   <div className="bv-filter-pills" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -3214,17 +3239,37 @@ function HubPage() {
                     </div>
                   </div>
 
-                  {/* Mobile dropdown — replaces the filter pills on small screens */}
-                  <select
-                    value={eventType}
-                    onChange={e => setEventType(e.target.value)}
-                    className="bv-filter-select"
-                    style={{ display: 'none', flex: '1 1 100%', minWidth: 0, padding: '10px 34px 10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: 'white', fontSize: 13, fontWeight: 600, outline: 'none', WebkitAppearance: 'none', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                  >
-                    {TYPES.map(t => (
-                      <option key={t} value={t} style={{ background: '#0a0a16', color: 'white' }}>{t === 'All' ? 'All event types' : t}</option>
-                    ))}
-                  </select>
+                  {/* Mobile picker — custom themed dropdown (replaces the native <select> on small screens) */}
+                  <div className="bv-filter-select" ref={eventTypeRef} style={{ display: 'none', position: 'relative', flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => setEventTypeOpen(o => !o)}
+                      aria-haspopup="listbox"
+                      aria-expanded={eventTypeOpen}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10, minWidth: 150, background: eventType !== 'All' ? 'rgba(139,92,246,0.22)' : 'rgba(255,255,255,0.05)', border: `1px solid ${eventType !== 'All' || eventTypeOpen ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.14)'}`, color: eventType !== 'All' ? '#c4b5fd' : 'white', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: eventType === 'All' ? '#8b5cf6' : (TYPE_META[eventType]?.color || '#8b5cf6'), boxShadow: `0 0 7px ${eventType === 'All' ? '#8b5cf6' : (TYPE_META[eventType]?.color || '#8b5cf6')}` }} />
+                      <span style={{ flex: 1, textAlign: 'left', whiteSpace: 'nowrap' }}>{eventType === 'All' ? 'All event types' : eventType}</span>
+                      <ChevronRight style={{ width: 13, height: 13, opacity: 0.7, transform: eventTypeOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .18s', flexShrink: 0 }} />
+                    </button>
+                    {eventTypeOpen && (
+                      <div role="listbox" style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, minWidth: 190, zIndex: 60, background: 'rgba(8,8,16,.97)', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(139,92,246,.55)', borderRadius: 14, boxShadow: '0 24px 70px rgba(0,0,0,.7)', backdropFilter: 'blur(14px)', padding: 8 }}>
+                        {TYPES.map(t => {
+                          const active = eventType === t;
+                          const tc = t === 'All' ? '#8b5cf6' : (TYPE_META[t]?.color || '#8b5cf6');
+                          return (
+                            <button key={t} role="option" aria-selected={active} onClick={() => { setEventType(t); setEventTypeOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, marginBottom: 2, background: active ? `${tc}1f` : 'transparent', border: `1px solid ${active ? tc + '4d' : 'transparent'}`, cursor: 'pointer', transition: 'background .15s' }}
+                              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.05)'; }}
+                              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                            >
+                              <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: active ? tc : 'rgba(255,255,255,.25)', boxShadow: active ? `0 0 7px ${tc}` : 'none' }} />
+                              <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 600, color: active ? 'white' : 'rgba(255,255,255,.62)' }}>{t === 'All' ? 'All event types' : t}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Stats + CTA */}
                   <div className="ea-stats-cta" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -1330,7 +1330,12 @@ img, video { max-width: 100%; height: auto; }
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
-  .hub-leaderboard > * { min-width: 600px !important; }
+  .hub-leaderboard > * { min-width: 736px !important; }
+  /* The row list must NOT be its own horizontal scroller, otherwise the header
+     (which scrolls with .hub-leaderboard) and the rows scroll independently and
+     the right-hand columns (SCORE / RAISED) fall out of view. Let the whole
+     table scroll as one unit via .hub-leaderboard. */
+  .hub-leaderboard .analytics-scroll { overflow-x: visible !important; }
 
   /* Defensive: no scout/hub card or panel may exceed the viewport width. */
   .sc-tab-panel-left, .sc-tab-sidebar, .sc-network-side,
