@@ -1407,10 +1407,14 @@ img, video { max-width: 100%; height: auto; }
   .dp-card-namerow > div:last-child { text-align: left !important; }
 }
 
-/* ── Explore Hub Brand Vault "Type" filter → native dropdown on mobile ── */
+/* ── Explore Hub Brand Vault "Type" filter → themed dropdown on mobile ── */
 @media (max-width: 768px) {
   .bv-filter-pills { display: none !important; }
-  .bv-filter-select { display: block !important; }
+  /* Custom dropdown wrapper: inline-flex so "Type: [All types]" stays on one line
+     with the Upload button (justify-between), instead of a full-width native select. */
+  .bv-filter-select { display: inline-flex !important; }
+  /* Shorten "Upload Document" → "Upload" on phones so the whole filter row is linear. */
+  .bv-upload-doc-word { display: none; }
 }
 
 /* ── Explore Hub Event Arena header → matches the Demo Days mobile layout:

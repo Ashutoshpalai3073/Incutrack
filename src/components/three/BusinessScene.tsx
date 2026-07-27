@@ -242,8 +242,20 @@ function CapitalComets() {
 function SceneTilt({ children }: { children: React.ReactNode }) {
   const group = useRef<THREE.Group>(null)
   const mouse = useCursor()
+  const { viewport } = useThree()
   useFrame(() => {
     if (!group.current) return
+    // On narrow/portrait viewports (mobile) the ecosystem's default +2.4 x-offset
+    // pushes the central crystal off the right edge. Recenter it (and lift it into
+    // the upper third, above the hero copy) so the "idea" gem is clearly visible.
+    const narrow = viewport.aspect < 0.9
+    const targetX = narrow ? 0 : 2.4
+    const targetY = narrow ? 0.7 : 0
+    const targetScale = narrow ? 0.82 : 1
+    group.current.position.x = THREE.MathUtils.lerp(group.current.position.x, targetX, 0.08)
+    group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, targetY, 0.08)
+    const s = THREE.MathUtils.lerp(group.current.scale.x, targetScale, 0.08)
+    group.current.scale.setScalar(s)
     group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, mouse.x * 0.18, 0.05)
     group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, -mouse.y * 0.1, 0.05)
   })

@@ -1797,16 +1797,40 @@ function Index() {
           <Spotlight className="-top-40 left-0 md:left-60 md:-top-20" fill="white" />
           {!dustDone && <DustCanvas heroRef={heroRef} onDone={() => setDustDone(true)} />}
 
-          <nav className="relative z-20 flex items-center justify-between px-6 md:px-16 py-7" style={{ flexWrap: 'wrap' }}>
-            <button type="button" onClick={() => navigateToSection(-1)} className="flex items-center gap-2.5 text-sm font-semibold tracking-widest uppercase" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}>
+          <nav className="lp-hero-nav relative z-20 flex items-center justify-between px-6 md:px-16 py-7" style={{ flexWrap: 'nowrap' }}>
+            <button type="button" onClick={() => navigateToSection(-1)} className="lp-hero-logo flex items-center gap-2.5 text-sm font-semibold tracking-widest uppercase" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}>
               <span className="inline-block h-2 w-2 rounded-full bg-violet-400 shadow-[0_0_12px_2px_rgba(167,139,250,0.8)]" />
               Incutrack
             </button>
-            <div className="hidden md:flex items-center gap-8 text-neutral-400 lp-nav-centered" style={{ fontSize: 13 }}>
-              <button onClick={() => navigateToSection(-1)} className="hover:text-white transition-colors cursor-pointer" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }}>Home</button>
-              {["features", "founders", "investors", "testimonials", "about", "contact"].map((l, i) => (
-                <button key={l} onClick={() => navigateToSection(i)} className="hover:text-white transition-colors cursor-pointer capitalize" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }}>{l.charAt(0).toUpperCase() + l.slice(1)}</button>
-              ))}
+            <div className="flex items-center justify-center gap-8 text-neutral-400 lp-nav-centered" style={{ fontSize: 13 }}>
+              {/* Desktop nav links */}
+              <div className="hidden md:flex items-center gap-8">
+                <button onClick={() => navigateToSection(-1)} className="hover:text-white transition-colors cursor-pointer" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }}>Home</button>
+                {["features", "founders", "investors", "testimonials", "about", "contact"].map((l, i) => (
+                  <button key={l} onClick={() => navigateToSection(i)} className="hover:text-white transition-colors cursor-pointer capitalize" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }}>{l.charAt(0).toUpperCase() + l.slice(1)}</button>
+                ))}
+              </div>
+              {/* Mobile-only Drusti pill — fills the otherwise-empty nav center on phones */}
+              <a
+                href="https://drusti.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="lp-drusti-mobile inline-flex md:hidden"
+                aria-label="Visit Drusti (opens in a new tab)"
+                style={{
+                  alignItems: 'center', gap: 5,
+                  padding: '4px 9px 4px 5px', borderRadius: 999,
+                  background: 'rgba(167,139,250,.1)', border: '1px solid rgba(167,139,250,.28)',
+                  textDecoration: 'none', fontSize: 11.5, fontWeight: 600, color: '#c4b5fd',
+                  whiteSpace: 'nowrap', flexShrink: 0,
+                }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 15, height: 15, borderRadius: 5, background: 'rgba(167,139,250,.25)', flexShrink: 0 }}>
+                  <Sparkles style={{ width: 8, height: 8, color: '#a78bfa' }} />
+                </span>
+                Drusti
+                <svg width="8" height="8" viewBox="0 0 9 9" fill="none" style={{ opacity: 0.5, flexShrink: 0 }}><path d="M1 8L8 1M8 1H3M8 1V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </a>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {/* Drusti ecosystem pill — desktop only */}

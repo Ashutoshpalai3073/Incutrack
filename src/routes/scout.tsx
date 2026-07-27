@@ -716,6 +716,10 @@ function ScoutPage() {
     const [insightSectors, setInsightSectors] = useState<string[]>([]); // empty = all sectors
     const [insightSectorOpen, setInsightSectorOpen] = useState(false);
     const insightSectorRef = useRef<HTMLDivElement>(null);
+    const [drSelectOpen, setDrSelectOpen] = useState(false); // Diligence Room "Viewing" custom dropdown (mobile)
+    const drSelectRef = useRef<HTMLDivElement>(null);
+    const [ddFilterOpen, setDdFilterOpen] = useState(false); // Demo Days event-type filter custom dropdown (mobile)
+    const ddFilterRef = useRef<HTMLDivElement>(null);
     const [startups, setStartups] = useState(ALL_STARTUPS);
     const [accessRequests, setAccessRequests] = useState<string[]>([]);
     const [viewedDocs, setViewedDocs] = useState<string[]>([]);
@@ -916,17 +920,19 @@ function ScoutPage() {
 
     // close popovers on outside click (reliable across transform/backdrop-filter ancestors)
     useEffect(() => {
-        if (!notifOpen && !searchOpen && !dealSectorOpen && !insightSectorOpen) return;
+        if (!notifOpen && !searchOpen && !dealSectorOpen && !insightSectorOpen && !drSelectOpen && !ddFilterOpen) return;
         const onDown = (e: MouseEvent) => {
             const t = e.target as Node;
             if (notifOpen && notifRef.current && !notifRef.current.contains(t)) setNotifOpen(false);
             if (searchOpen && searchRef.current && !searchRef.current.contains(t)) setSearchOpen(false);
             if (dealSectorOpen && dealSectorRef.current && !dealSectorRef.current.contains(t)) setDealSectorOpen(false);
             if (insightSectorOpen && insightSectorRef.current && !insightSectorRef.current.contains(t)) setInsightSectorOpen(false);
+            if (drSelectOpen && drSelectRef.current && !drSelectRef.current.contains(t)) setDrSelectOpen(false);
+            if (ddFilterOpen && ddFilterRef.current && !ddFilterRef.current.contains(t)) setDdFilterOpen(false);
         };
         document.addEventListener('mousedown', onDown);
         return () => document.removeEventListener('mousedown', onDown);
-    }, [notifOpen, searchOpen, dealSectorOpen, insightSectorOpen]);
+    }, [notifOpen, searchOpen, dealSectorOpen, insightSectorOpen, drSelectOpen, ddFilterOpen]);
 
     useEffect(() => {
         const channel = supabase
@@ -1924,7 +1930,7 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── Startup selector ── */}
-                                <div className="sc-dr-selrow" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
+                                <div className="sc-dr-selrow" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: drSelectOpen ? 30 : 1 }}>
                                     <div className="sc-dr-selector sc-dr-chips" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
                                         <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.08em', padding: '0 6px' }}>Viewing</span>
                                         {startups.map(s => {
@@ -1940,20 +1946,48 @@ function ScoutPage() {
                                             );
                                         })}
                                     </div>
-                                    {/* Mobile dropdown — replaces the chip row on small screens */}
-                                    <label className="sc-dr-select-wrap" style={{ display: 'none', alignItems: 'center', gap: 8, flex: '1 1 100%' }}>
+                                    {/* Mobile picker — custom themed dropdown (replaces the native <select> on small screens) */}
+                                    <div className="sc-dr-select-wrap" style={{ display: 'none', alignItems: 'center', gap: 8, flex: '1 1 100%' }}>
                                         <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.08em', flexShrink: 0 }}>Viewing</span>
-                                        <select
-                                            value={selectedStartupId}
-                                            onChange={e => setSelectedStartupId(e.target.value)}
-                                            className="sc-dr-select"
-                                            style={{ flex: 1, minWidth: 0, padding: '10px 34px 10px 12px', borderRadius: 10, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.14)', color: 'white', fontSize: 13, fontWeight: 600, outline: 'none', WebkitAppearance: 'none', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                                        >
-                                            {startups.map(s => (
-                                                <option key={s.id} value={s.id} style={{ background: '#0a0a16', color: 'white' }}>{s.name}{shortlisted.includes(s.id) ? '  ★ shortlisted' : ''}</option>
-                                            ))}
-                                        </select>
-                                    </label>
+                                        <div ref={drSelectRef} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setDrSelectOpen(o => !o)}
+                                                aria-haspopup="listbox"
+                                                aria-expanded={drSelectOpen}
+                                                className="sc-btn"
+                                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,.05)', border: `1px solid ${drSelectOpen ? 'rgba(139,92,246,.5)' : 'rgba(255,255,255,.14)'}`, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left', boxShadow: drSelectOpen ? '0 0 14px rgba(139,92,246,.28)' : 'none' }}
+                                            >
+                                                <span style={{ width: 7, height: 7, borderRadius: '50%', background: STAGE_COLORS[selectedStartupObj.stage] || '#8b5cf6', boxShadow: `0 0 7px ${STAGE_COLORS[selectedStartupObj.stage] || '#8b5cf6'}`, flexShrink: 0 }} />
+                                                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedStartupObj.name}</span>
+                                                {shortlisted.includes(selectedStartupObj.id) && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, color: '#fbbf24', flexShrink: 0 }}><Star style={{ width: 10, height: 10, fill: '#fbbf24' }} />Shortlisted</span>}
+                                                <ChevronRight style={{ width: 14, height: 14, color: 'rgba(255,255,255,.5)', transform: drSelectOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .18s', flexShrink: 0 }} />
+                                            </button>
+                                            {drSelectOpen && (
+                                                <div className="notif-scroll" role="listbox" style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, maxHeight: 300, overflowY: 'auto', zIndex: 41, background: 'rgba(8,8,16,.97)', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(139,92,246,.55)', borderRadius: 14, boxShadow: '0 24px 70px rgba(0,0,0,.7)', backdropFilter: 'blur(14px)', padding: 8 }}>
+                                                    <div style={{ padding: '4px 8px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                                                        <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.55)' }}>Select a startup</span>
+                                                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.3)' }}>{startups.length}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 8 }}>
+                                                        {startups.map(s => {
+                                                            const active = selectedStartupId === s.id;
+                                                            const sc = STAGE_COLORS[s.stage] || '#8b5cf6';
+                                                            const sl = shortlisted.includes(s.id);
+                                                            return (
+                                                                <button key={s.id} role="option" aria-selected={active} onClick={() => { setSelectedStartupId(s.id); setDrSelectOpen(false); }} className="dr-btn" style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 10, background: active ? 'rgba(139,92,246,.14)' : 'transparent', border: `1px solid ${active ? 'rgba(139,92,246,.34)' : 'rgba(255,255,255,.06)'}`, cursor: 'pointer' }}>
+                                                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: sc, boxShadow: `0 0 7px ${sc}`, flexShrink: 0 }} />
+                                                                    <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 600, color: active ? 'white' : 'rgba(255,255,255,.66)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                                                                    {sl && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 8.5, fontWeight: 800, padding: '2px 6px', borderRadius: 999, background: 'rgba(251,191,36,.14)', color: '#fbbf24', flexShrink: 0 }}><Star style={{ width: 8, height: 8, fill: '#fbbf24' }} />Shortlisted</span>}
+                                                                    {active && <Check style={{ width: 14, height: 14, color: '#a78bfa', flexShrink: 0 }} />}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
                                         {[
                                             { val: selectedDocs.length, label: 'docs', col: '#a78bfa' },
@@ -2687,7 +2721,7 @@ function ScoutPage() {
                                 </div>
 
                                 {/* ── Header: stats + filter row ── */}
-                                <div className="sc-demodays-stats" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
+                                <div className="sc-demodays-stats" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: ddFilterOpen ? 30 : 1 }}>
                                     {/* KPI pills */}
                                     {[
                                         { val: events.length, label: 'Events', col: '#8b5cf6' },
@@ -2720,20 +2754,47 @@ function ScoutPage() {
                                         }
                                     </div>
 
-                                    {/* Mobile dropdown — replaces the filter chips on small screens */}
-                                    <label className="dd-filter-select-wrap" style={{ display: 'none', alignItems: 'center', gap: 8, flex: '1 1 100%' }}>
+                                    {/* Mobile picker — custom themed dropdown (replaces the native <select> on small screens) */}
+                                    <div className="dd-filter-select-wrap" style={{ display: 'none', alignItems: 'center', gap: 8, flex: '1 1 100%' }}>
                                         <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.08em', flexShrink: 0 }}>Filter</span>
-                                        <select
-                                            value={eventType}
-                                            onChange={e => setEventType(e.target.value)}
-                                            className="dd-filter-select"
-                                            style={{ flex: 1, minWidth: 0, padding: '10px 34px 10px 12px', borderRadius: 10, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.14)', color: 'white', fontSize: 13, fontWeight: 600, outline: 'none', WebkitAppearance: 'none', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                                        >
-                                            {TYPES.map(t => (
-                                                <option key={t} value={t} style={{ background: '#0a0a16', color: 'white' }}>{t === 'All' ? 'All event types' : t}</option>
-                                            ))}
-                                        </select>
-                                    </label>
+                                        <div ref={ddFilterRef} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setDdFilterOpen(o => !o)}
+                                                aria-haspopup="listbox"
+                                                aria-expanded={ddFilterOpen}
+                                                className="sc-btn"
+                                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,.05)', border: `1px solid ${ddFilterOpen ? 'rgba(139,92,246,.5)' : 'rgba(255,255,255,.14)'}`, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left', boxShadow: ddFilterOpen ? '0 0 14px rgba(139,92,246,.28)' : 'none' }}
+                                            >
+                                                <span style={{ width: 7, height: 7, borderRadius: '50%', background: eventType === 'All' ? '#8b5cf6' : (TYPE_META[eventType]?.color || '#8b5cf6'), boxShadow: `0 0 7px ${eventType === 'All' ? '#8b5cf6' : (TYPE_META[eventType]?.color || '#8b5cf6')}`, flexShrink: 0 }} />
+                                                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{eventType === 'All' ? 'All event types' : eventType}</span>
+                                                <ChevronRight style={{ width: 14, height: 14, color: 'rgba(255,255,255,.5)', transform: ddFilterOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .18s', flexShrink: 0 }} />
+                                            </button>
+                                            {ddFilterOpen && (
+                                                <div className="notif-scroll" role="listbox" style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, maxHeight: 320, overflowY: 'auto', zIndex: 41, background: 'rgba(8,8,16,.97)', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(139,92,246,.55)', borderRadius: 14, boxShadow: '0 24px 70px rgba(0,0,0,.7)', backdropFilter: 'blur(14px)', padding: 8 }}>
+                                                    <div style={{ padding: '4px 8px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                                                        <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.55)' }}>Filter by type</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 8 }}>
+                                                        {TYPES.map(t => {
+                                                            const active = eventType === t;
+                                                            const tc = t === 'All' ? '#8b5cf6' : (TYPE_META[t]?.color || '#8b5cf6');
+                                                            const TIcon = t === 'All' ? null : TYPE_META[t]?.Icon;
+                                                            return (
+                                                                <button key={t} role="option" aria-selected={active} onClick={() => { setEventType(t); setDdFilterOpen(false); }} className="dr-btn" style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 10, background: active ? `${tc}1f` : 'transparent', border: `1px solid ${active ? tc + '4d' : 'rgba(255,255,255,.06)'}`, cursor: 'pointer' }}>
+                                                                    <span style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${tc}1f`, border: `1px solid ${tc}3a` }}>
+                                                                        {TIcon ? <TIcon style={{ width: 12, height: 12, color: tc }} /> : <span style={{ width: 7, height: 7, borderRadius: '50%', background: tc, boxShadow: `0 0 7px ${tc}` }} />}
+                                                                    </span>
+                                                                    <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 600, color: active ? 'white' : 'rgba(255,255,255,.66)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t === 'All' ? 'All event types' : t}</span>
+                                                                    {active && <Check style={{ width: 14, height: 14, color: tc, flexShrink: 0 }} />}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
 
                                     {/* add event */}
                                     <button onClick={() => setAddEventOpen(true)} className="dd-btn dd-add-event" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: 'linear-gradient(90deg,#7c3aed,#0ea5e9)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(124,58,237,.4)' }}>

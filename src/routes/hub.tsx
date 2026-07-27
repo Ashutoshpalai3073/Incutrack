@@ -843,6 +843,10 @@ function HubPage() {
   const [notifAllRead, setNotifAllRead] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const [pipelineSectorOpen, setPipelineSectorOpen] = useState(false);
+  const pipelineSectorRef = useRef<HTMLDivElement>(null);
+  const [vaultTypeOpen, setVaultTypeOpen] = useState(false);
+  const vaultTypeRef = useRef<HTMLDivElement>(null);
   // Result picked from global search → surface (and highlight) that item in its tab.
   // `pinned` controls ORDER (stays at top until the next search). `focus` controls the
   // one-time glow animation only and auto-clears — keeping the two separate is what makes
@@ -1404,6 +1408,18 @@ function HubPage() {
     return () => document.removeEventListener('mousedown', onDown);
   }, [searchOpen]);
 
+  // close the custom filter dropdowns (pipeline sector, vault type) on outside click
+  useEffect(() => {
+    if (!pipelineSectorOpen && !vaultTypeOpen) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (pipelineSectorOpen && pipelineSectorRef.current && !pipelineSectorRef.current.contains(t)) setPipelineSectorOpen(false);
+      if (vaultTypeOpen && vaultTypeRef.current && !vaultTypeRef.current.contains(t)) setVaultTypeOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [pipelineSectorOpen, vaultTypeOpen]);
+
   // clear the search-focus highlight after it has played
   useEffect(() => {
     if (!focus) return;
@@ -1930,8 +1946,10 @@ function HubPage() {
                     </button>
                   </div>
 
-                  {/* Column headers — padding matches row: margin 12px + padding 16px = 28px each side */}
-                  <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: '36px 1fr 110px 148px 90px 52px 110px', padding: '8px 28px', borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'center' }}>
+                  {/* Column headers — box model mirrors the rows exactly so the grid tracks line up:
+                      row = margin 12 + border-left 3 + border-right 1 + padding 16/16 = 60px total horizontal.
+                      Header reproduces that with padding-left 31 (12+3+16) / padding-right 29 (12+1+16). */}
+                  <div style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: '36px minmax(190px,1fr) 110px 148px 90px 52px 110px', padding: '8px 29px 8px 31px', borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'center' }}>
                     {['#', 'COMPANY', 'FOUNDER', 'STAGE', 'INDUSTRY', 'SCORE', 'RAISED'].map(h => (
                       <span key={h} style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>{h}</span>
                     ))}
@@ -1958,7 +1976,7 @@ function HubPage() {
                             borderRadius: 12,
                             padding: '12px 16px',
                             display: 'grid',
-                            gridTemplateColumns: '36px 1fr 110px 148px 90px 52px 110px',
+                            gridTemplateColumns: '36px minmax(190px,1fr) 110px 148px 90px 52px 110px',
                             alignItems: 'center',
                             cursor: 'pointer',
                             position: 'relative',
@@ -2290,14 +2308,42 @@ function HubPage() {
                 </div>
 
                 {/* ── Header ── */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: pipelineSectorOpen ? 30 : 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 5 }}><Filter style={{ width: 11, height: 11 }} />Sector</span>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {['All', ...Array.from(new Set(startups.map(s => s.industry).filter(Boolean))).sort()].map(s => {
-                        const active = pipelineSector === s;
-                        return <button key={s} onClick={() => setPipelineSector(s)} style={{ padding: '5px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .18s', background: active ? 'rgba(139,92,246,0.28)' : 'rgba(255,255,255,0.04)', color: active ? '#a78bfa' : 'rgba(255,255,255,0.35)', border: `1px solid ${active ? 'rgba(139,92,246,0.55)' : 'rgba(255,255,255,0.08)'}`, boxShadow: active ? '0 0 16px rgba(139,92,246,0.4)' : 'none' }}>{s}</button>;
-                      })}
+                    {/* Themed sector dropdown (replaces the chip row so it reads as one control) */}
+                    <div ref={pipelineSectorRef} style={{ position: 'relative' }}>
+                      <button
+                        type="button"
+                        onClick={() => setPipelineSectorOpen(o => !o)}
+                        aria-haspopup="listbox"
+                        aria-expanded={pipelineSectorOpen}
+                        style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .18s', background: pipelineSector !== 'All' ? 'rgba(139,92,246,0.28)' : 'rgba(255,255,255,0.05)', color: pipelineSector !== 'All' ? '#a78bfa' : 'rgba(255,255,255,0.6)', border: `1px solid ${pipelineSector !== 'All' || pipelineSectorOpen ? 'rgba(139,92,246,0.55)' : 'rgba(255,255,255,0.1)'}`, boxShadow: pipelineSector !== 'All' ? '0 0 16px rgba(139,92,246,0.35)' : 'none' }}
+                      >
+                        <span style={{ whiteSpace: 'nowrap' }}>{pipelineSector === 'All' ? 'All sectors' : pipelineSector}</span>
+                        <ChevronRight style={{ width: 12, height: 12, transform: pipelineSectorOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .18s' }} />
+                      </button>
+                      {pipelineSectorOpen && (
+                        <div className="analytics-scroll" role="listbox" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: 224, maxHeight: 300, overflowY: 'auto', zIndex: 60, background: 'rgba(8,8,16,.97)', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(139,92,246,.55)', borderRadius: 14, boxShadow: '0 24px 70px rgba(0,0,0,.7)', backdropFilter: 'blur(14px)', padding: 8 }}>
+                          <div style={{ padding: '2px 8px 8px', borderBottom: '1px solid rgba(255,255,255,.06)', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.06em' }}>Filter by sector</div>
+                          <div style={{ marginTop: 6 }}>
+                            {['All', ...Array.from(new Set(startups.map(s => s.industry).filter(Boolean))).sort()].map(s => {
+                              const active = pipelineSector === s;
+                              const cnt = s === 'All' ? startups.length : startups.filter(x => x.industry === s).length;
+                              return (
+                                <button key={s} role="option" aria-selected={active} onClick={() => { setPipelineSector(s); setPipelineSectorOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, marginBottom: 2, background: active ? 'rgba(139,92,246,.14)' : 'transparent', border: `1px solid ${active ? 'rgba(139,92,246,.34)' : 'transparent'}`, cursor: 'pointer', transition: 'background .15s' }}
+                                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.05)'; }}
+                                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                                >
+                                  <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: active ? '#a78bfa' : 'rgba(255,255,255,.25)', boxShadow: active ? '0 0 7px #a78bfa' : 'none' }} />
+                                  <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: active ? 'white' : 'rgba(255,255,255,.62)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s === 'All' ? 'All sectors' : s}</span>
+                                  <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 7px', borderRadius: 999, background: active ? 'rgba(139,92,246,.2)' : 'rgba(255,255,255,.06)', color: active ? '#c4b5fd' : 'rgba(255,255,255,.3)' }}>{cnt}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -2489,7 +2535,7 @@ function HubPage() {
               </div>
 
               {/* ── Filter row ── */}
-              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, position: 'relative', zIndex: 1 }}>
+              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, position: 'relative', zIndex: vaultTypeOpen ? 30 : 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Filter style={{ width: 12, height: 12 }} />Type:
@@ -2497,17 +2543,35 @@ function HubPage() {
                   <div className="bv-filter-pills">
                     <FilterPills options={['All', 'Deck', 'Doc', 'Sheet', 'Video', 'Bundle']} value={vaultType} onChange={setVaultType} />
                   </div>
-                  {/* Mobile dropdown — replaces the type chips on small screens */}
-                  <select
-                    value={vaultType}
-                    onChange={e => setVaultType(e.target.value)}
-                    className="bv-filter-select"
-                    style={{ display: 'none', flex: '1 1 100%', minWidth: 0, padding: '10px 34px 10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: 'white', fontSize: 13, fontWeight: 600, outline: 'none', WebkitAppearance: 'none', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                  >
-                    {['All', 'Deck', 'Doc', 'Sheet', 'Video', 'Bundle'].map(t => (
-                      <option key={t} value={t} style={{ background: '#0a0a16', color: 'white' }}>{t === 'All' ? 'All types' : t}</option>
-                    ))}
-                  </select>
+                  {/* Mobile picker — custom themed dropdown (replaces the native <select> on small screens) */}
+                  <div className="bv-filter-select" ref={vaultTypeRef} style={{ display: 'none', position: 'relative', flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => setVaultTypeOpen(o => !o)}
+                      aria-haspopup="listbox"
+                      aria-expanded={vaultTypeOpen}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10, minWidth: 128, background: vaultType !== 'All' ? 'rgba(139,92,246,0.22)' : 'rgba(255,255,255,0.05)', border: `1px solid ${vaultType !== 'All' || vaultTypeOpen ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.14)'}`, color: vaultType !== 'All' ? '#c4b5fd' : 'white', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      <span style={{ flex: 1, textAlign: 'left', whiteSpace: 'nowrap' }}>{vaultType === 'All' ? 'All types' : vaultType}</span>
+                      <ChevronRight style={{ width: 13, height: 13, opacity: 0.7, transform: vaultTypeOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .18s', flexShrink: 0 }} />
+                    </button>
+                    {vaultTypeOpen && (
+                      <div role="listbox" style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, minWidth: 176, zIndex: 60, background: 'rgba(8,8,16,.97)', border: '1px solid rgba(255,255,255,.1)', borderTop: '2px solid rgba(139,92,246,.55)', borderRadius: 14, boxShadow: '0 24px 70px rgba(0,0,0,.7)', backdropFilter: 'blur(14px)', padding: 8 }}>
+                        {['All', 'Deck', 'Doc', 'Sheet', 'Video', 'Bundle'].map(t => {
+                          const active = vaultType === t;
+                          return (
+                            <button key={t} role="option" aria-selected={active} onClick={() => { setVaultType(t); setVaultTypeOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, marginBottom: 2, background: active ? 'rgba(139,92,246,.14)' : 'transparent', border: `1px solid ${active ? 'rgba(139,92,246,.34)' : 'transparent'}`, cursor: 'pointer', transition: 'background .15s' }}
+                              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.05)'; }}
+                              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                            >
+                              <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: active ? '#a78bfa' : 'rgba(255,255,255,.25)', boxShadow: active ? '0 0 7px #a78bfa' : 'none' }} />
+                              <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 600, color: active ? 'white' : 'rgba(255,255,255,.62)' }}>{t === 'All' ? 'All types' : t}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                   {vaultBrand && (
                     <span style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 10px 5px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700, color: '#a78bfa', background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(139,92,246,0.35)' }}>
                       <FolderKey style={{ width: 11, height: 11 }} />Viewing: {vaultBrand}
@@ -2532,7 +2596,7 @@ function HubPage() {
                   style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 18px', borderRadius: 999, fontSize: 12, fontWeight: 600, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', transition: 'all 0.2s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(139,92,246,0.5)'; (e.currentTarget as HTMLButtonElement).style.color = '#c4b5fd'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.6)'; }}>
-                  <Upload style={{ width: 14, height: 14 }} /> Upload Document
+                  <Upload style={{ width: 14, height: 14 }} /> Upload<span className="bv-upload-doc-word"> Document</span>
                 </button>
               </div>
 
